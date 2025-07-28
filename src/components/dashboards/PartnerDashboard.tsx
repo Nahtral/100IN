@@ -5,235 +5,257 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Handshake, 
   TrendingUp, 
-  Eye, 
-  DollarSign, 
+  Calendar, 
   Users,
-  Calendar,
+  DollarSign,
   Award,
-  BarChart3,
-  Star
+  Target,
+  MessageSquare
 } from "lucide-react";
 
 const PartnerDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Partnership Overview */}
-      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-blue-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Teams</CardTitle>
+            <Users className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-muted-foreground">
+              Under sponsorship
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-green-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Investment</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">$85K</div>
+            <p className="text-xs text-muted-foreground">
+              This season
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-orange-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Brand Exposure</CardTitle>
+            <TrendingUp className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2.4M</div>
+            <p className="text-xs text-muted-foreground">
+              Impressions
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-purple-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ROI</CardTitle>
+            <Award className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3.2x</div>
+            <p className="text-xs text-muted-foreground">
+              Return on investment
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Sponsored Teams Performance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-600" />
+              Sponsored Teams Performance
+            </CardTitle>
+            <CardDescription>
+              How your teams are performing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { team: "Eagles U18", record: "12-3", ranking: "#2 League", performance: "Excellent" },
+                { team: "Hawks U16", record: "9-6", ranking: "#5 League", performance: "Good" },
+                { team: "Lions U14", record: "11-4", ranking: "#3 League", performance: "Excellent" },
+                { team: "Bears U12", record: "8-7", ranking: "#7 League", performance: "Average" }
+              ].map((team, index) => (
+                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <p className="font-medium">{team.team}</p>
+                    <p className="text-sm text-gray-600">{team.record} • {team.ranking}</p>
+                  </div>
+                  <Badge variant={
+                    team.performance === 'Excellent' ? 'default' :
+                    team.performance === 'Good' ? 'secondary' : 'outline'
+                  }>
+                    {team.performance}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+            <Button className="w-full mt-4 bg-gradient-to-r from-yellow-500 to-yellow-600">
+              View Detailed Reports
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Marketing Impact */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-green-600" />
+              Marketing Impact
+            </CardTitle>
+            <CardDescription>
+              Brand visibility and engagement
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Game Attendance</span>
+                  <span className="font-medium">+15%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{width: '85%'}}></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Social Media Reach</span>
+                  <span className="font-medium">+32%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{width: '78%'}}></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Brand Recognition</span>
+                  <span className="font-medium">+28%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-orange-500 h-2 rounded-full" style={{width: '72%'}}></div>
+                </div>
+              </div>
+            </div>
+            <Button className="w-full mt-4 bg-gradient-to-r from-green-500 to-green-600">
+              View Analytics
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Upcoming Events */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Handshake className="h-5 w-5 text-purple-600" />
-            SportsTech Solutions - Gold Partner
+            <Calendar className="h-5 w-5 text-purple-600" />
+            Upcoming Sponsored Events
           </CardTitle>
           <CardDescription>
-            Premium partnership with the Panthers Basketball Club
+            Events where your brand will be featured
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">$25,000</p>
-              <p className="text-sm text-gray-600">Annual Investment</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">2.3M</p>
-              <p className="text-sm text-gray-600">Brand Impressions</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">847</p>
-              <p className="text-sm text-gray-600">Community Reach</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600">95%</p>
-              <p className="text-sm text-gray-600">Satisfaction Score</p>
-            </div>
+          <div className="space-y-3">
+            {[
+              { 
+                date: "Tomorrow", 
+                time: "6:00 PM", 
+                event: "Eagles vs Hawks Championship", 
+                location: "Main Arena",
+                exposure: "High",
+                attendance: "2,500+"
+              },
+              { 
+                date: "Friday", 
+                time: "7:00 PM", 
+                event: "Lions Tournament Finals", 
+                location: "Sports Complex",
+                exposure: "Medium",
+                attendance: "1,200+"
+              },
+              { 
+                date: "Saturday", 
+                time: "10:00 AM", 
+                event: "Youth Skills Showcase", 
+                location: "Community Center",
+                exposure: "Medium",
+                attendance: "800+"
+              },
+              { 
+                date: "Sunday", 
+                time: "2:00 PM", 
+                event: "Bears Season Opener", 
+                location: "Home Court",
+                exposure: "Low",
+                attendance: "500+"
+              }
+            ].map((event, index) => (
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+                <div>
+                  <p className="font-medium">{event.event}</p>
+                  <p className="text-sm text-gray-600">{event.location}</p>
+                  <p className="text-xs text-gray-500">Expected: {event.attendance}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium">{event.date}</p>
+                  <p className="text-xs text-gray-500">{event.time}</p>
+                  <Badge variant={
+                    event.exposure === 'High' ? 'default' :
+                    event.exposure === 'Medium' ? 'secondary' : 'outline'
+                  }>
+                    {event.exposure} Impact
+                  </Badge>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Brand Exposure Analytics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-blue-600" />
-              Brand Exposure Analytics
-            </CardTitle>
-            <CardDescription>
-              Your visibility and engagement metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Logo Visibility</span>
-                <span className="text-lg font-bold text-blue-600">450K</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{width: '92%'}}></div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Social Media Mentions</span>
-                <span className="text-lg font-bold text-green-600">1.2K</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{width: '78%'}}></div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Event Attendance</span>
-                <span className="text-lg font-bold text-purple-600">15K</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{width: '85%'}}></div>
-              </div>
-            </div>
-            <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
-              View Detailed Analytics
+      {/* Communication Center */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-blue-600" />
+            Communication Center
+          </CardTitle>
+          <CardDescription>
+            Direct communication with teams and management
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button className="bg-gradient-to-r from-blue-500 to-blue-600">
+              Message Team Managers
             </Button>
-          </CardContent>
-        </Card>
-
-        {/* Partnership Benefits */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-gold-600" />
-              Partnership Benefits
-            </CardTitle>
-            <CardDescription>
-              Active sponsorship opportunities
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { benefit: "Logo on Team Jerseys", status: "active", reach: "All games" },
-              { benefit: "Stadium Banner Display", status: "active", reach: "Home games" },
-              { benefit: "Social Media Features", status: "active", reach: "Weekly posts" },
-              { benefit: "Newsletter Inclusion", status: "active", reach: "2,500 subscribers" },
-              { benefit: "Event Naming Rights", status: "upcoming", reach: "Tournament 2024" }
-            ].map((benefit, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
-                <div>
-                  <p className="font-medium text-sm">{benefit.benefit}</p>
-                  <p className="text-xs text-gray-600">{benefit.reach}</p>
-                </div>
-                <Badge 
-                  variant={benefit.status === 'active' ? 'default' : 'secondary'}
-                  className={benefit.status === 'active' ? 'bg-green-500' : ''}
-                >
-                  {benefit.status}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ROI & Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              ROI Performance
-            </CardTitle>
-            <CardDescription>
-              Return on investment metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center p-4 rounded-lg bg-green-50 border border-green-200">
-              <p className="text-3xl font-bold text-green-600">247%</p>
-              <p className="text-sm text-gray-600">Estimated ROI</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Brand Awareness Lift</span>
-                <span className="font-medium">+34%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Customer Acquisition</span>
-                <span className="font-medium">+156 leads</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Community Engagement</span>
-                <span className="font-medium">+89%</span>
-              </div>
-            </div>
-
-            <Button className="w-full bg-gradient-to-r from-green-500 to-green-600">
-              Download ROI Report
+            <Button className="bg-gradient-to-r from-green-500 to-green-600">
+              Schedule Partnership Review
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-purple-600" />
-              Upcoming Opportunities
-            </CardTitle>
-            <CardDescription>
-              Events and sponsorship chances
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { 
-                event: "Regional Championship", 
-                date: "March 25, 2024", 
-                type: "Tournament", 
-                exposure: "High",
-                cost: "$5,000"
-              },
-              { 
-                event: "Youth Basketball Camp", 
-                date: "April 10-12", 
-                type: "Community", 
-                exposure: "Medium",
-                cost: "$2,500"
-              },
-              { 
-                event: "Annual Awards Dinner", 
-                date: "May 15, 2024", 
-                type: "Gala", 
-                exposure: "Premium",
-                cost: "$8,000"
-              }
-            ].map((opportunity, index) => (
-              <div key={index} className="p-3 rounded-lg border border-gray-100 hover:border-purple-200 transition-colors">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-medium text-sm">{opportunity.event}</p>
-                    <p className="text-xs text-gray-600">{opportunity.date}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="text-xs">
-                      {opportunity.type}
-                    </Badge>
-                    <Star className={`h-3 w-3 ${
-                      opportunity.exposure === 'Premium' ? 'text-yellow-500' :
-                      opportunity.exposure === 'High' ? 'text-orange-500' :
-                      'text-gray-400'
-                    }`} />
-                  </div>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span>Investment: {opportunity.cost}</span>
-                  <span className="text-purple-600 font-medium">{opportunity.exposure} Exposure</span>
-                </div>
-              </div>
-            ))}
-            <Button className="w-full bg-gradient-to-r from-purple-500 to-purple-600">
-              View All Opportunities
+            <Button className="bg-gradient-to-r from-purple-500 to-purple-600">
+              Request Performance Report
             </Button>
-          </CardContent>
-        </Card>
-      </div>
+            <Button className="bg-gradient-to-r from-orange-500 to-orange-600">
+              Discuss Renewal Terms
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

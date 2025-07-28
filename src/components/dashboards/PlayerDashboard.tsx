@@ -3,234 +3,184 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  TrendingUp, 
-  Target, 
+  Activity, 
   Calendar, 
-  Trophy, 
-  Activity,
-  Zap,
-  Award,
-  Clock
+  Target, 
+  TrendingUp,
+  Heart,
+  Trophy,
+  Clock,
+  User
 } from "lucide-react";
 
 const PlayerDashboard = () => {
   return (
     <div className="space-y-6">
-      {/* Personal Stats */}
+      {/* Performance Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-blue-200">
+        <Card className="border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Points Per Game</CardTitle>
-            <Target className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium">Avg Points</CardTitle>
+            <Target className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">18.5</div>
             <p className="text-xs text-muted-foreground">
-              +2.3 from last month
+              Per game this season
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Field Goal %</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">67%</div>
-            <p className="text-xs text-muted-foreground">
-              Above team average
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-orange-200">
+        <Card className="border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Games Played</CardTitle>
-            <Activity className="h-4 w-4 text-orange-600" />
+            <Activity className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">14</div>
+            <div className="text-2xl font-bold">12</div>
             <p className="text-xs text-muted-foreground">
               This season
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-purple-200">
+        <Card className="border-green-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Fitness Score</CardTitle>
-            <Zap className="h-4 w-4 text-purple-600" />
+            <Heart className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">85</div>
             <p className="text-xs text-muted-foreground">
-              Excellent level
+              Out of 100
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-purple-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Team Rank</CardTitle>
+            <Trophy className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">#3</div>
+            <p className="text-xs text-muted-foreground">
+              On team leaderboard
             </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance Tracking */}
+        {/* Recent Performance */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              Performance Analytics
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+              Recent Performance
             </CardTitle>
             <CardDescription>
-              Your improvement over time
+              Your last 5 games
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Shooting Accuracy</span>
-                <span className="text-lg font-bold text-green-600">78%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{width: '78%'}}></div>
-              </div>
+              {[
+                { opponent: "Eagles", score: "78-65", personal: "22 pts, 8 reb", result: "W" },
+                { opponent: "Hawks", score: "68-72", personal: "15 pts, 6 reb", result: "L" },
+                { opponent: "Lions", score: "82-59", personal: "28 pts, 10 reb", result: "W" },
+                { opponent: "Bears", score: "71-68", personal: "19 pts, 7 reb", result: "W" },
+                { opponent: "Wolves", score: "65-75", personal: "12 pts, 5 reb", result: "L" }
+              ].map((game, index) => (
+                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <p className="font-medium">vs {game.opponent}</p>
+                    <p className="text-sm text-gray-600">{game.personal}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">{game.score}</p>
+                    <Badge variant={game.result === 'W' ? 'default' : 'destructive'}>
+                      {game.result}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Defense Rating</span>
-                <span className="text-lg font-bold text-blue-600">92%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{width: '92%'}}></div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Team Play</span>
-                <span className="text-lg font-bold text-purple-600">85%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{width: '85%'}}></div>
-              </div>
-            </div>
-            <Button className="w-full bg-gradient-to-r from-green-500 to-green-600">
-              View Detailed Stats
-            </Button>
           </CardContent>
         </Card>
 
-        {/* Achievements */}
+        {/* Development Goals */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-yellow-600" />
-              Recent Achievements
+              <Target className="h-5 w-5 text-orange-600" />
+              Development Goals
             </CardTitle>
             <CardDescription>
-              Milestones and awards
+              Areas for improvement
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { title: "Player of the Month", date: "March 2024", type: "award" },
-              { title: "25+ Point Game", date: "Last week", type: "milestone" },
-              { title: "Perfect Attendance", date: "This month", type: "achievement" },
-              { title: "Team Captain", date: "Season 2024", type: "role" }
-            ].map((achievement, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 rounded-lg border border-yellow-100 bg-yellow-50">
-                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <Trophy className="h-4 w-4 text-white" />
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Free Throw %</span>
+                  <span className="font-medium">72% → 85%</span>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium">{achievement.title}</p>
-                  <p className="text-sm text-gray-600">{achievement.date}</p>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-orange-500 h-2 rounded-full" style={{width: '72%'}}></div>
                 </div>
-                <Badge variant="outline" className="text-yellow-600 border-yellow-300">
-                  {achievement.type}
-                </Badge>
               </div>
-            ))}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Defense Rating</span>
+                  <span className="font-medium">B → A</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{width: '75%'}}></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Assist Average</span>
+                  <span className="font-medium">4.2 → 6.0</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{width: '70%'}}></div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Training Schedule */}
+      {/* Upcoming Schedule */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            My Schedule
+            <Calendar className="h-5 w-5 text-purple-600" />
+            Upcoming Schedule
           </CardTitle>
           <CardDescription>
-            Upcoming practices and games
+            Your next events
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[
-              { 
-                date: "Today", 
-                time: "6:00 PM", 
-                event: "Team Practice", 
-                location: "Court A", 
-                type: "practice",
-                mandatory: true
-              },
-              { 
-                date: "Tomorrow", 
-                time: "7:30 PM", 
-                event: "vs Lakers Jr", 
-                location: "Away", 
-                type: "game",
-                mandatory: true
-              },
-              { 
-                date: "Thursday", 
-                time: "5:00 PM", 
-                event: "Individual Training", 
-                location: "Gym", 
-                type: "training",
-                mandatory: false
-              },
-              { 
-                date: "Saturday", 
-                time: "9:00 AM", 
-                event: "Team Meeting", 
-                location: "Clubhouse", 
-                type: "meeting",
-                mandatory: true
-              }
+              { date: "Tomorrow", time: "4:00 PM", event: "Team Practice", location: "Court A" },
+              { date: "Wednesday", time: "6:00 PM", event: "vs Eagles", location: "Home Court" },
+              { date: "Friday", time: "5:00 PM", event: "Skills Training", location: "Gym" },
+              { date: "Saturday", time: "10:00 AM", event: "Fitness Test", location: "Training Center" }
             ].map((item, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 rounded-lg border border-gray-100">
-                <div className="text-center min-w-[70px]">
-                  <p className="text-sm font-medium text-gray-600">{item.date}</p>
-                  <p className="text-xs text-gray-500">{item.time}</p>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{item.event}</p>
-                    {item.mandatory && (
-                      <Badge variant="secondary" className="text-xs">
-                        Required
-                      </Badge>
-                    )}
-                  </div>
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+                <div>
+                  <p className="font-medium">{item.event}</p>
                   <p className="text-sm text-gray-600">{item.location}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant="outline" 
-                    className={`${
-                      item.type === 'game' ? 'text-green-600 border-green-200' :
-                      item.type === 'practice' ? 'text-blue-600 border-blue-200' :
-                      item.type === 'training' ? 'text-orange-600 border-orange-200' :
-                      'text-purple-600 border-purple-200'
-                    }`}
-                  >
-                    {item.type}
-                  </Badge>
-                  {item.type === 'game' && <Trophy className="h-4 w-4 text-yellow-500" />}
-                  {item.type === 'practice' && <Activity className="h-4 w-4 text-blue-500" />}
-                  {item.type === 'training' && <Zap className="h-4 w-4 text-orange-500" />}
-                  {item.type === 'meeting' && <Clock className="h-4 w-4 text-purple-500" />}
+                <div className="text-right">
+                  <p className="text-sm font-medium">{item.date}</p>
+                  <p className="text-xs text-gray-500">{item.time}</p>
                 </div>
               </div>
             ))}
