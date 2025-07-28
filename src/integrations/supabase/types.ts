@@ -297,8 +297,12 @@ export type Database = {
           end_time: string
           event_type: string
           id: string
+          is_recurring: boolean | null
           location: string
           opponent: string | null
+          recurrence_end_date: string | null
+          recurrence_interval: number | null
+          recurrence_pattern: string | null
           start_time: string
           team_id: string | null
           title: string
@@ -311,8 +315,12 @@ export type Database = {
           end_time: string
           event_type: string
           id?: string
+          is_recurring?: boolean | null
           location: string
           opponent?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?: string | null
           start_time: string
           team_id?: string | null
           title: string
@@ -325,8 +333,12 @@ export type Database = {
           end_time?: string
           event_type?: string
           id?: string
+          is_recurring?: boolean | null
           location?: string
           opponent?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?: string | null
           start_time?: string
           team_id?: string | null
           title?: string

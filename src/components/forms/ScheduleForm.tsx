@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Save } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar, Save, Repeat } from 'lucide-react';
 
 const scheduleFormSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
@@ -25,13 +25,25 @@ const scheduleFormSchema = z.object({
 
 type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
 
+interface ExtendedScheduleFormData extends ScheduleFormData {
+  isRecurring?: boolean;
+  recurrencePattern?: string;
+  recurrenceInterval?: number;
+  recurrenceEndDate?: string;
+}
+
 interface ScheduleFormProps {
-  onSubmit: (data: ScheduleFormData) => void;
-  initialData?: Partial<ScheduleFormData>;
+  onSubmit: (data: ExtendedScheduleFormData) => void;
+  initialData?: Partial<ExtendedScheduleFormData>;
   isLoading?: boolean;
 }
 
 const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLoading = false }) => {
+  const [isRecurring, setIsRecurring] = useState(initialData?.isRecurring || false);
+  const [recurrencePattern, setRecurrencePattern] = useState(initialData?.recurrencePattern || '');
+  const [recurrenceInterval, setRecurrenceInterval] = useState(initialData?.recurrenceInterval || 1);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState(initialData?.recurrenceEndDate || '');
+
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: {
@@ -48,6 +60,18 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
   });
 
   const eventTypes = ['game', 'practice', 'meeting', 'event', 'tournament'];
+  const recurrencePatterns = ['daily', 'weekly', 'monthly'];
+
+  const handleFormSubmit = (data: ScheduleFormData) => {
+    const extendedData: ExtendedScheduleFormData = {
+      ...data,
+      isRecurring,
+      recurrencePattern: isRecurring ? recurrencePattern : undefined,
+      recurrenceInterval: isRecurring ? recurrenceInterval : undefined,
+      recurrenceEndDate: isRecurring ? recurrenceEndDate : undefined,
+    };
+    onSubmit(extendedData);
+  };
 
   return (
     <Card>
@@ -59,7 +83,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -202,6 +226,64 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
                 </FormItem>
               )}
             />
+
+            {/* Recurring Options */}
+            <div className="border-t pt-4 space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="recurring"
+                  checked={isRecurring}
+                  onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+                />
+                <label
+                  htmlFor="recurring"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
+                >
+                  <Repeat className="h-4 w-4" />
+                  Make this a recurring event
+                </label>
+              </div>
+
+              {isRecurring && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Repeat Pattern</label>
+                    <Select onValueChange={setRecurrencePattern} value={recurrencePattern}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select pattern" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {recurrencePatterns.map((pattern) => (
+                          <SelectItem key={pattern} value={pattern}>
+                            {pattern.charAt(0).toUpperCase() + pattern.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Every</label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      placeholder="1"
+                      value={recurrenceInterval}
+                      onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">End Date</label>
+                    <Input 
+                      type="date" 
+                      value={recurrenceEndDate}
+                      onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
             
             <div className="flex justify-end">
               <Button type="submit" disabled={isLoading}>
