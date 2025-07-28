@@ -10,7 +10,8 @@ import {
   DollarSign,
   Award,
   Target,
-  MessageSquare
+  MessageSquare,
+  Trophy
 } from "lucide-react";
 
 const PartnerDashboard = () => {
