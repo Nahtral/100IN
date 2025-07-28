@@ -4,7 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import Players from "./pages/Players";
 import Schedule from "./pages/Schedule";
 import Analytics from "./pages/Analytics";
@@ -17,22 +20,53 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/players" element={<Players />} />
-          <Route path="/schedule" element={<Schedule />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/medical" element={<Medical />} />
-          <Route path="/partners" element={<Partners />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/players" element={
+              <ProtectedRoute>
+                <Players />
+              </ProtectedRoute>
+            } />
+            <Route path="/schedule" element={
+              <ProtectedRoute>
+                <Schedule />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/medical" element={
+              <ProtectedRoute>
+                <Medical />
+              </ProtectedRoute>
+            } />
+            <Route path="/partners" element={
+              <ProtectedRoute>
+                <Partners />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

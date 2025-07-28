@@ -1,15 +1,168 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Plus } from 'lucide-react';
+import { Users, Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import PlayerForm from '@/components/forms/PlayerForm';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+interface Player {
+  id: string;
+  user_id: string;
+  team_id?: string;
+  jersey_number?: number;
+  position?: string;
+  height?: string;
+  weight?: string;
+  date_of_birth?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  medical_notes?: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    full_name: string;
+    email: string;
+    phone?: string;
+  } | null;
+}
 
 const Players = () => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const currentUser = {
-    name: "Alex Johnson",
+    name: user?.user_metadata?.full_name || user?.email || "User",
     role: "Coach",
-    avatar: "AJ"
+    avatar: user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('') || "U"
+  };
+
+  useEffect(() => {
+    fetchPlayers();
+  }, []);
+
+  const fetchPlayers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPlayers((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching players:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load players.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (formData: any) => {
+    setIsSubmitting(true);
+    try {
+      if (editingPlayer) {
+        // Update existing player
+        const { error } = await supabase
+          .from('players')
+          .update({
+            jersey_number: formData.jerseyNumber,
+            position: formData.position,
+            height: formData.height,
+            weight: formData.weight,
+            date_of_birth: formData.dateOfBirth,
+            emergency_contact_name: formData.emergencyContactName,
+            emergency_contact_phone: formData.emergencyContactPhone,
+            medical_notes: formData.medicalNotes,
+          })
+          .eq('id', editingPlayer.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Player updated successfully.",
+        });
+      } else {
+        // Create new player (requires existing user profile)
+        toast({
+          title: "Info",
+          description: "Player creation requires user registration first.",
+        });
+      }
+
+      setIsFormOpen(false);
+      setEditingPlayer(null);
+      fetchPlayers();
+    } catch (error) {
+      console.error('Error saving player:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save player.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (playerId: string) => {
+    if (!confirm('Are you sure you want to delete this player?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('players')
+        .delete()
+        .eq('id', playerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player deleted successfully.",
+      });
+      
+      fetchPlayers();
+    } catch (error) {
+      console.error('Error deleting player:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete player.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEditForm = (player: Player) => {
+    setEditingPlayer(player);
+    setIsFormOpen(true);
+  };
+
+  const openAddForm = () => {
+    setEditingPlayer(null);
+    setIsFormOpen(true);
   };
 
   return (
@@ -20,21 +173,125 @@ const Players = () => {
             <h1 className="text-3xl font-bold text-gray-900">Players</h1>
             <p className="text-gray-600">Manage your team roster</p>
           </div>
-          <Button className="bg-orange-500 hover:bg-orange-600">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Player
-          </Button>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Player
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingPlayer ? 'Edit Player' : 'Add New Player'}
+                </DialogTitle>
+              </DialogHeader>
+              <PlayerForm
+                onSubmit={handleSubmit}
+                initialData={editingPlayer ? {
+                  jerseyNumber: editingPlayer.jersey_number?.toString(),
+                  position: editingPlayer.position,
+                  height: editingPlayer.height,
+                  weight: editingPlayer.weight,
+                  dateOfBirth: editingPlayer.date_of_birth,
+                  emergencyContactName: editingPlayer.emergency_contact_name,
+                  emergencyContactPhone: editingPlayer.emergency_contact_phone,
+                  medicalNotes: editingPlayer.medical_notes,
+                } : undefined}
+                isLoading={isSubmitting}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
         
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Team Roster
+              Team Roster ({players.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600">Players management interface will be implemented here.</p>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Loading players...</p>
+              </div>
+            ) : players.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">No players found. Add your first player to get started.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Jersey #</TableHead>
+                      <TableHead>Position</TableHead>
+                      <TableHead>Height/Weight</TableHead>
+                      <TableHead>Emergency Contact</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {players.map((player) => (
+                      <TableRow key={player.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
+                            <p className="text-sm text-gray-600">{player.profiles?.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {player.jersey_number ? (
+                            <Badge variant="outline">#{player.jersey_number}</Badge>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {player.position ? (
+                            <Badge variant="secondary">{player.position}</Badge>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p>{player.height || '-'}</p>
+                            <p className="text-gray-600">{player.weight || '-'}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p>{player.emergency_contact_name || '-'}</p>
+                            <p className="text-gray-600">{player.emergency_contact_phone || '-'}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditForm(player)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(player.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

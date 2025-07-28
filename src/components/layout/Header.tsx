@@ -2,7 +2,9 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, Search, User, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface HeaderProps {
   currentUser: {
@@ -13,6 +15,25 @@ interface HeaderProps {
 }
 
 const Header = ({ currentUser }: HeaderProps) => {
+  const { signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error signing out",
+        description: "There was a problem signing you out.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 ml-64">
       <div className="px-6 py-4">
@@ -31,6 +52,9 @@ const Header = ({ currentUser }: HeaderProps) => {
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <LogOut className="h-5 w-5" />
             </Button>
             
             <div className="flex items-center space-x-3">
