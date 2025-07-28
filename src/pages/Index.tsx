@@ -1,5 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,7 +26,47 @@ import PartnerDashboard from "@/components/dashboards/PartnerDashboard";
 type UserRole = 'super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medical' | 'partner';
 
 const Index = () => {
+  const { user } = useAuth();
   const [currentRole, setCurrentRole] = useState<UserRole>('super_admin');
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user) return;
+      
+      try {
+        // Fetch user profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        // Fetch user roles
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+
+        setUserProfile(profile);
+        setUserRoles(roles?.map(r => r.role) || []);
+        
+        // Set the primary role for demo switcher
+        if (roles && roles.length > 0) {
+          setCurrentRole(roles[0].role as UserRole);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
   
   const roleConfigs = {
     super_admin: { 
@@ -72,10 +114,21 @@ const Index = () => {
   };
 
   const currentUser = {
-    name: "Alex Johnson",
+    name: userProfile?.full_name || user?.email || "User",
     role: roleConfigs[currentRole].title,
-    avatar: "AJ"
+    avatar: userProfile?.full_name ? userProfile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : "U"
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderDashboard = () => {
     switch (currentRole) {
