@@ -207,7 +207,7 @@ const SuperAdminDashboard = () => {
             </div>
             <Button 
               className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600"
-              onClick={() => navigate('/settings')}
+              onClick={() => navigate('/user-management')}
             >
               Manage Users
             </Button>
