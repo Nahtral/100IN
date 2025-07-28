@@ -639,10 +639,71 @@ const UserManagement = () => {
                   <TableCell>{team.coach_name}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={async () => {
+                          // Simple edit - just change coach assignment for now
+                          const newCoachId = prompt('Enter new coach ID (leave empty for no coach):');
+                          if (newCoachId !== null) {
+                            try {
+                              const { error } = await supabase
+                                .from('teams')
+                                .update({ coach_id: newCoachId || null })
+                                .eq('id', team.id);
+                              
+                              if (error) throw error;
+                              
+                              toast({
+                                title: "Success",
+                                description: "Team updated successfully.",
+                              });
+                              
+                              fetchTeams();
+                            } catch (error) {
+                              console.error('Error updating team:', error);
+                              toast({
+                                title: "Error", 
+                                description: "Failed to update team.",
+                                variant: "destructive",
+                              });
+                            }
+                          }
+                        }}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" className="text-red-600">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-red-600"
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to delete team "${team.name}"?`)) {
+                            try {
+                              const { error } = await supabase
+                                .from('teams')
+                                .delete()
+                                .eq('id', team.id);
+                              
+                              if (error) throw error;
+                              
+                              toast({
+                                title: "Success",
+                                description: "Team deleted successfully.",
+                              });
+                              
+                              fetchTeams();
+                            } catch (error) {
+                              console.error('Error deleting team:', error);
+                              toast({
+                                title: "Error",
+                                description: "Failed to delete team.", 
+                                variant: "destructive",
+                              });
+                            }
+                          }
+                        }}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
