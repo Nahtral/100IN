@@ -1,20 +1,16 @@
 
 import { useState } from "react";
+import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Users, 
-  TrendingUp, 
-  Calendar, 
-  Trophy, 
-  Activity, 
   Shield, 
+  Users, 
   UserCheck, 
+  Activity, 
   Heart,
   Handshake,
-  BarChart3,
   Settings
 } from "lucide-react";
 import SuperAdminDashboard from "@/components/dashboards/SuperAdminDashboard";
@@ -29,11 +25,7 @@ type UserRole = 'super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medic
 
 const Index = () => {
   const [currentRole, setCurrentRole] = useState<UserRole>('super_admin');
-  const [currentUser] = useState({
-    name: "Alex Johnson",
-    avatar: "AJ"
-  });
-
+  
   const roleConfigs = {
     super_admin: { 
       title: "Super Admin", 
@@ -79,6 +71,12 @@ const Index = () => {
     }
   };
 
+  const currentUser = {
+    name: "Alex Johnson",
+    role: roleConfigs[currentRole].title,
+    avatar: "AJ"
+  };
+
   const renderDashboard = () => {
     switch (currentRole) {
       case 'super_admin': return <SuperAdminDashboard />;
@@ -95,41 +93,10 @@ const Index = () => {
   const CurrentIcon = roleConfigs[currentRole].icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b-2 border-orange-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                <Trophy className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  Court Vision
-                </h1>
-                <p className="text-sm text-gray-600">Panthers Basketball Club</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className={`w-8 h-8 ${roleConfigs[currentRole].color} rounded-full flex items-center justify-center`}>
-                  <CurrentIcon className="h-4 w-4 text-white" />
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                  <p className="text-xs text-gray-500">{roleConfigs[currentRole].title}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Layout currentUser={currentUser}>
+      <div className="space-y-6">
         {/* Role Switcher - Demo purposes */}
-        <Card className="mb-6 border-orange-200">
+        <Card className="border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-orange-600" />
@@ -164,7 +131,7 @@ const Index = () => {
         </Card>
 
         {/* Current Role Badge */}
-        <div className="mb-6">
+        <div>
           <Badge variant="outline" className="text-lg px-4 py-2 border-orange-300">
             <CurrentIcon className="h-5 w-5 mr-2" />
             {roleConfigs[currentRole].title} Dashboard
@@ -175,7 +142,7 @@ const Index = () => {
         {/* Dashboard Content */}
         {renderDashboard()}
       </div>
-    </div>
+    </Layout>
   );
 };
 
