@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +16,88 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SuperAdminDashboard = () => {
   const { stats, loading, error } = useDashboardData();
+  const navigate = useNavigate();
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+
+  // Fetch recent activities from database
+  useEffect(() => {
+    const fetchRecentActivities = async () => {
+      try {
+        // Fetch recent data without complex joins
+        const [teamsData, schedulesData, newsData] = await Promise.all([
+          supabase.from('teams').select('*').order('created_at', { ascending: false }).limit(3),
+          supabase.from('schedules').select('*').order('created_at', { ascending: false }).limit(3),
+          supabase.from('news_updates').select('*').order('created_at', { ascending: false }).limit(3)
+        ]);
+
+        const activities = [];
+
+        // Add team activities
+        teamsData.data?.forEach(team => {
+          activities.push({
+            action: `New team "${team.name}" registered`,
+            user: 'Team Admin',
+            time: formatTimeAgo(team.created_at),
+            type: 'success'
+          });
+        });
+
+        // Add schedule activities
+        schedulesData.data?.forEach(schedule => {
+          activities.push({
+            action: `Event "${schedule.title}" scheduled`,
+            user: 'Staff Member',
+            time: formatTimeAgo(schedule.created_at),
+            type: 'info'
+          });
+        });
+
+        // Add news activities
+        newsData.data?.forEach(news => {
+          activities.push({
+            action: `News "${news.title}" published`,
+            user: 'Content Manager',
+            time: formatTimeAgo(news.created_at),
+            type: 'info'
+          });
+        });
+
+        // Sort by most recent and take top 4
+        activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        setRecentActivities(activities.slice(0, 4));
+      } catch (error) {
+        console.error('Error fetching recent activities:', error);
+        // Fallback to mock data if needed
+        setRecentActivities([
+          { action: "System started", user: "System", time: "1 hour ago", type: "info" }
+        ]);
+      }
+    };
+
+    fetchRecentActivities();
+  }, []);
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Just now';
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
@@ -28,6 +106,7 @@ const SuperAdminDashboard = () => {
   if (error) {
     return <div className="flex items-center justify-center p-8 text-red-600">Error: {error}</div>;
   }
+
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -126,7 +205,10 @@ const SuperAdminDashboard = () => {
               </div>
               <Badge variant="outline">{Math.floor((stats?.totalUsers || 0) * 0.6)} Active</Badge>
             </div>
-            <Button className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600">
+            <Button 
+              className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600"
+              onClick={() => navigate('/settings')}
+            >
               Manage Users
             </Button>
           </CardContent>
@@ -171,7 +253,10 @@ const SuperAdminDashboard = () => {
                 <div className="bg-orange-500 h-2 rounded-full" style={{width: '67%'}}></div>
               </div>
             </div>
-            <Button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-purple-600">
+            <Button 
+              className="w-full mt-4 bg-gradient-to-r from-purple-500 to-purple-600"
+              onClick={() => navigate('/analytics')}
+            >
               View Detailed Analytics
             </Button>
           </CardContent>
@@ -191,12 +276,7 @@ const SuperAdminDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { action: "New team registration", user: "Coach Martinez", time: "2 hours ago", type: "success" },
-              { action: "Payment processed", user: "Parent Johnson", time: "3 hours ago", type: "info" },
-              { action: "Medical clearance updated", user: "Dr. Smith", time: "5 hours ago", type: "warning" },
-              { action: "Partnership agreement signed", user: "Local Sports Inc.", time: "1 day ago", type: "success" }
-            ].map((activity, index) => (
+            {recentActivities.length > 0 ? recentActivities.map((activity, index) => (
               <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${
@@ -210,7 +290,9 @@ const SuperAdminDashboard = () => {
                 </div>
                 <span className="text-sm text-gray-500">{activity.time}</span>
               </div>
-            ))}
+            )) : (
+              <p className="text-center text-muted-foreground py-4">No recent activities</p>
+            )}
           </div>
         </CardContent>
       </Card>
