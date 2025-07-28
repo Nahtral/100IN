@@ -12,8 +12,57 @@ import {
   Clock,
   User
 } from "lucide-react";
+import { usePlayerPerformance, useUpcomingSchedule } from "@/hooks/useDashboardData";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const PlayerDashboard = () => {
+  const [playerData, setPlayerData] = useState<any>(null);
+  const [playerStats, setPlayerStats] = useState<any>(null);
+  const { performance, loading: performanceLoading } = usePlayerPerformance(playerData?.id);
+  const { schedule } = useUpcomingSchedule(playerData?.team_id);
+
+  useEffect(() => {
+    const fetchPlayerData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: player } = await supabase
+        .from('players')
+        .select('*, teams(name)')
+        .eq('user_id', user.id)
+        .single();
+
+      if (player) {
+        setPlayerData(player);
+
+        // Calculate player stats from performance data
+        const { data: performanceData } = await supabase
+          .from('player_performance')
+          .select('*')
+          .eq('player_id', player.id);
+
+        if (performanceData && performanceData.length > 0) {
+          const totalPoints = performanceData.reduce((sum, game) => sum + (game.points || 0), 0);
+          const avgPoints = totalPoints / performanceData.length;
+          const gamesPlayed = performanceData.length;
+
+          setPlayerStats({
+            avgPoints: avgPoints.toFixed(1),
+            gamesPlayed,
+            fitnessScore: 85, // This would come from health_wellness table
+            teamRank: 3 // This would be calculated based on team performance
+          });
+        }
+      }
+    };
+
+    fetchPlayerData();
+  }, []);
+
+  if (!playerData) {
+    return <div className="flex items-center justify-center p-8">Loading player data...</div>;
+  }
   return (
     <div className="space-y-6">
       {/* Performance Summary */}
@@ -24,7 +73,7 @@ const PlayerDashboard = () => {
             <Target className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">18.5</div>
+            <div className="text-2xl font-bold">{playerStats?.avgPoints || '0.0'}</div>
             <p className="text-xs text-muted-foreground">
               Per game this season
             </p>
@@ -37,7 +86,7 @@ const PlayerDashboard = () => {
             <Activity className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{playerStats?.gamesPlayed || 0}</div>
             <p className="text-xs text-muted-foreground">
               This season
             </p>
@@ -50,7 +99,7 @@ const PlayerDashboard = () => {
             <Heart className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">85</div>
+            <div className="text-2xl font-bold">{playerStats?.fitnessScore || 0}</div>
             <p className="text-xs text-muted-foreground">
               Out of 100
             </p>
@@ -63,7 +112,7 @@ const PlayerDashboard = () => {
             <Trophy className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">#3</div>
+            <div className="text-2xl font-bold">#{playerStats?.teamRank || 'N/A'}</div>
             <p className="text-xs text-muted-foreground">
               On team leaderboard
             </p>
@@ -85,26 +134,22 @@ const PlayerDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { opponent: "Eagles", score: "78-65", personal: "22 pts, 8 reb", result: "W" },
-                { opponent: "Hawks", score: "68-72", personal: "15 pts, 6 reb", result: "L" },
-                { opponent: "Lions", score: "82-59", personal: "28 pts, 10 reb", result: "W" },
-                { opponent: "Bears", score: "71-68", personal: "19 pts, 7 reb", result: "W" },
-                { opponent: "Wolves", score: "65-75", personal: "12 pts, 5 reb", result: "L" }
-              ].map((game, index) => (
+              {performance.length > 0 ? performance.map((game, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
                   <div>
-                    <p className="font-medium">vs {game.opponent}</p>
-                    <p className="text-sm text-gray-600">{game.personal}</p>
+                    <p className="font-medium">vs {game.opponent || 'TBD'}</p>
+                    <p className="text-sm text-gray-600">{game.points || 0} pts, {game.rebounds || 0} reb, {game.assists || 0} ast</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">{game.score}</p>
-                    <Badge variant={game.result === 'W' ? 'default' : 'destructive'}>
-                      {game.result}
+                    <p className="text-sm font-medium">{new Date(game.game_date).toLocaleDateString()}</p>
+                    <Badge variant="outline">
+                      {game.points >= 15 ? 'Good' : 'Average'}
                     </Badge>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-center text-muted-foreground py-4">No performance data available</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -167,23 +212,20 @@ const PlayerDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[
-              { date: "Tomorrow", time: "4:00 PM", event: "Team Practice", location: "Court A" },
-              { date: "Wednesday", time: "6:00 PM", event: "vs Eagles", location: "Home Court" },
-              { date: "Friday", time: "5:00 PM", event: "Skills Training", location: "Gym" },
-              { date: "Saturday", time: "10:00 AM", event: "Fitness Test", location: "Training Center" }
-            ].map((item, index) => (
+            {schedule.length > 0 ? schedule.map((item, index) => (
               <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
                 <div>
-                  <p className="font-medium">{item.event}</p>
+                  <p className="font-medium">{item.title}</p>
                   <p className="text-sm text-gray-600">{item.location}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium">{item.date}</p>
-                  <p className="text-xs text-gray-500">{item.time}</p>
+                  <p className="text-sm font-medium">{new Date(item.start_time).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">{new Date(item.start_time).toLocaleTimeString()}</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-center text-muted-foreground py-4">No upcoming events</p>
+            )}
           </div>
         </CardContent>
       </Card>

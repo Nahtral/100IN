@@ -12,8 +12,19 @@ import {
   Clock,
   CheckCircle
 } from "lucide-react";
+import { useDashboardData, useUpcomingSchedule } from "@/hooks/useDashboardData";
 
 const StaffDashboard = () => {
+  const { stats, loading, error } = useDashboardData();
+  const { schedule } = useUpcomingSchedule();
+
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
+  }
+
+  if (error) {
+    return <div className="flex items-center justify-center p-8 text-red-600">Error: {error}</div>;
+  }
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
@@ -24,7 +35,7 @@ const StaffDashboard = () => {
             <Clock className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{stats?.pendingTasks || 0}</div>
             <p className="text-xs text-muted-foreground">
               Due today
             </p>
@@ -37,7 +48,7 @@ const StaffDashboard = () => {
             <Users className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15</div>
+            <div className="text-2xl font-bold">{Math.floor((stats?.totalPlayers || 0) * 0.1)}</div>
             <p className="text-xs text-muted-foreground">
               This week
             </p>
@@ -50,7 +61,7 @@ const StaffDashboard = () => {
             <DollarSign className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$8,240</div>
+            <div className="text-2xl font-bold">${Math.floor((stats?.revenue || 0) * 0.15).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               This month
             </p>
@@ -63,7 +74,7 @@ const StaffDashboard = () => {
             <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{schedule?.length || 0}</div>
             <p className="text-xs text-muted-foreground">
               Next 7 days
             </p>
