@@ -46,6 +46,7 @@ const UserManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showUserDialog, setShowUserDialog] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState<UserData[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -57,6 +58,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchPendingApprovals();
   }, []);
 
   useEffect(() => {
@@ -74,10 +76,11 @@ const UserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      // Fetch user roles
+      // Fetch user roles (only active ones for main user list)
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select('user_id, role')
+        .eq('is_active', true);
 
       if (rolesError) throw rolesError;
 
@@ -87,8 +90,8 @@ const UserManagement = () => {
         return {
           ...profile,
           roles,
-          status: 'active' as const, // In a real app, you'd determine this from last_sign_in
-          last_sign_in: profile.updated_at // Placeholder
+          status: 'active' as const,
+          last_sign_in: profile.updated_at
         };
       }) || [];
 
@@ -102,6 +105,55 @@ const UserManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingApprovals = async () => {
+    try {
+      // Fetch pending user roles with profiles
+      const { data: pendingRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          role,
+          created_at
+        `)
+        .eq('is_active', false)
+        .is('approved_at', null);
+
+      if (rolesError) throw rolesError;
+
+      if (!pendingRoles || pendingRoles.length === 0) {
+        setPendingApprovals([]);
+        return;
+      }
+
+      // Fetch profiles for pending users
+      const userIds = pendingRoles.map(role => role.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const pendingUsers = pendingRoles.map(roleData => {
+        const profile = profiles?.find(p => p.id === roleData.user_id);
+        return {
+          id: roleData.user_id,
+          email: profile?.email || '',
+          full_name: profile?.full_name || '',
+          phone: profile?.phone || '',
+          created_at: roleData.created_at,
+          roles: [roleData.role],
+          status: 'inactive' as const,
+          last_sign_in: null
+        };
+      });
+
+      setPendingApprovals(pendingUsers);
+    } catch (error) {
+      console.error('Error fetching pending approvals:', error);
     }
   };
 
@@ -184,6 +236,133 @@ const UserManagement = () => {
     }
   };
 
+  const handleSaveUser = async (formData: FormData) => {
+    try {
+      const fullName = formData.get('fullName') as string;
+      const email = formData.get('email') as string;
+      const phone = formData.get('phone') as string;
+      const role = formData.get('role') as string;
+
+      if (selectedUser) {
+        // Update existing user
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: fullName,
+            email: email,
+            phone: phone,
+          })
+          .eq('id', selectedUser.id);
+
+        if (profileError) throw profileError;
+
+        // Update role if changed
+        if (role && role !== selectedUser.roles?.[0]) {
+          // Deactivate old role
+          await supabase
+            .from('user_roles')
+            .update({ is_active: false })
+            .eq('user_id', selectedUser.id);
+
+          // Add new role
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: selectedUser.id,
+              role: role as any,
+              is_active: true,
+              approved_by: user?.id,
+              approved_at: new Date().toISOString()
+            });
+
+          if (roleError) throw roleError;
+        }
+      } else {
+        // Create new user - this would typically be done via invitation
+        toast({
+          title: "Note",
+          description: "User creation requires proper invitation flow with Supabase Auth.",
+          variant: "default",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: `User ${selectedUser ? 'updated' : 'created'} successfully.`,
+      });
+
+      setShowUserDialog(false);
+      fetchUsers();
+      fetchPendingApprovals();
+    } catch (error) {
+      console.error('Error saving user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save user.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleApproveUser = async (userId: string, role: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({
+          is_active: true,
+          approved_by: user?.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('role', role as any);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User approved successfully.",
+      });
+
+      fetchUsers();
+      fetchPendingApprovals();
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve user.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectUser = async (userId: string, role: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .eq('role', role as any)
+        .eq('is_active', false);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User application rejected.",
+      });
+
+      fetchPendingApprovals();
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject user.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const UserDialog = () => (
     <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
       <DialogContent className="max-w-2xl">
@@ -192,23 +371,31 @@ const UserManagement = () => {
             {selectedUser ? 'Edit User' : 'Add New User'}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          handleSaveUser(formData);
+        }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
                 id="fullName"
+                name="fullName"
                 defaultValue={selectedUser?.full_name || ''}
                 placeholder="Enter full name"
+                required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 defaultValue={selectedUser?.email || ''}
                 placeholder="Enter email"
+                required
               />
             </div>
           </div>
@@ -217,6 +404,7 @@ const UserManagement = () => {
             <Label htmlFor="phone">Phone Number</Label>
             <Input
               id="phone"
+              name="phone"
               defaultValue={selectedUser?.phone || ''}
               placeholder="Enter phone number"
             />
@@ -224,7 +412,7 @@ const UserManagement = () => {
 
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select defaultValue={selectedUser?.roles?.[0] || ''}>
+            <Select name="role" defaultValue={selectedUser?.roles?.[0] || ''}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
@@ -240,21 +428,14 @@ const UserManagement = () => {
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowUserDialog(false)}>
+            <Button type="button" variant="outline" onClick={() => setShowUserDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              // Handle save logic here
-              setShowUserDialog(false);
-              toast({
-                title: "Success",
-                description: `User ${selectedUser ? 'updated' : 'created'} successfully.`,
-              });
-            }}>
+            <Button type="submit">
               {selectedUser ? 'Update User' : 'Create User'}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -288,6 +469,55 @@ const UserManagement = () => {
             Add User
           </Button>
         </div>
+
+        {/* Pending Approvals */}
+        {pendingApprovals.length > 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="text-orange-800 flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Pending User Approvals ({pendingApprovals.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {pendingApprovals.map((pendingUser) => (
+                  <div key={pendingUser.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                        {pendingUser.full_name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <p className="font-medium">{pendingUser.full_name}</p>
+                        <p className="text-sm text-gray-500">{pendingUser.email}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {pendingUser.roles?.[0]?.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproveUser(pendingUser.id, pendingUser.roles?.[0] || '')}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRejectUser(pendingUser.id, pendingUser.roles?.[0] || '')}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
