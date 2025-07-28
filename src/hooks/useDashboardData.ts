@@ -22,13 +22,20 @@ export const useDashboardData = () => {
       try {
         setLoading(true);
         
-        // Fetch basic counts
-        const [usersResult, playersResult, teamsResult, performanceResult, schedulesResult] = await Promise.all([
+        // Fetch basic counts and real data
+        const [usersResult, playersResult, teamsResult, performanceResult, schedulesResult, paymentsResult, alertsResult] = await Promise.all([
           supabase.from('profiles').select('*', { count: 'exact', head: true }),
           supabase.from('players').select('*', { count: 'exact', head: true }),
           supabase.from('teams').select('*', { count: 'exact', head: true }),
           supabase.from('player_performance').select('*', { count: 'exact', head: true }),
-          supabase.from('schedules').select('*').gte('start_time', new Date().toISOString())
+          supabase.from('schedules').select('*').gte('start_time', new Date().toISOString()),
+          supabase.from('payments')
+            .select('amount')
+            .eq('payment_status', 'completed')
+            .gte('payment_date', new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString()), // Last 3 months
+          supabase.from('system_alerts')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_resolved', false)
         ]);
 
         const totalUsers = usersResult.count || 0;
@@ -36,6 +43,12 @@ export const useDashboardData = () => {
         const totalTeams = teamsResult.count || 0;
         const totalGames = performanceResult.count || 0;
         const upcomingEvents = schedulesResult.data?.length || 0;
+        
+        // Calculate real revenue from payments
+        const revenue = paymentsResult.data?.reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0) || 0;
+        
+        // Get real system alerts count
+        const systemAlerts = alertsResult.count || 0;
 
         setStats({
           totalUsers,
@@ -43,8 +56,8 @@ export const useDashboardData = () => {
           totalTeams,
           totalGames,
           activeUsers: Math.floor(totalUsers * 0.7), // Estimate active users
-          pendingTasks: 8, // This would come from a tasks table
-          revenue: 52430, // This would come from a payments/revenue table
+          pendingTasks: systemAlerts, // Use alerts as pending tasks
+          revenue,
           upcomingEvents
         });
       } catch (err) {

@@ -138,6 +138,56 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          payer_id: string | null
+          payment_date: string
+          payment_status: string
+          payment_type: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          payer_id?: string | null
+          payment_date?: string
+          payment_status?: string
+          payment_type: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          payer_id?: string | null
+          payment_date?: string
+          payment_status?: string
+          payment_type?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_performance: {
         Row: {
           assists: number | null
@@ -297,8 +347,12 @@ export type Database = {
           end_time: string
           event_type: string
           id: string
+          is_recurring: boolean | null
           location: string
           opponent: string | null
+          recurrence_end_date: string | null
+          recurrence_interval: number | null
+          recurrence_pattern: string | null
           start_time: string
           team_id: string | null
           title: string
@@ -311,8 +365,12 @@ export type Database = {
           end_time: string
           event_type: string
           id?: string
+          is_recurring?: boolean | null
           location: string
           opponent?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?: string | null
           start_time: string
           team_id?: string | null
           title: string
@@ -325,8 +383,12 @@ export type Database = {
           end_time?: string
           event_type?: string
           id?: string
+          is_recurring?: boolean | null
           location?: string
           opponent?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?: string | null
           start_time?: string
           team_id?: string | null
           title?: string
@@ -341,6 +403,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_resolved: boolean
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_resolved?: boolean
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_resolved?: boolean
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       teams: {
         Row: {
