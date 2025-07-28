@@ -20,7 +20,10 @@ import {
   Shield,
   Activity,
   Heart,
-  UserCheck
+  UserCheck,
+  Settings,
+  Link,
+  Plus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +40,26 @@ interface UserData {
   status: 'active' | 'inactive';
 }
 
+interface TeamData {
+  id: string;
+  name: string;
+  age_group: string;
+  season: string;
+  coach_id?: string;
+  coach_name?: string;
+  created_at: string;
+}
+
+interface PlayerTeamData {
+  id: string;
+  full_name: string;
+  email: string;
+  team_id?: string;
+  team_name?: string;
+  position?: string;
+  jersey_number?: number;
+}
+
 const UserManagement = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
@@ -47,6 +70,11 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState<UserData[]>([]);
+  const [teams, setTeams] = useState<TeamData[]>([]);
+  const [players, setPlayers] = useState<PlayerTeamData[]>([]);
+  const [coaches, setCoaches] = useState<UserData[]>([]);
+  const [parents, setParents] = useState<UserData[]>([]);
+  const [selectedTab, setSelectedTab] = useState('users');
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -363,6 +391,450 @@ const UserManagement = () => {
     }
   };
 
+  const fetchTeams = async () => {
+    try {
+      const { data: teamsData, error } = await supabase
+        .from('teams')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch coach names separately
+      const coachIds = teamsData?.map(team => team.coach_id).filter(Boolean) || [];
+      let coachNames: { [key: string]: string } = {};
+      
+      if (coachIds.length > 0) {
+        const { data: coaches } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', coachIds);
+        
+        coachNames = coaches?.reduce((acc, coach) => {
+          acc[coach.id] = coach.full_name;
+          return acc;
+        }, {} as { [key: string]: string }) || {};
+      }
+
+      const teamsWithCoachNames = teamsData?.map(team => ({
+        ...team,
+        coach_name: team.coach_id ? coachNames[team.coach_id] || 'Unknown coach' : 'No coach assigned'
+      })) || [];
+
+      setTeams(teamsWithCoachNames);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+    }
+  };
+
+  const fetchPlayers = async () => {
+    try {
+      const { data: playersData, error } = await supabase
+        .from('players')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch user profiles and team names separately
+      const userIds = playersData?.map(player => player.user_id) || [];
+      const teamIds = playersData?.map(player => player.team_id).filter(Boolean) || [];
+
+      const [userProfiles, teamData] = await Promise.all([
+        supabase.from('profiles').select('id, full_name, email').in('id', userIds),
+        teamIds.length > 0 ? supabase.from('teams').select('id, name').in('id', teamIds) : { data: [] }
+      ]);
+
+      const userProfilesMap = userProfiles.data?.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as { [key: string]: any }) || {};
+
+      const teamNamesMap = (teamData.data as any[])?.reduce((acc: { [key: string]: string }, team: any) => {
+        acc[team.id] = team.name;
+        return acc;
+      }, {}) || {};
+
+      const playersWithDetails = playersData?.map(player => ({
+        id: player.id,
+        full_name: userProfilesMap[player.user_id]?.full_name || '',
+        email: userProfilesMap[player.user_id]?.email || '',
+        team_id: player.team_id,
+        team_name: player.team_id ? teamNamesMap[player.team_id] || 'Unknown team' : 'No team assigned',
+        position: player.position,
+        jersey_number: player.jersey_number
+      })) || [];
+
+      setPlayers(playersWithDetails);
+    } catch (error) {
+      console.error('Error fetching players:', error);
+    }
+  };
+
+  const fetchCoachesAndParents = async () => {
+    try {
+      const { data: coachRoles, error: coachError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'coach')
+        .eq('is_active', true);
+
+      const { data: parentRoles, error: parentError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'parent')
+        .eq('is_active', true);
+
+      if (coachError || parentError) throw coachError || parentError;
+
+      // Fetch profiles for coaches and parents
+      const coachUserIds = coachRoles?.map(role => role.user_id) || [];
+      const parentUserIds = parentRoles?.map(role => role.user_id) || [];
+
+      const [coachProfiles, parentProfiles] = await Promise.all([
+        coachUserIds.length > 0 ? supabase.from('profiles').select('*').in('id', coachUserIds) : { data: [] },
+        parentUserIds.length > 0 ? supabase.from('profiles').select('*').in('id', parentUserIds) : { data: [] }
+      ]);
+
+      const coachUsers = coachProfiles.data?.map(profile => ({
+        id: profile.id,
+        email: profile.email,
+        full_name: profile.full_name,
+        phone: profile.phone,
+        created_at: profile.created_at,
+        roles: ['coach'],
+        status: 'active' as const,
+        last_sign_in: profile.updated_at
+      })) || [];
+
+      const parentUsers = parentProfiles.data?.map(profile => ({
+        id: profile.id,
+        email: profile.email,
+        full_name: profile.full_name,
+        phone: profile.phone,
+        created_at: profile.created_at,
+        roles: ['parent'],
+        status: 'active' as const,
+        last_sign_in: profile.updated_at
+      })) || [];
+
+      setCoaches(coachUsers);
+      setParents(parentUsers);
+    } catch (error) {
+      console.error('Error fetching coaches and parents:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedTab === 'teams') {
+      fetchTeams();
+    } else if (selectedTab === 'assignments') {
+      fetchPlayers();
+      fetchCoachesAndParents();
+    }
+  }, [selectedTab]);
+
+  const TeamsManagement = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Team Management</h2>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Team
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Team</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              
+              try {
+                const { error } = await supabase
+                  .from('teams')
+                  .insert({
+                    name: formData.get('name') as string,
+                    age_group: formData.get('age_group') as string,
+                    season: formData.get('season') as string,
+                    coach_id: formData.get('coach_id') as string || null
+                  });
+
+                if (error) throw error;
+
+                toast({
+                  title: "Success",
+                  description: "Team created successfully.",
+                });
+
+                fetchTeams();
+              } catch (error) {
+                console.error('Error creating team:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to create team.",
+                  variant: "destructive",
+                });
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Team Name</Label>
+                <Input id="name" name="name" required placeholder="Enter team name" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="age_group">Age Group</Label>
+                <Input id="age_group" name="age_group" required placeholder="e.g., U-16, U-18" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="season">Season</Label>
+                <Input id="season" name="season" required placeholder="e.g., 2024, Spring 2024" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coach_id">Assign Coach</Label>
+                <Select name="coach_id">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a coach (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {coaches.map((coach) => (
+                      <SelectItem key={coach.id} value={coach.id}>
+                        {coach.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <DialogTrigger asChild>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </DialogTrigger>
+                <Button type="submit">Create Team</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Team Name</TableHead>
+                <TableHead>Age Group</TableHead>
+                <TableHead>Season</TableHead>
+                <TableHead>Coach</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {teams.map((team) => (
+                <TableRow key={team.id}>
+                  <TableCell className="font-medium">{team.name}</TableCell>
+                  <TableCell>{team.age_group}</TableCell>
+                  <TableCell>{team.season}</TableCell>
+                  <TableCell>{team.coach_name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-red-600">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AssignmentsManagement = () => (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold">Player & Team Assignments</h2>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Player Team Assignments */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Player Team Assignments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {players.map((player) => (
+                <div key={player.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{player.full_name}</p>
+                    <p className="text-sm text-gray-500">{player.team_name}</p>
+                    {player.position && (
+                      <Badge variant="outline" className="text-xs">
+                        {player.position} #{player.jersey_number}
+                      </Badge>
+                    )}
+                  </div>
+                  <Select
+                    defaultValue={player.team_id || ''}
+                    onValueChange={async (teamId) => {
+                      try {
+                        const { error } = await supabase
+                          .from('players')
+                          .update({ team_id: teamId || null })
+                          .eq('id', player.id);
+
+                        if (error) throw error;
+
+                        toast({
+                          title: "Success",
+                          description: "Player team assignment updated.",
+                        });
+
+                        fetchPlayers();
+                      } catch (error) {
+                        console.error('Error updating player team:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to update team assignment.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Assign team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No team</SelectItem>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Parent-Child Relationships */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              Parent-Child Relationships
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="w-full" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Link Parent to Child
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create Parent-Child Relationship</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    
+                    try {
+                      const { error } = await supabase
+                        .from('parent_child_relationships')
+                        .insert({
+                          parent_id: formData.get('parent_id') as string,
+                          child_id: formData.get('child_id') as string,
+                          relationship_type: formData.get('relationship_type') as string
+                        });
+
+                      if (error) throw error;
+
+                      toast({
+                        title: "Success",
+                        description: "Parent-child relationship created.",
+                      });
+                    } catch (error) {
+                      console.error('Error creating relationship:', error);
+                      toast({
+                        title: "Error",
+                        description: "Failed to create relationship.",
+                        variant: "destructive",
+                      });
+                    }
+                  }} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="parent_id">Parent</Label>
+                      <Select name="parent_id" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select parent" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {parents.map((parent) => (
+                            <SelectItem key={parent.id} value={parent.id}>
+                              {parent.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="child_id">Child (Player)</Label>
+                      <Select name="child_id" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select child" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {players.map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="relationship_type">Relationship</Label>
+                      <Select name="relationship_type" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select relationship" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="parent">Parent</SelectItem>
+                          <SelectItem value="guardian">Guardian</SelectItem>
+                          <SelectItem value="emergency_contact">Emergency Contact</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="outline">Cancel</Button>
+                      </DialogTrigger>
+                      <Button type="submit">Create Relationship</Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
   const UserDialog = () => (
     <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
       <DialogContent className="max-w-2xl">
@@ -456,19 +928,40 @@ const UserManagement = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="text-gray-600">Manage all user accounts, roles, and permissions</p>
+            <p className="text-gray-600">Manage users, teams, and assignments</p>
           </div>
-          <Button 
-            onClick={() => {
-              setSelectedUser(null);
-              setShowUserDialog(true);
-            }}
-            className="bg-gradient-to-r from-blue-500 to-blue-600"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
         </div>
+
+        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Users & Roles
+            </TabsTrigger>
+            <TabsTrigger value="teams" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Teams
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              Assignments
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users">
+            <div className="space-y-6">
+              <div className="flex justify-end">
+                <Button 
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setShowUserDialog(true);
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add User
+                </Button>
+              </div>
 
         {/* Pending Approvals */}
         {pendingApprovals.length > 0 && (
@@ -709,6 +1202,17 @@ const UserManagement = () => {
             )}
           </CardContent>
         </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="teams">
+            <TeamsManagement />
+          </TabsContent>
+
+          <TabsContent value="assignments">
+            <AssignmentsManagement />
+          </TabsContent>
+        </Tabs>
 
         <UserDialog />
       </div>
