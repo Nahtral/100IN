@@ -32,6 +32,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { UserDialog } from '@/components/dialogs/UserDialog';
 
 interface UserData {
   id: string;
@@ -1040,88 +1041,6 @@ const UserManagement = () => {
     </div>
   );
 
-  const UserDialog = () => {
-    const [selectedRole, setSelectedRole] = useState(selectedUser?.roles?.[0] || '');
-    const [selectedTeam, setSelectedTeam] = useState('');
-    const [isPlayerActive, setIsPlayerActive] = useState(true);
-    const [selectedParents, setSelectedParents] = useState<string[]>([]);
-
-    useEffect(() => {
-      console.log('UserDialog opened, selectedUser:', selectedUser);
-      
-      if (selectedUser) {
-        setSelectedRole(selectedUser?.roles?.[0] || '');
-        // Fetch player data if user is a player
-        if (selectedUser.roles?.includes('player')) {
-          fetchPlayerDetails(selectedUser.id);
-        }
-      } else {
-        setSelectedRole('');
-        setSelectedTeam('');
-        setIsPlayerActive(true);
-        setSelectedParents([]);
-      }
-    }, [selectedUser]);
-
-    // Fetch coaches and parents only once when dialog component mounts
-    useEffect(() => {
-      if (showUserDialog) {
-        console.log('Fetching coaches and parents...');
-        fetchCoachesAndParents();
-      }
-    }, [showUserDialog, fetchCoachesAndParents]);
-
-    const fetchPlayerDetails = async (userId: string) => {
-      try {
-        console.log('Fetching player details for userId:', userId);
-        const { data: playerData } = await supabase
-          .from('players')
-          .select('team_id, is_active')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (playerData) {
-          setSelectedTeam(playerData.team_id || '');
-          setIsPlayerActive(playerData.is_active);
-        }
-
-        // Fetch parent relationships
-        const { data: relationships } = await supabase
-          .from('parent_child_relationships')
-          .select('parent_id')
-          .eq('child_id', userId);
-
-        if (relationships) {
-          setSelectedParents(relationships.map(r => r.parent_id));
-        }
-      } catch (error) {
-        console.error('Error fetching player details:', error);
-      }
-    };
-
-    const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      console.log('Form submitted, selectedUser:', selectedUser);
-      
-      try {
-        const formData = new FormData(e.currentTarget);
-        
-        // Add additional form data
-        formData.append('team_id', selectedTeam);
-        formData.append('is_active', isPlayerActive.toString());
-        formData.append('parent_ids', JSON.stringify(selectedParents));
-        
-        console.log('Calling handleSaveUser with formData');
-        await handleSaveUser(formData);
-      } catch (error) {
-        console.error('Error in handleFormSubmit:', error);
-        toast({
-          title: "Error",
-          description: "Failed to submit form. Please try again.",
-          variant: "destructive",
-        });
-      }
-    };
 
     return (
       <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
@@ -1867,7 +1786,15 @@ const UserManagement = () => {
           </TabsContent>
         </Tabs>
 
-        <UserDialog />
+        <UserDialog
+          isOpen={showUserDialog}
+          onClose={() => setShowUserDialog(false)}
+          selectedUser={selectedUser}
+          teams={teams}
+          coaches={coaches}
+          parents={parents}
+          onSave={handleSaveUser}
+        />
         <PaymentDialog />
       </div>
     </Layout>
