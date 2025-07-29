@@ -32,7 +32,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { UserDialog } from '@/components/dialogs/UserDialog';
 
 interface UserData {
   id: string;
@@ -107,13 +106,11 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    console.log('UserManagement mounting, fetching initial data...');
     fetchUsers();
     fetchPendingApprovals();
     fetchTeams();
     fetchPlayers();
     fetchPayments();
-    fetchCoachesAndParents(); // Add this to load coaches and parents initially
   }, []);
 
   useEffect(() => {
@@ -293,8 +290,6 @@ const UserManagement = () => {
 
   const handleSaveUser = async (formData: FormData) => {
     try {
-      console.log('handleSaveUser called with formData:', Object.fromEntries(formData));
-      
       const fullName = formData.get('fullName') as string;
       const email = formData.get('email') as string;
       const phone = formData.get('phone') as string;
@@ -302,8 +297,6 @@ const UserManagement = () => {
       const teamId = formData.get('team_id') as string;
       const isActive = formData.get('is_active') === 'true';
       const parentIds = JSON.parse(formData.get('parent_ids') as string || '[]');
-
-      console.log('Parsed form data:', { fullName, email, phone, role, teamId, isActive, parentIds });
 
       if (selectedUser) {
         // Update existing user
@@ -354,7 +347,7 @@ const UserManagement = () => {
             const { error: playerError } = await supabase
               .from('players')
               .update({
-                team_id: teamId === 'none' ? null : teamId || null,
+                team_id: teamId || null,
                 is_active: isActive
               })
               .eq('user_id', selectedUser.id);
@@ -366,7 +359,7 @@ const UserManagement = () => {
               .from('players')
               .insert({
                 user_id: selectedUser.id,
-                team_id: teamId === 'none' ? null : teamId || null,
+                team_id: teamId || null,
                 is_active: isActive
               });
 
@@ -616,7 +609,7 @@ const UserManagement = () => {
     }
   };
 
-  const fetchCoachesAndParents = React.useCallback(async () => {
+  const fetchCoachesAndParents = async () => {
     try {
       const { data: coachRoles, error: coachError } = await supabase
         .from('user_roles')
@@ -668,7 +661,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error fetching coaches and parents:', error);
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (selectedTab === 'teams') {
@@ -677,7 +670,7 @@ const UserManagement = () => {
       fetchPlayers();
       fetchCoachesAndParents();
     }
-  }, [selectedTab, fetchCoachesAndParents]);
+  }, [selectedTab]);
 
   const TeamsManagement = () => (
     <div className="space-y-6">
@@ -919,7 +912,7 @@ const UserManagement = () => {
                       <SelectValue placeholder="Assign team" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No team</SelectItem>
+                      <SelectItem value="">No team</SelectItem>
                       {teams.map((team) => (
                         <SelectItem key={team.id} value={team.id}>
                           {team.name}
@@ -1041,6 +1034,65 @@ const UserManagement = () => {
     </div>
   );
 
+  const UserDialog = () => {
+    const [selectedRole, setSelectedRole] = useState(selectedUser?.roles?.[0] || '');
+    const [selectedTeam, setSelectedTeam] = useState('');
+    const [isPlayerActive, setIsPlayerActive] = useState(true);
+    const [selectedParents, setSelectedParents] = useState<string[]>([]);
+
+    useEffect(() => {
+      if (selectedUser) {
+        setSelectedRole(selectedUser?.roles?.[0] || '');
+        // Fetch player data if user is a player
+        if (selectedUser.roles?.includes('player')) {
+          fetchPlayerDetails(selectedUser.id);
+        }
+      } else {
+        setSelectedRole('');
+        setSelectedTeam('');
+        setIsPlayerActive(true);
+        setSelectedParents([]);
+      }
+    }, [selectedUser]);
+
+    const fetchPlayerDetails = async (userId: string) => {
+      try {
+        const { data: playerData } = await supabase
+          .from('players')
+          .select('team_id, is_active')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (playerData) {
+          setSelectedTeam(playerData.team_id || '');
+          setIsPlayerActive(playerData.is_active);
+        }
+
+        // Fetch parent relationships
+        const { data: relationships } = await supabase
+          .from('parent_child_relationships')
+          .select('parent_id')
+          .eq('child_id', userId);
+
+        if (relationships) {
+          setSelectedParents(relationships.map(r => r.parent_id));
+        }
+      } catch (error) {
+        console.error('Error fetching player details:', error);
+      }
+    };
+
+    const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      
+      // Add additional form data
+      formData.append('team_id', selectedTeam);
+      formData.append('is_active', isPlayerActive.toString());
+      formData.append('parent_ids', JSON.stringify(selectedParents));
+      
+      await handleSaveUser(formData);
+    };
 
     return (
       <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
@@ -1119,8 +1171,8 @@ const UserManagement = () => {
                         <SelectValue placeholder="Select a team" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No Team</SelectItem>
-                        {(teams || []).map((team) => (
+                        <SelectItem value="">No Team</SelectItem>
+                        {teams.map((team) => (
                           <SelectItem key={team.id} value={team.id}>
                             {team.name} ({team.age_group})
                           </SelectItem>
@@ -1147,7 +1199,7 @@ const UserManagement = () => {
                 <div className="space-y-2">
                   <Label>Assign Parents/Guardians</Label>
                   <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded p-2">
-                    {(parents || []).map((parent) => (
+                    {parents.map((parent) => (
                       <div key={parent.id} className="flex items-center space-x-2">
                         <Checkbox
                           id={`parent-${parent.id}`}
@@ -1166,7 +1218,7 @@ const UserManagement = () => {
                       </div>
                     ))}
                   </div>
-                  {(!parents || parents.length === 0) && (
+                  {parents.length === 0 && (
                     <p className="text-sm text-muted-foreground">No parent users found</p>
                   )}
                 </div>
@@ -1327,8 +1379,8 @@ const UserManagement = () => {
         const { error } = await supabase
           .from('payments')
           .insert({
-            payer_id: payerId === 'none' ? null : payerId || null,
-            team_id: teamId === 'none' ? null : teamId || null,
+            payer_id: payerId || null,
+            team_id: teamId || null,
             amount,
             currency,
             payment_type: paymentType,
@@ -1374,7 +1426,7 @@ const UserManagement = () => {
                     <SelectValue placeholder="Select player/payer" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border z-50">
-                    <SelectItem value="none">No specific player</SelectItem>
+                    <SelectItem value="">No specific player</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.full_name} ({user.email})
@@ -1391,7 +1443,7 @@ const UserManagement = () => {
                     <SelectValue placeholder="Select team" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border z-50">
-                    <SelectItem value="none">No specific team</SelectItem>
+                    <SelectItem value="">No specific team</SelectItem>
                     {teams.map((team) => (
                       <SelectItem key={team.id} value={team.id}>
                         {team.name} ({team.age_group})
@@ -1786,15 +1838,7 @@ const UserManagement = () => {
           </TabsContent>
         </Tabs>
 
-        <UserDialog
-          isOpen={showUserDialog}
-          onClose={() => setShowUserDialog(false)}
-          selectedUser={selectedUser}
-          teams={teams}
-          coaches={coaches}
-          parents={parents}
-          onSave={handleSaveUser}
-        />
+        <UserDialog />
         <PaymentDialog />
       </div>
     </Layout>
