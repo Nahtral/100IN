@@ -5,8 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Trophy, TrendingUp, Clock, Users, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import Layout from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Home = () => {
+  const { user } = useAuth();
+  
   // Fetch club news
   const { data: news } = useQuery({
     queryKey: ['club-news'],
@@ -84,7 +88,12 @@ const Home = () => {
   });
 
   return (
-    <div className="space-y-6 p-6">
+    <Layout currentUser={{ 
+      name: user?.user_metadata?.full_name || 'User',
+      role: user?.user_metadata?.role || 'User',
+      avatar: '' 
+    }}>
+      <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -224,7 +233,8 @@ const Home = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
