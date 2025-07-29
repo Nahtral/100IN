@@ -15,6 +15,7 @@ import Medical from "./pages/Medical";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
+import Evaluations from "./pages/Evaluations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,11 @@ const App = () => (
             <Route path="/user-management" element={
               <ProtectedRoute>
                 <UserManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/evaluations" element={
+              <ProtectedRoute>
+                <Evaluations />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

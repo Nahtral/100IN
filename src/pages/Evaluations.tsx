@@ -64,8 +64,7 @@ const Evaluations = () => {
       .from('players')
       .select(`
         id,
-        user_id,
-        profiles!inner(full_name)
+        user_id
       `)
       .eq('is_active', true);
 
@@ -76,26 +75,85 @@ const Evaluations = () => {
         description: "Failed to fetch players",
         variant: "destructive",
       });
-    } else {
-      setPlayers(data || []);
+      return;
+    }
+
+    // Fetch profiles separately
+    if (data && data.length > 0) {
+      const userIds = data.map(p => p.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return;
+      }
+
+      const playersWithProfiles = data.map(player => {
+        const profile = profiles?.find(p => p.id === player.user_id);
+        return {
+          ...player,
+          profiles: { full_name: profile?.full_name || 'Unknown' }
+        };
+      });
+
+      setPlayers(playersWithProfiles);
     }
   };
 
   const fetchEvaluations = async () => {
     const { data, error } = await supabase
       .from('evaluations')
-      .select(`
-        *,
-        players!inner(
-          profiles!inner(full_name)
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching evaluations:', error);
-    } else {
-      setEvaluations(data || []);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      // Get player IDs and fetch players with profiles
+      const playerIds = data.map(e => e.player_id);
+      const { data: players, error: playersError } = await supabase
+        .from('players')
+        .select('id, user_id')
+        .in('id', playerIds);
+
+      if (playersError) {
+        console.error('Error fetching players:', playersError);
+        return;
+      }
+
+      // Get user IDs and fetch profiles
+      const userIds = players?.map(p => p.user_id) || [];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return;
+      }
+
+      // Combine the data
+      const evaluationsWithProfiles = data.map(evaluation => {
+        const player = players?.find(p => p.id === evaluation.player_id);
+        const profile = profiles?.find(p => p.id === player?.user_id);
+        return {
+          ...evaluation,
+          players: {
+            profiles: {
+              full_name: profile?.full_name || 'Unknown'
+            }
+          }
+        };
+      });
+
+      setEvaluations(evaluationsWithProfiles);
     }
   };
 
@@ -223,7 +281,7 @@ const Evaluations = () => {
   };
 
   return (
-    <Layout>
+    <Layout currentUser={{ name: "Admin", role: "Super Admin", avatar: "" }}>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>

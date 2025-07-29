@@ -11,12 +11,15 @@ import {
   Activity,
   Heart,
   Handshake,
-  Shield
+  Shield,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const Navigation = () => {
   const location = useLocation();
+  const { isSuperAdmin, loading } = useUserRole();
 
   const navItems = [
     {
@@ -53,6 +56,15 @@ const Navigation = () => {
       title: 'Settings',
       href: '/settings',
       icon: Settings
+    }
+  ];
+
+  // Add Evaluations for super admins only
+  const superAdminItems = [
+    {
+      title: 'Evaluations',
+      href: '/evaluations',
+      icon: Brain
     }
   ];
 
@@ -95,6 +107,38 @@ const Navigation = () => {
               </li>
             );
           })}
+          
+          {/* Super Admin only items */}
+          {!loading && isSuperAdmin && (
+            <>
+              <li className="pt-4">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-2">
+                  Super Admin
+                </div>
+              </li>
+              {superAdminItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                
+                return (
+                  <li key={item.href}>
+                    <Link
+                      to={item.href}
+                      className={cn(
+                        "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                        isActive 
+                          ? "bg-orange-100 text-orange-700 border-r-2 border-orange-500" 
+                          : "text-gray-600 hover:bg-gray-100"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </>
+          )}
         </ul>
       </div>
     </nav>
