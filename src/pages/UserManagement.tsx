@@ -531,6 +531,7 @@ const UserManagement = () => {
     if (selectedTab === 'teams') {
       fetchTeams();
       fetchCoachesAndParents(); // Also fetch coaches for the dropdown
+      fetchPlayers(); // Also fetch players for the dropdown
     } else if (selectedTab === 'assignments') {
       fetchPlayers();
       fetchCoachesAndParents();
@@ -542,15 +543,36 @@ const UserManagement = () => {
 
     try {
       const coachId = formData.get('coach_id') as string;
+      const selectedPlayerIds = formData.getAll('player_ids') as string[];
       
-      const { error } = await supabase
+      // Update team coach
+      const { error: teamError } = await supabase
         .from('teams')
         .update({ 
           coach_id: (coachId === 'none') ? null : coachId 
         })
         .eq('id', selectedTeam.id);
       
-      if (error) throw error;
+      if (teamError) throw teamError;
+
+      // Update players' team assignments
+      // First, remove all players from this team
+      const { error: removeError } = await supabase
+        .from('players')
+        .update({ team_id: null })
+        .eq('team_id', selectedTeam.id);
+      
+      if (removeError) throw removeError;
+
+      // Then assign selected players to this team
+      if (selectedPlayerIds.length > 0) {
+        const { error: assignError } = await supabase
+          .from('players')
+          .update({ team_id: selectedTeam.id })
+          .in('id', selectedPlayerIds);
+        
+        if (assignError) throw assignError;
+      }
       
       toast({
         title: "Success",
@@ -559,6 +581,7 @@ const UserManagement = () => {
       
       setShowTeamEditDialog(false);
       fetchTeams();
+      fetchPlayers();
     } catch (error) {
       console.error('Error updating team:', error);
       toast({
@@ -569,45 +592,94 @@ const UserManagement = () => {
     }
   };
 
-  const TeamEditDialog = () => (
-    <Dialog open={showTeamEditDialog} onOpenChange={setShowTeamEditDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Team - {selectedTeam?.name}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          handleUpdateTeam(formData);
-        }} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="coach_id">Assign Coach</Label>
-            <Select name="coach_id" defaultValue={selectedTeam?.coach_id || 'none'}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a coach" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No coach assigned</SelectItem>
-                {coaches.map((coach) => (
-                  <SelectItem key={coach.id} value={coach.id}>
-                    {coach.full_name} ({coach.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => setShowTeamEditDialog(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              Update Team
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+  const TeamEditDialog = () => {
+    // Get current team players
+    const currentTeamPlayers = players.filter(player => player.team_id === selectedTeam?.id);
+    const [selectedPlayerIds, setSelectedPlayerIds] = React.useState<string[]>(
+      currentTeamPlayers.map(player => player.id)
+    );
+
+    return (
+      <Dialog open={showTeamEditDialog} onOpenChange={setShowTeamEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Team - {selectedTeam?.name}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            // Add selected player IDs to form data
+            selectedPlayerIds.forEach(id => formData.append('player_ids', id));
+            handleUpdateTeam(formData);
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="coach_id">Assign Coach</Label>
+              <Select name="coach_id" defaultValue={selectedTeam?.coach_id || 'none'}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a coach" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No coach assigned</SelectItem>
+                  {coaches.map((coach) => (
+                    <SelectItem key={coach.id} value={coach.id}>
+                      {coach.full_name} ({coach.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Assign Players</Label>
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                {players.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No players available</p>
+                ) : (
+                  players.map((player) => (
+                    <div key={player.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`player-${player.id}`}
+                        checked={selectedPlayerIds.includes(player.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedPlayerIds([...selectedPlayerIds, player.id]);
+                          } else {
+                            setSelectedPlayerIds(selectedPlayerIds.filter(id => id !== player.id));
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <label 
+                        htmlFor={`player-${player.id}`} 
+                        className="text-sm cursor-pointer flex-1"
+                      >
+                        {player.full_name} ({player.email})
+                        {player.team_name !== 'No team assigned' && player.team_id !== selectedTeam?.id && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            - Currently on {player.team_name}
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={() => setShowTeamEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Update Team
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   const TeamsManagement = () => (
     <div className="space-y-6">
