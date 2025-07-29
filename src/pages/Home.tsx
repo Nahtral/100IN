@@ -71,7 +71,7 @@ const Home = () => {
       <div className="space-y-8 p-6">
         {/* Welcome Header */}
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto p-2">
+          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto p-2">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
           <div>

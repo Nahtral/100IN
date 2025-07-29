@@ -142,7 +142,7 @@ export function AppSidebar() {
           "flex items-center gap-3 p-4 border-b border-border",
           collapsed ? "justify-center" : "justify-start"
         )}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
