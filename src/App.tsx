@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
+import HealthWellness from "./pages/HealthWellness";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,11 @@ const App = () => (
             <Route path="/evaluations" element={
               <ProtectedRoute>
                 <Evaluations />
+              </ProtectedRoute>
+            } />
+            <Route path="/health-wellness" element={
+              <ProtectedRoute>
+                <HealthWellness />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

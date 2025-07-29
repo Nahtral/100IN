@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_health_checkins: {
+        Row: {
+          additional_notes: string | null
+          check_in_date: string
+          created_at: string
+          energy_level: number | null
+          hydration_level: number | null
+          id: string
+          mood: number | null
+          nutrition_quality: number | null
+          player_id: string
+          sleep_hours: number | null
+          sleep_quality: number | null
+          soreness_areas: string[] | null
+          soreness_level: number | null
+          stress_level: number | null
+          updated_at: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          check_in_date?: string
+          created_at?: string
+          energy_level?: number | null
+          hydration_level?: number | null
+          id?: string
+          mood?: number | null
+          nutrition_quality?: number | null
+          player_id: string
+          sleep_hours?: number | null
+          sleep_quality?: number | null
+          soreness_areas?: string[] | null
+          soreness_level?: number | null
+          stress_level?: number | null
+          updated_at?: string
+        }
+        Update: {
+          additional_notes?: string | null
+          check_in_date?: string
+          created_at?: string
+          energy_level?: number | null
+          hydration_level?: number | null
+          id?: string
+          mood?: number | null
+          nutrition_quality?: number | null
+          player_id?: string
+          sleep_hours?: number | null
+          sleep_quality?: number | null
+          soreness_areas?: string[] | null
+          soreness_level?: number | null
+          stress_level?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evaluations: {
         Row: {
           analysis_data: Json | null
@@ -135,6 +189,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      injury_reports: {
+        Row: {
+          created_at: string
+          date_occurred: string
+          follow_up_date: string | null
+          follow_up_required: boolean | null
+          id: string
+          injury_description: string
+          injury_location: string
+          injury_type: string
+          medical_clearance_received: boolean | null
+          medical_clearance_required: boolean | null
+          player_id: string
+          reported_by: string
+          return_to_play_date: string | null
+          severity_level: string
+          status: string
+          symptoms: string[] | null
+          treatment_received: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_occurred: string
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          injury_description: string
+          injury_location: string
+          injury_type: string
+          medical_clearance_received?: boolean | null
+          medical_clearance_required?: boolean | null
+          player_id: string
+          reported_by: string
+          return_to_play_date?: string | null
+          severity_level: string
+          status?: string
+          symptoms?: string[] | null
+          treatment_received?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_occurred?: string
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          injury_description?: string
+          injury_location?: string
+          injury_type?: string
+          medical_clearance_received?: boolean | null
+          medical_clearance_required?: boolean | null
+          player_id?: string
+          reported_by?: string
+          return_to_play_date?: string | null
+          severity_level?: string
+          status?: string
+          symptoms?: string[] | null
+          treatment_received?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      medical_communications: {
+        Row: {
+          communication_type: string
+          created_at: string
+          id: string
+          is_read_by: Json | null
+          message: string
+          priority: string
+          recipient_ids: string[] | null
+          recipient_type: string
+          related_player_id: string | null
+          sender_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          communication_type: string
+          created_at?: string
+          id?: string
+          is_read_by?: Json | null
+          message: string
+          priority?: string
+          recipient_ids?: string[] | null
+          recipient_type: string
+          related_player_id?: string | null
+          sender_id: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          communication_type?: string
+          created_at?: string
+          id?: string
+          is_read_by?: Json | null
+          message?: string
+          priority?: string
+          recipient_ids?: string[] | null
+          recipient_type?: string
+          related_player_id?: string | null
+          sender_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       news_updates: {
         Row: {

@@ -56,6 +56,11 @@ const Navigation = () => {
       icon: Heart
     },
     {
+      title: 'Health & Wellness',
+      href: '/health-wellness',
+      icon: Activity
+    },
+    {
       title: 'Partners',
       href: '/partners',
       icon: Handshake
