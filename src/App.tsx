@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Medical from "./pages/Medical";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
+import Chat from "./pages/Chat";
 import UserManagement from "./pages/UserManagement";
 import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
@@ -90,6 +91,11 @@ const App = () => (
             <Route path="/news-manager" element={
               <ProtectedRoute>
                 <NewsManager />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

@@ -13,7 +13,8 @@ import {
   Handshake,
   Shield,
   Brain,
-  Newspaper
+  Newspaper,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -76,6 +77,12 @@ const Navigation = () => {
       icon: Handshake,
       showForAll: false,
       showCondition: () => canAccessPartners()
+    },
+    {
+      title: 'Chat',
+      href: '/chat',
+      icon: MessageCircle,
+      showForAll: true
     },
     {
       title: 'Settings',

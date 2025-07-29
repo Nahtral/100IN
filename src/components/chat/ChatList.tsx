@@ -1,0 +1,163 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
+import { Users, MessageCircle } from 'lucide-react';
+
+interface ChatListProps {
+  chats: any[];
+  selectedChatId: string | null;
+  onSelectChat: (chatId: string) => void;
+}
+
+export const ChatList: React.FC<ChatListProps> = ({
+  chats,
+  selectedChatId,
+  onSelectChat,
+}) => {
+  const [lastMessages, setLastMessages] = useState<Record<string, any>>({});
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (chats.length > 0) {
+      fetchLastMessages();
+      fetchUnreadCounts();
+    }
+  }, [chats]);
+
+  const fetchLastMessages = async () => {
+    const chatIds = chats.map(chat => chat.id);
+    const { data } = await supabase
+      .from('messages')
+      .select(`
+        *,
+        profiles:sender_id(full_name)
+      `)
+      .in('chat_id', chatIds)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const messageMap: Record<string, any> = {};
+    data?.forEach(message => {
+      if (!messageMap[message.chat_id]) {
+        messageMap[message.chat_id] = message;
+      }
+    });
+    setLastMessages(messageMap);
+  };
+
+  const fetchUnreadCounts = async () => {
+    // This would require implementing read status tracking
+    // For now, we'll use placeholder logic
+    const counts: Record<string, number> = {};
+    chats.forEach(chat => {
+      counts[chat.id] = 0; // Placeholder
+    });
+    setUnreadCounts(counts);
+  };
+
+  const getChatDisplayName = (chat: any) => {
+    if (chat.chat_type === 'group') {
+      return chat.name || `Team Chat`;
+    }
+    // For private chats, we'd need to get the other participant's name
+    return 'Private Chat';
+  };
+
+  const getChatDisplayContent = (message: any) => {
+    if (!message) return 'No messages yet';
+    
+    switch (message.message_type) {
+      case 'image':
+        return '📷 Photo';
+      case 'video':
+        return '🎥 Video';
+      case 'file':
+        return '📎 File';
+      case 'location':
+        return '📍 Location';
+      case 'link':
+        return '🔗 Link';
+      default:
+        return message.content || 'Message';
+    }
+  };
+
+  return (
+    <div className="overflow-y-auto">
+      {chats.map((chat) => {
+        const lastMessage = lastMessages[chat.id];
+        const unreadCount = unreadCounts[chat.id] || 0;
+        const isSelected = selectedChatId === chat.id;
+
+        return (
+          <div
+            key={chat.id}
+            className={cn(
+              "p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors",
+              isSelected && "bg-muted"
+            )}
+            onClick={() => onSelectChat(chat.id)}
+          >
+            <div className="flex items-start gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback>
+                  {chat.chat_type === 'group' ? (
+                    <Users className="h-6 w-6" />
+                  ) : (
+                    <MessageCircle className="h-6 w-6" />
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-foreground truncate">
+                    {getChatDisplayName(chat)}
+                  </h4>
+                  {lastMessage && (
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-sm text-muted-foreground truncate">
+                    {getChatDisplayContent(lastMessage)}
+                  </p>
+                  {unreadCount > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </div>
+                
+                {chat.chat_type === 'group' && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Users className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      {chat.chat_participants?.length || 0} members
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      
+      {chats.length === 0 && (
+        <div className="p-8 text-center">
+          <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No chats yet</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Start a conversation to begin chatting
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
