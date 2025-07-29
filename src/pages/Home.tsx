@@ -71,8 +71,8 @@ const Home = () => {
       <div className="space-y-8 p-6">
         {/* Welcome Header */}
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto">
-            <Trophy className="h-10 w-10 text-white" />
+          <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto p-2">
+            <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
