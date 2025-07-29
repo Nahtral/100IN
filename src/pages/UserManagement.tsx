@@ -353,7 +353,7 @@ const UserManagement = () => {
             const { error: playerError } = await supabase
               .from('players')
               .update({
-                team_id: teamId || null,
+                team_id: teamId === 'none' ? null : teamId || null,
                 is_active: isActive
               })
               .eq('user_id', selectedUser.id);
@@ -365,7 +365,7 @@ const UserManagement = () => {
               .from('players')
               .insert({
                 user_id: selectedUser.id,
-                team_id: teamId || null,
+                team_id: teamId === 'none' ? null : teamId || null,
                 is_active: isActive
               });
 
@@ -918,7 +918,7 @@ const UserManagement = () => {
                       <SelectValue placeholder="Assign team" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No team</SelectItem>
+                      <SelectItem value="none">No team</SelectItem>
                       {teams.map((team) => (
                         <SelectItem key={team.id} value={team.id}>
                           {team.name}
@@ -1196,7 +1196,7 @@ const UserManagement = () => {
                         <SelectValue placeholder="Select a team" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Team</SelectItem>
+                        <SelectItem value="none">No Team</SelectItem>
                         {(teams || []).map((team) => (
                           <SelectItem key={team.id} value={team.id}>
                             {team.name} ({team.age_group})
@@ -1404,8 +1404,8 @@ const UserManagement = () => {
         const { error } = await supabase
           .from('payments')
           .insert({
-            payer_id: payerId || null,
-            team_id: teamId || null,
+            payer_id: payerId === 'none' ? null : payerId || null,
+            team_id: teamId === 'none' ? null : teamId || null,
             amount,
             currency,
             payment_type: paymentType,
@@ -1451,7 +1451,7 @@ const UserManagement = () => {
                     <SelectValue placeholder="Select player/payer" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border z-50">
-                    <SelectItem value="">No specific player</SelectItem>
+                    <SelectItem value="none">No specific player</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.full_name} ({user.email})
@@ -1468,7 +1468,7 @@ const UserManagement = () => {
                     <SelectValue placeholder="Select team" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border z-50">
-                    <SelectItem value="">No specific team</SelectItem>
+                    <SelectItem value="none">No specific team</SelectItem>
                     {teams.map((team) => (
                       <SelectItem key={team.id} value={team.id}>
                         {team.name} ({team.age_group})
