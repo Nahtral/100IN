@@ -75,6 +75,8 @@ const UserManagement = () => {
   const [coaches, setCoaches] = useState<UserData[]>([]);
   const [parents, setParents] = useState<UserData[]>([]);
   const [selectedTab, setSelectedTab] = useState('users');
+  const [showTeamEditDialog, setShowTeamEditDialog] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<TeamData | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -534,6 +536,78 @@ const UserManagement = () => {
     }
   }, [selectedTab]);
 
+  const handleUpdateTeam = async (formData: FormData) => {
+    if (!selectedTeam) return;
+
+    try {
+      const coachId = formData.get('coach_id') as string;
+      
+      const { error } = await supabase
+        .from('teams')
+        .update({ 
+          coach_id: coachId || null 
+        })
+        .eq('id', selectedTeam.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Team updated successfully.",
+      });
+      
+      setShowTeamEditDialog(false);
+      fetchTeams();
+    } catch (error) {
+      console.error('Error updating team:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to update team.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const TeamEditDialog = () => (
+    <Dialog open={showTeamEditDialog} onOpenChange={setShowTeamEditDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Team - {selectedTeam?.name}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          handleUpdateTeam(formData);
+        }} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="coach_id">Assign Coach</Label>
+            <Select name="coach_id" defaultValue={selectedTeam?.coach_id || ''}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a coach" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No coach assigned</SelectItem>
+                {coaches.map((coach) => (
+                  <SelectItem key={coach.id} value={coach.id}>
+                    {coach.full_name} ({coach.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={() => setShowTeamEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              Update Team
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+
   const TeamsManagement = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -642,33 +716,9 @@ const UserManagement = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={async () => {
-                          // Simple edit - just change coach assignment for now
-                          const newCoachId = prompt('Enter new coach ID (leave empty for no coach):');
-                          if (newCoachId !== null) {
-                            try {
-                              const { error } = await supabase
-                                .from('teams')
-                                .update({ coach_id: newCoachId || null })
-                                .eq('id', team.id);
-                              
-                              if (error) throw error;
-                              
-                              toast({
-                                title: "Success",
-                                description: "Team updated successfully.",
-                              });
-                              
-                              fetchTeams();
-                            } catch (error) {
-                              console.error('Error updating team:', error);
-                              toast({
-                                title: "Error", 
-                                description: "Failed to update team.",
-                                variant: "destructive",
-                              });
-                            }
-                          }
+                        onClick={() => {
+                          setSelectedTeam(team);
+                          setShowTeamEditDialog(true);
                         }}
                       >
                         <Edit className="h-4 w-4" />
@@ -1276,6 +1326,7 @@ const UserManagement = () => {
         </Tabs>
 
         <UserDialog />
+        <TeamEditDialog />
       </div>
     </Layout>
   );
