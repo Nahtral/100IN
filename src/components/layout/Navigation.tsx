@@ -20,7 +20,7 @@ const Navigation = () => {
 
   const navItems = [
     {
-      title: 'Dashboard',
+      title: 'Home',
       href: '/',
       icon: Home
     },
