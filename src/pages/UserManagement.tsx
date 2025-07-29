@@ -530,6 +530,7 @@ const UserManagement = () => {
   useEffect(() => {
     if (selectedTab === 'teams') {
       fetchTeams();
+      fetchCoachesAndParents(); // Also fetch coaches for the dropdown
     } else if (selectedTab === 'assignments') {
       fetchPlayers();
       fetchCoachesAndParents();
