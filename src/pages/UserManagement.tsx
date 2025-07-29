@@ -1061,11 +1061,15 @@ const UserManagement = () => {
         setIsPlayerActive(true);
         setSelectedParents([]);
       }
-      
-      // Always fetch coaches and parents data when dialog opens
-      console.log('Fetching coaches and parents...');
-      fetchCoachesAndParents();
     }, [selectedUser]);
+
+    // Fetch coaches and parents only once when dialog component mounts
+    useEffect(() => {
+      if (showUserDialog) {
+        console.log('Fetching coaches and parents...');
+        fetchCoachesAndParents();
+      }
+    }, [showUserDialog]);
 
     const fetchPlayerDetails = async (userId: string) => {
       try {
