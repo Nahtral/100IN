@@ -19,10 +19,19 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Link } from 'react-router-dom';
+import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
+import PlayerDashboard from '@/components/dashboards/PlayerDashboard';
+import CoachDashboard from '@/components/dashboards/CoachDashboard';
+import ParentDashboard from '@/components/dashboards/ParentDashboard';
+import StaffDashboard from '@/components/dashboards/StaffDashboard';
+import MedicalDashboard from '@/components/dashboards/MedicalDashboard';
+import PartnerDashboard from '@/components/dashboards/PartnerDashboard';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { isSuperAdmin, userRole, loading: roleLoading } = useUserRole();
   const { stats, loading, error } = useDashboardData();
 
   // Fetch recent activities
@@ -85,11 +94,11 @@ const Dashboard = () => {
     return `${diffInDays}d ago`;
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <Layout currentUser={{ 
         name: user?.user_metadata?.full_name || 'User',
-        role: user?.user_metadata?.role || 'User',
+        role: userRole || 'User',
         avatar: '' 
       }}>
         <div className="p-6">
@@ -106,10 +115,35 @@ const Dashboard = () => {
     );
   }
 
+  // Render role-specific dashboard
+  if (isSuperAdmin) {
+    return <SuperAdminDashboard />;
+  }
+
+  // Render specific dashboard based on user role
+  switch (userRole) {
+    case 'player':
+      return <PlayerDashboard />;
+    case 'coach':
+      return <CoachDashboard />;
+    case 'parent':
+      return <ParentDashboard />;
+    case 'staff':
+      return <StaffDashboard />;
+    case 'medical':
+      return <MedicalDashboard />;
+    case 'partner':
+      return <PartnerDashboard />;
+    default:
+      // For users without specific roles, show limited dashboard with only Top Performers
+      break;
+  }
+
+  // Default dashboard for users without specific roles - only shows Top Performers
   return (
     <Layout currentUser={{ 
       name: user?.user_metadata?.full_name || 'User',
-      role: user?.user_metadata?.role || 'User',
+      role: userRole || 'User',
       avatar: '' 
     }}>
       <div className="space-y-6 p-6">
@@ -120,132 +154,16 @@ const Dashboard = () => {
               Dashboard
             </h1>
             <p className="text-muted-foreground mt-2">
-              Analytics and performance overview
+              Welcome to your dashboard
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <BarChart3 className="h-8 w-8 text-primary" />
-            <Activity className="h-8 w-8 text-primary" />
+            <Target className="h-8 w-8 text-primary" />
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                +{stats?.activeUsers || 0} active this month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Teams</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalTeams || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.totalPlayers || 0} total players
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats?.revenue?.toFixed(2) || '0.00'}</div>
-              <p className="text-xs text-muted-foreground">
-                Last 3 months
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">System Alerts</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.pendingTasks || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Pending resolution
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Dashboard Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* User Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                User Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Staff Members</span>
-                <Badge variant="secondary">12</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Coaches</span>
-                <Badge variant="secondary">8</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Players</span>
-                <Badge variant="secondary">{stats?.totalPlayers || 0}</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Parents</span>
-                <Badge variant="secondary">45</Badge>
-              </div>
-              <Button asChild className="w-full mt-4">
-                <Link to="/user-management">Manage Users</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* System Analytics */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                System Analytics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Daily Active Users</span>
-                <span className="font-semibold">{Math.floor((stats?.activeUsers || 0) * 0.3)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">System Uptime</span>
-                <Badge variant="outline" className="text-green-600">99.9%</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Storage Usage</span>
-                <span className="font-semibold">2.4 GB</span>
-              </div>
-              <Button asChild variant="outline" className="w-full mt-4">
-                <Link to="/analytics">View Analytics</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Top Performers */}
+        {/* Top Performers - Available to all users */}
+        <div className="max-w-md mx-auto">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -276,42 +194,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Recent Activities */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Recent Activities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivities?.map((activity, index) => {
-                const Icon = activity.icon;
-                return (
-                  <div key={index} className="flex items-center gap-4 py-2">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatTimeAgo(activity.time)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {!recentActivities?.length && (
-                <p className="text-center text-muted-foreground py-8">
-                  No recent activities
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );
