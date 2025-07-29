@@ -545,7 +545,7 @@ const UserManagement = () => {
       const { error } = await supabase
         .from('teams')
         .update({ 
-          coach_id: coachId || null 
+          coach_id: (coachId === 'none') ? null : coachId 
         })
         .eq('id', selectedTeam.id);
       
@@ -581,12 +581,12 @@ const UserManagement = () => {
         }} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="coach_id">Assign Coach</Label>
-            <Select name="coach_id" defaultValue={selectedTeam?.coach_id || ''}>
+            <Select name="coach_id" defaultValue={selectedTeam?.coach_id || 'none'}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a coach" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No coach assigned</SelectItem>
+                <SelectItem value="none">No coach assigned</SelectItem>
                 {coaches.map((coach) => (
                   <SelectItem key={coach.id} value={coach.id}>
                     {coach.full_name} ({coach.email})
