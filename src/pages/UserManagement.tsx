@@ -106,11 +106,13 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
+    console.log('UserManagement mounting, fetching initial data...');
     fetchUsers();
     fetchPendingApprovals();
     fetchTeams();
     fetchPlayers();
     fetchPayments();
+    fetchCoachesAndParents(); // Add this to load coaches and parents initially
   }, []);
 
   useEffect(() => {
@@ -290,6 +292,8 @@ const UserManagement = () => {
 
   const handleSaveUser = async (formData: FormData) => {
     try {
+      console.log('handleSaveUser called with formData:', Object.fromEntries(formData));
+      
       const fullName = formData.get('fullName') as string;
       const email = formData.get('email') as string;
       const phone = formData.get('phone') as string;
@@ -297,6 +301,8 @@ const UserManagement = () => {
       const teamId = formData.get('team_id') as string;
       const isActive = formData.get('is_active') === 'true';
       const parentIds = JSON.parse(formData.get('parent_ids') as string || '[]');
+
+      console.log('Parsed form data:', { fullName, email, phone, role, teamId, isActive, parentIds });
 
       if (selectedUser) {
         // Update existing user
@@ -1041,6 +1047,8 @@ const UserManagement = () => {
     const [selectedParents, setSelectedParents] = useState<string[]>([]);
 
     useEffect(() => {
+      console.log('UserDialog opened, selectedUser:', selectedUser);
+      
       if (selectedUser) {
         setSelectedRole(selectedUser?.roles?.[0] || '');
         // Fetch player data if user is a player
@@ -1053,10 +1061,15 @@ const UserManagement = () => {
         setIsPlayerActive(true);
         setSelectedParents([]);
       }
+      
+      // Always fetch coaches and parents data when dialog opens
+      console.log('Fetching coaches and parents...');
+      fetchCoachesAndParents();
     }, [selectedUser]);
 
     const fetchPlayerDetails = async (userId: string) => {
       try {
+        console.log('Fetching player details for userId:', userId);
         const { data: playerData } = await supabase
           .from('players')
           .select('team_id, is_active')
@@ -1084,14 +1097,26 @@ const UserManagement = () => {
 
     const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const formData = new FormData(e.currentTarget);
+      console.log('Form submitted, selectedUser:', selectedUser);
       
-      // Add additional form data
-      formData.append('team_id', selectedTeam);
-      formData.append('is_active', isPlayerActive.toString());
-      formData.append('parent_ids', JSON.stringify(selectedParents));
-      
-      await handleSaveUser(formData);
+      try {
+        const formData = new FormData(e.currentTarget);
+        
+        // Add additional form data
+        formData.append('team_id', selectedTeam);
+        formData.append('is_active', isPlayerActive.toString());
+        formData.append('parent_ids', JSON.stringify(selectedParents));
+        
+        console.log('Calling handleSaveUser with formData');
+        await handleSaveUser(formData);
+      } catch (error) {
+        console.error('Error in handleFormSubmit:', error);
+        toast({
+          title: "Error",
+          description: "Failed to submit form. Please try again.",
+          variant: "destructive",
+        });
+      }
     };
 
     return (
@@ -1172,7 +1197,7 @@ const UserManagement = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">No Team</SelectItem>
-                        {teams.map((team) => (
+                        {(teams || []).map((team) => (
                           <SelectItem key={team.id} value={team.id}>
                             {team.name} ({team.age_group})
                           </SelectItem>
@@ -1199,7 +1224,7 @@ const UserManagement = () => {
                 <div className="space-y-2">
                   <Label>Assign Parents/Guardians</Label>
                   <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded p-2">
-                    {parents.map((parent) => (
+                    {(parents || []).map((parent) => (
                       <div key={parent.id} className="flex items-center space-x-2">
                         <Checkbox
                           id={`parent-${parent.id}`}
@@ -1218,7 +1243,7 @@ const UserManagement = () => {
                       </div>
                     ))}
                   </div>
-                  {parents.length === 0 && (
+                  {(!parents || parents.length === 0) && (
                     <p className="text-sm text-muted-foreground">No parent users found</p>
                   )}
                 </div>
