@@ -27,6 +27,7 @@ import InjuryReporting from '@/components/health/InjuryReporting';
 import MedicalLog from '@/components/health/MedicalLog';
 import HealthCommunication from '@/components/health/HealthCommunication';
 import HealthAnalytics from '@/components/health/HealthAnalytics';
+import QuickCheckIn from '@/components/health/QuickCheckIn';
 
 const HealthWellness = () => {
   const { user } = useAuth();
@@ -163,11 +164,13 @@ const HealthWellness = () => {
           </Button>
         </div>
 
-        {/* Navigation Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="border-b border-gray-200">
-            <TabsList className="h-auto p-0 bg-transparent border-0">
-              <div className="flex flex-wrap gap-1 sm:gap-0 sm:space-x-8">
+        {/* Navigation Tabs and Quick Check-in */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="border-b border-gray-200">
+                <TabsList className="h-auto p-0 bg-transparent border-0">
+                  <div className="flex flex-wrap gap-1 sm:gap-0 sm:space-x-8">
                 <TabsTrigger 
                   value="dashboard" 
                   className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
@@ -261,10 +264,11 @@ const HealthWellness = () => {
 
             {(['coach', 'staff', 'medical'].includes(userRole) || isSuperAdmin) && (
               <TabsContent value="communication" className="mt-0">
-                <HealthCommunication 
-                  userRole={userRole}
-                  isSuperAdmin={isSuperAdmin}
-                />
+                 <HealthCommunication 
+                   userRole={userRole}
+                   isSuperAdmin={isSuperAdmin}
+                   playerProfile={playerProfile}
+                 />
               </TabsContent>
             )}
 
@@ -275,12 +279,22 @@ const HealthWellness = () => {
                   isSuperAdmin={isSuperAdmin}
                 />
               </TabsContent>
-            )}
-          </div>
-        </Tabs>
-      </div>
-    </Layout>
-  );
+             )}
+             </div>
+           </Tabs>
+         </div>
+         
+         {/* Quick Check-in Sidebar */}
+         <div className="lg:col-span-1">
+           <QuickCheckIn 
+             playerProfile={playerProfile}
+             userRole={userRole}
+           />
+         </div>
+       </div>
+     </div>
+   </Layout>
+ );
 };
 
 export default HealthWellness;

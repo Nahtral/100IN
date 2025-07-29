@@ -22,14 +22,20 @@ export type Database = {
           energy_level: number | null
           hydration_level: number | null
           id: string
+          medication_taken: string | null
           mood: number | null
           nutrition_quality: number | null
+          overall_mood: string | null
+          pain_level: number | null
+          pain_location: string | null
           player_id: string
           sleep_hours: number | null
           sleep_quality: number | null
           soreness_areas: string[] | null
           soreness_level: number | null
           stress_level: number | null
+          symptoms: string[] | null
+          training_readiness: number | null
           updated_at: string
         }
         Insert: {
@@ -39,14 +45,20 @@ export type Database = {
           energy_level?: number | null
           hydration_level?: number | null
           id?: string
+          medication_taken?: string | null
           mood?: number | null
           nutrition_quality?: number | null
+          overall_mood?: string | null
+          pain_level?: number | null
+          pain_location?: string | null
           player_id: string
           sleep_hours?: number | null
           sleep_quality?: number | null
           soreness_areas?: string[] | null
           soreness_level?: number | null
           stress_level?: number | null
+          symptoms?: string[] | null
+          training_readiness?: number | null
           updated_at?: string
         }
         Update: {
@@ -56,14 +68,20 @@ export type Database = {
           energy_level?: number | null
           hydration_level?: number | null
           id?: string
+          medication_taken?: string | null
           mood?: number | null
           nutrition_quality?: number | null
+          overall_mood?: string | null
+          pain_level?: number | null
+          pain_location?: string | null
           player_id?: string
           sleep_hours?: number | null
           sleep_quality?: number | null
           soreness_areas?: string[] | null
           soreness_level?: number | null
           stress_level?: number | null
+          symptoms?: string[] | null
+          training_readiness?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -249,6 +267,60 @@ export type Database = {
           status?: string
           symptoms?: string[] | null
           treatment_received?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      medical_appointments: {
+        Row: {
+          appointment_date: string
+          appointment_type: string
+          created_at: string
+          created_by: string
+          duration_minutes: number | null
+          follow_up_required: boolean | null
+          id: string
+          location: string | null
+          next_appointment_date: string | null
+          notes: string | null
+          outcome: string | null
+          player_id: string
+          provider_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_date: string
+          appointment_type: string
+          created_at?: string
+          created_by: string
+          duration_minutes?: number | null
+          follow_up_required?: boolean | null
+          id?: string
+          location?: string | null
+          next_appointment_date?: string | null
+          notes?: string | null
+          outcome?: string | null
+          player_id: string
+          provider_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_date?: string
+          appointment_type?: string
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number | null
+          follow_up_required?: boolean | null
+          id?: string
+          location?: string | null
+          next_appointment_date?: string | null
+          notes?: string | null
+          outcome?: string | null
+          player_id?: string
+          provider_name?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -616,6 +688,65 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      rehabilitation_plans: {
+        Row: {
+          actual_completion_date: string | null
+          assigned_by: string
+          created_at: string
+          exercises: Json | null
+          id: string
+          injury_report_id: string | null
+          plan_description: string | null
+          plan_title: string
+          player_id: string
+          progress_notes: string | null
+          start_date: string
+          status: string
+          target_completion_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          assigned_by: string
+          created_at?: string
+          exercises?: Json | null
+          id?: string
+          injury_report_id?: string | null
+          plan_description?: string | null
+          plan_title: string
+          player_id: string
+          progress_notes?: string | null
+          start_date: string
+          status?: string
+          target_completion_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_completion_date?: string | null
+          assigned_by?: string
+          created_at?: string
+          exercises?: Json | null
+          id?: string
+          injury_report_id?: string | null
+          plan_description?: string | null
+          plan_title?: string
+          player_id?: string
+          progress_notes?: string | null
+          start_date?: string
+          status?: string
+          target_completion_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rehabilitation_plans_injury_report_id_fkey"
+            columns: ["injury_report_id"]
+            isOneToOne: false
+            referencedRelation: "injury_reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schedules: {
         Row: {

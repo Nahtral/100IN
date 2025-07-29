@@ -13,20 +13,30 @@ import {
   Filter,
   Search
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface HealthCommunicationProps {
   userRole: string;
   isSuperAdmin: boolean;
+  playerProfile?: any;
 }
 
 const HealthCommunication: React.FC<HealthCommunicationProps> = ({ 
   userRole, 
-  isSuperAdmin 
+  isSuperAdmin,
+  playerProfile
 }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState('');
   const [messageType, setMessageType] = useState('general');
+  const [subject, setSubject] = useState('');
+  const [priority, setPriority] = useState('normal');
+  const [loading, setLoading] = useState(true);
 
   // Mock data for demonstration
   const mockMessages = [
@@ -63,26 +73,69 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
   ];
 
   useEffect(() => {
-    setMessages(mockMessages);
-  }, []);
+    fetchMessages();
+  }, [userRole, playerProfile]);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedRecipient) return;
+  const fetchMessages = async () => {
+    try {
+      let query = supabase
+        .from('medical_communications')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    const message = {
-      id: Date.now(),
-      from: "Current User",
-      to: selectedRecipient,
-      subject: "New Message",
-      message: newMessage,
-      type: messageType,
-      timestamp: new Date().toISOString(),
-      priority: "normal"
-    };
+      const { data, error } = await query;
+      if (error) throw error;
 
-    setMessages(prev => [message, ...prev]);
-    setNewMessage('');
-    setSelectedRecipient('');
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      // Fallback to mock data
+      setMessages(mockMessages);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedRecipient || !subject.trim()) return;
+
+    try {
+      const messageData = {
+        sender_id: user?.id,
+        subject: subject,
+        message: newMessage,
+        communication_type: messageType,
+        priority: priority,
+        recipient_type: selectedRecipient,
+        related_player_id: playerProfile?.id || null
+      };
+
+      const { error } = await supabase
+        .from('medical_communications')
+        .insert([messageData]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Message Sent",
+        description: "Your health communication has been sent successfully.",
+      });
+
+      setNewMessage('');
+      setSelectedRecipient('');
+      setSubject('');
+      setPriority('normal');
+      setMessageType('general');
+      
+      fetchMessages();
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getMessageTypeBadge = (type: string) => {
@@ -169,6 +222,29 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
             </div>
 
             <div>
+              <label className="text-sm font-medium mb-2 block">Priority</label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <Input
+                placeholder="Enter message subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+              />
+            </div>
+
+            <div>
               <label className="text-sm font-medium mb-2 block">Message</label>
               <Textarea
                 placeholder="Type your message here..."
@@ -180,7 +256,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
 
             <Button 
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() || !selectedRecipient}
+              disabled={!newMessage.trim() || !selectedRecipient || !subject.trim()}
               className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
               <Send className="h-4 w-4 mr-2" />

@@ -53,25 +53,25 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({ playerProfile, userRole }) 
       const today = new Date().toISOString().split('T')[0];
       
       const { data, error } = await supabase
-        .from('health_wellness')
+        .from('daily_health_checkins')
         .select('*')
         .eq('player_id', playerProfile.id)
-        .eq('date', today)
-        .single();
+        .eq('check_in_date', today)
+        .maybeSingle();
 
       if (data) {
         setTodayRecord(data);
         // Populate form with existing data
         setCheckInData({
-          sleepQuality: [data.fitness_score || 7],
-          energyLevel: [7], // These would come from expanded schema
-          stressLevel: [3],
-          hydration: [7],
-          nutrition: [7],
-          mood: data.medical_notes?.split('|')[0] || '',
-          notes: data.medical_notes || '',
-          painLevel: [0],
-          painLocation: data.injury_description || ''
+          sleepQuality: [data.sleep_quality || 7],
+          energyLevel: [data.energy_level || 7],
+          stressLevel: [data.stress_level || 3],
+          hydration: [data.hydration_level || 7],
+          nutrition: [data.nutrition_quality || 7],
+          mood: data.overall_mood || '',
+          notes: data.additional_notes || '',
+          painLevel: [data.pain_level || 0],
+          painLocation: data.pain_location || ''
         });
       }
     } catch (error) {
@@ -90,18 +90,25 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({ playerProfile, userRole }) 
       
       const recordData = {
         player_id: playerProfile.id,
-        date: today,
-        fitness_score: checkInData.sleepQuality[0],
-        medical_notes: `${checkInData.mood}|${checkInData.notes}`,
-        injury_description: checkInData.painLocation || null,
-        injury_status: checkInData.painLevel[0] > 0 ? 'monitoring' : 'healthy',
-        created_by: user?.id
+        check_in_date: today,
+        sleep_quality: checkInData.sleepQuality[0],
+        sleep_hours: 8, // Could be added to form
+        energy_level: checkInData.energyLevel[0],
+        stress_level: checkInData.stressLevel[0],
+        hydration_level: checkInData.hydration[0],
+        nutrition_quality: checkInData.nutrition[0],
+        overall_mood: checkInData.mood,
+        pain_level: checkInData.painLevel[0],
+        pain_location: checkInData.painLocation || null,
+        additional_notes: checkInData.notes,
+        mood: checkInData.mood === 'Great' ? 9 : checkInData.mood === 'Good' ? 7 : checkInData.mood === 'Okay' ? 5 : checkInData.mood === 'Tired' ? 4 : checkInData.mood === 'Stressed' ? 3 : checkInData.mood === 'Unwell' ? 2 : 5,
+        training_readiness: Math.round((checkInData.energyLevel[0] + checkInData.sleepQuality[0] + (10 - checkInData.stressLevel[0])) / 3)
       };
 
       if (todayRecord) {
         // Update existing record
         const { error } = await supabase
-          .from('health_wellness')
+          .from('daily_health_checkins')
           .update(recordData)
           .eq('id', todayRecord.id);
 
@@ -114,7 +121,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({ playerProfile, userRole }) 
       } else {
         // Create new record
         const { error } = await supabase
-          .from('health_wellness')
+          .from('daily_health_checkins')
           .insert([recordData]);
 
         if (error) throw error;
