@@ -1481,6 +1481,7 @@ const UserManagement = () => {
                     <SelectItem value="cad">CAD (C$)</SelectItem>
                     <SelectItem value="aud">AUD (A$)</SelectItem>
                     <SelectItem value="jpy">JPY (¥)</SelectItem>
+                    <SelectItem value="cny">CNY (¥)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
