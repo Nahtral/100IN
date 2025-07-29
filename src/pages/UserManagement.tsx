@@ -615,7 +615,7 @@ const UserManagement = () => {
     }
   };
 
-  const fetchCoachesAndParents = async () => {
+  const fetchCoachesAndParents = React.useCallback(async () => {
     try {
       const { data: coachRoles, error: coachError } = await supabase
         .from('user_roles')
@@ -667,7 +667,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error fetching coaches and parents:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (selectedTab === 'teams') {
@@ -676,7 +676,7 @@ const UserManagement = () => {
       fetchPlayers();
       fetchCoachesAndParents();
     }
-  }, [selectedTab]);
+  }, [selectedTab, fetchCoachesAndParents]);
 
   const TeamsManagement = () => (
     <div className="space-y-6">
@@ -1069,7 +1069,7 @@ const UserManagement = () => {
         console.log('Fetching coaches and parents...');
         fetchCoachesAndParents();
       }
-    }, [showUserDialog]);
+    }, [showUserDialog, fetchCoachesAndParents]);
 
     const fetchPlayerDetails = async (userId: string) => {
       try {
