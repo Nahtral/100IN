@@ -177,10 +177,10 @@ const Evaluations = () => {
     const file = event.target.files?.[0];
     if (file) {
       const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > 680) {
+      if (fileSizeMB > 50) {
         toast({
           title: "File too large",
-          description: "Video file must be under 680MB",
+          description: "Video file must be under 50MB due to upload limits",
           variant: "destructive",
         });
         return;
@@ -344,7 +344,7 @@ const Evaluations = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="video-upload">Upload Video (Max 680MB)</Label>
+                      <Label htmlFor="video-upload">Upload Video (Max 50MB)</Label>
                       <Input
                         id="video-upload"
                         type="file"
