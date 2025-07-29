@@ -2,88 +2,63 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Trophy, TrendingUp, Clock, Users, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Trophy, TrendingUp, Clock, ArrowRight, Users, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 const Home = () => {
   const { user } = useAuth();
   
-  // Fetch club news
-  const { data: news } = useQuery({
-    queryKey: ['club-news'],
+  // Fetch recent news (limited for home page)
+  const { data: recentNews } = useQuery({
+    queryKey: ['recent-news'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('news_updates')
         .select('*')
+        .eq('priority', 'high')
         .order('published_at', { ascending: false })
-        .limit(5);
+        .limit(3);
       if (error) throw error;
       return data;
     }
   });
 
-  // Fetch upcoming schedules
-  const { data: upcomingSchedules } = useQuery({
-    queryKey: ['upcoming-schedules'],
+  // Fetch next upcoming event
+  const { data: nextEvent } = useQuery({
+    queryKey: ['next-event'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
         .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true })
-        .limit(5);
-      if (error) throw error;
+        .limit(1)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
       return data;
     }
   });
 
-  // Fetch player performance rankings
-  const { data: playerRankings } = useQuery({
-    queryKey: ['player-rankings'],
+  // Fetch quick stats
+  const { data: quickStats } = useQuery({
+    queryKey: ['quick-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('player_performance')
-        .select(`
-          *,
-          players!inner (
-            user_id,
-            profiles!inner (full_name)
-          )
-        `)
-        .order('points', { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data;
-    }
-  });
+      const [playersResult, teamsResult, upcomingResult] = await Promise.all([
+        supabase.from('players').select('*', { count: 'exact', head: true }),
+        supabase.from('teams').select('*', { count: 'exact', head: true }),
+        supabase.from('schedules').select('*', { count: 'exact', head: true }).gte('start_time', new Date().toISOString())
+      ]);
 
-  // Fetch recent game results
-  const { data: recentGames } = useQuery({
-    queryKey: ['recent-games'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('player_performance')
-        .select('game_date, opponent')
-        .lt('game_date', new Date().toISOString().split('T')[0])
-        .order('game_date', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      
-      // Group by game_date and opponent to get unique games
-      const uniqueGames = data?.reduce((acc: any[], curr) => {
-        const existing = acc.find(game => 
-          game.game_date === curr.game_date && game.opponent === curr.opponent
-        );
-        if (!existing) {
-          acc.push(curr);
-        }
-        return acc;
-      }, []);
-      
-      return uniqueGames || [];
+      return {
+        totalPlayers: playersResult.count || 0,
+        totalTeams: teamsResult.count || 0,
+        upcomingEvents: upcomingResult.count || 0
+      };
     }
   });
 
@@ -93,146 +68,167 @@ const Home = () => {
       role: user?.user_metadata?.role || 'User',
       avatar: '' 
     }}>
-      <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-            Welcome to Court Vision
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Panthers Basketball - Your central hub for team updates and performance
-          </p>
+      <div className="space-y-8 p-6">
+        {/* Welcome Header */}
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto">
+            <Trophy className="h-10 w-10 text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+              Welcome to Court Vision
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Panthers Basketball - Your central hub for team updates, performance tracking, and team management
+            </p>
+          </div>
         </div>
-        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-          <Trophy className="h-6 w-6 text-white" />
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="text-center">
+            <CardContent className="pt-6">
+              <Users className="h-8 w-8 text-primary mx-auto mb-2" />
+              <div className="text-2xl font-bold">{quickStats?.totalPlayers || 0}</div>
+              <p className="text-sm text-muted-foreground">Active Players</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center">
+            <CardContent className="pt-6">
+              <Trophy className="h-8 w-8 text-primary mx-auto mb-2" />
+              <div className="text-2xl font-bold">{quickStats?.totalTeams || 0}</div>
+              <p className="text-sm text-muted-foreground">Teams</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center">
+            <CardContent className="pt-6">
+              <Calendar className="h-8 w-8 text-primary mx-auto mb-2" />
+              <div className="text-2xl font-bold">{quickStats?.upcomingEvents || 0}</div>
+              <p className="text-sm text-muted-foreground">Upcoming Events</p>
+            </CardContent>
+          </Card>
         </div>
-      </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Club News */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Club News & Updates
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {news?.map((item) => (
-              <div key={item.id} className="border-l-4 border-primary pl-4 py-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <Badge variant={item.priority === 'high' ? 'destructive' : 'secondary'}>
-                    {item.category}
-                  </Badge>
+        {/* Next Event Highlight */}
+        {nextEvent && (
+          <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-800">
+                <Calendar className="h-5 w-5" />
+                Next Event
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-orange-900">{nextEvent.title}</h3>
+                  <p className="text-orange-700">
+                    {format(new Date(nextEvent.start_time), 'EEEE, MMMM d \'at\' h:mm a')}
+                  </p>
+                  <p className="text-sm text-orange-600">{nextEvent.location}</p>
+                  {nextEvent.opponent && (
+                    <p className="text-sm text-orange-600">vs {nextEvent.opponent}</p>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">{item.content}</p>
-                <p className="text-xs text-muted-foreground">
-                  {format(new Date(item.published_at), 'MMM d, yyyy')}
-                </p>
+                <Button asChild>
+                  <Link to="/schedule">
+                    View Schedule <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Upcoming Schedules */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Upcoming Events
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingSchedules?.map((schedule) => (
-              <div key={schedule.id} className="bg-muted/50 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-4 w-4" />
-                  <span className="font-medium text-sm">{schedule.title}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-1">
-                  {format(new Date(schedule.start_time), 'MMM d, h:mm a')}
-                </p>
-                {schedule.opponent && (
-                  <p className="text-xs text-muted-foreground">vs {schedule.opponent}</p>
-                )}
-                <p className="text-xs text-muted-foreground">{schedule.location}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Performance and Games Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Player Performance Leaderboard */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5" />
-              Player Performance Rankings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {playerRankings?.map((performance, index) => (
-                <div key={performance.id} className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold">#{index + 1}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium">
-                        {(performance.players as any)?.profiles?.full_name || 'Player'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        vs {performance.opponent}
-                      </p>
-                    </div>
+        {/* Important News */}
+        {recentNews && recentNews.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Important Updates
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {recentNews.map((item) => (
+                <div key={item.id} className="border-l-4 border-primary pl-4 py-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <Badge variant="destructive">
+                      {item.category}
+                    </Badge>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-primary">{performance.points} pts</p>
-                    <p className="text-xs text-muted-foreground">
-                      {performance.assists}A • {performance.rebounds}R
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{item.content}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(item.published_at), 'MMM d, yyyy')}
+                  </p>
                 </div>
               ))}
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/dashboard">
+                  View All Updates <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                <Link to="/players">
+                  <Users className="h-6 w-6" />
+                  <span>Manage Players</span>
+                </Link>
+              </Button>
+              
+              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                <Link to="/schedule">
+                  <Calendar className="h-6 w-6" />
+                  <span>View Schedule</span>
+                </Link>
+              </Button>
+              
+              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                <Link to="/analytics">
+                  <Target className="h-6 w-6" />
+                  <span>View Analytics</span>
+                </Link>
+              </Button>
+              
+              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                <Link to="/dashboard">
+                  <TrendingUp className="h-6 w-6" />
+                  <span>Dashboard</span>
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Game Results */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Recent Game Results
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentGames?.map((game, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <div>
-                    <p className="font-medium">vs {game.opponent}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(game.game_date), 'MMM d, yyyy')}
-                    </p>
-                  </div>
-                  <Badge variant="outline">
-                    View Details
-                  </Badge>
-                </div>
-              ))}
-            </div>
+        {/* Welcome Message */}
+        <Card className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardContent className="pt-6 pb-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+              Ready to get started?
+            </h3>
+            <p className="text-blue-700 mb-4">
+              Explore all the features Court Vision has to offer for managing your basketball team
+            </p>
+            <Button asChild size="lg">
+              <Link to="/dashboard">
+                Go to Dashboard <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
-      </div>
       </div>
     </Layout>
   );

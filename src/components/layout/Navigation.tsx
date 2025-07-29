@@ -28,6 +28,11 @@ const Navigation = () => {
       icon: Home
     },
     {
+      title: 'Dashboard',
+      href: '/dashboard',
+      icon: BarChart3
+    },
+    {
       title: 'Players',
       href: '/players',
       icon: Users

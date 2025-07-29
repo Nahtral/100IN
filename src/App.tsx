@@ -16,6 +16,7 @@ import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import Evaluations from "./pages/Evaluations";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,11 @@ const App = () => (
             <Route path="/" element={
               <ProtectedRoute>
                 <Home />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
               </ProtectedRoute>
             } />
             <Route path="/players" element={
