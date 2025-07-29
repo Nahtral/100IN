@@ -264,6 +264,7 @@ export type Database = {
           emergency_contact_phone: string | null
           height: string | null
           id: string
+          is_active: boolean
           jersey_number: number | null
           medical_notes: string | null
           position: string | null
@@ -279,6 +280,7 @@ export type Database = {
           emergency_contact_phone?: string | null
           height?: string | null
           id?: string
+          is_active?: boolean
           jersey_number?: number | null
           medical_notes?: string | null
           position?: string | null
@@ -294,6 +296,7 @@ export type Database = {
           emergency_contact_phone?: string | null
           height?: string | null
           id?: string
+          is_active?: boolean
           jersey_number?: number | null
           medical_notes?: string | null
           position?: string | null

@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Users, 
   UserPlus, 
@@ -270,6 +272,9 @@ const UserManagement = () => {
       const email = formData.get('email') as string;
       const phone = formData.get('phone') as string;
       const role = formData.get('role') as string;
+      const teamId = formData.get('team_id') as string;
+      const isActive = formData.get('is_active') === 'true';
+      const parentIds = JSON.parse(formData.get('parent_ids') as string || '[]');
 
       if (selectedUser) {
         // Update existing user
@@ -305,6 +310,62 @@ const UserManagement = () => {
 
           if (roleError) throw roleError;
         }
+
+        // Handle player-specific updates
+        if (role === 'player') {
+          // Check if player record exists
+          const { data: existingPlayer } = await supabase
+            .from('players')
+            .select('id')
+            .eq('user_id', selectedUser.id)
+            .maybeSingle();
+
+          if (existingPlayer) {
+            // Update existing player
+            const { error: playerError } = await supabase
+              .from('players')
+              .update({
+                team_id: teamId || null,
+                is_active: isActive
+              })
+              .eq('user_id', selectedUser.id);
+
+            if (playerError) throw playerError;
+          } else {
+            // Create new player record
+            const { error: playerError } = await supabase
+              .from('players')
+              .insert({
+                user_id: selectedUser.id,
+                team_id: teamId || null,
+                is_active: isActive
+              });
+
+            if (playerError) throw playerError;
+          }
+
+          // Update parent-child relationships
+          // First, remove existing relationships
+          await supabase
+            .from('parent_child_relationships')
+            .delete()
+            .eq('child_id', selectedUser.id);
+
+          // Add new relationships
+          if (parentIds.length > 0) {
+            const relationships = parentIds.map((parentId: string) => ({
+              parent_id: parentId,
+              child_id: selectedUser.id,
+              relationship_type: 'parent'
+            }));
+
+            const { error: relationshipError } = await supabase
+              .from('parent_child_relationships')
+              .insert(relationships);
+
+            if (relationshipError) throw relationshipError;
+          }
+        }
       } else {
         // Create new user - this would typically be done via invitation
         toast({
@@ -323,6 +384,8 @@ const UserManagement = () => {
       setShowUserDialog(false);
       fetchUsers();
       fetchPendingApprovals();
+      fetchTeams();
+      fetchPlayers();
     } catch (error) {
       console.error('Error saving user:', error);
       toast({
@@ -896,82 +959,210 @@ const UserManagement = () => {
     </div>
   );
 
-  const UserDialog = () => (
-    <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {selectedUser ? 'Edit User' : 'Add New User'}
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          handleSaveUser(formData);
-        }} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+  const UserDialog = () => {
+    const [selectedRole, setSelectedRole] = useState(selectedUser?.roles?.[0] || '');
+    const [selectedTeam, setSelectedTeam] = useState('');
+    const [isPlayerActive, setIsPlayerActive] = useState(true);
+    const [selectedParents, setSelectedParents] = useState<string[]>([]);
+
+    useEffect(() => {
+      if (selectedUser) {
+        setSelectedRole(selectedUser?.roles?.[0] || '');
+        // Fetch player data if user is a player
+        if (selectedUser.roles?.includes('player')) {
+          fetchPlayerDetails(selectedUser.id);
+        }
+      } else {
+        setSelectedRole('');
+        setSelectedTeam('');
+        setIsPlayerActive(true);
+        setSelectedParents([]);
+      }
+    }, [selectedUser]);
+
+    const fetchPlayerDetails = async (userId: string) => {
+      try {
+        const { data: playerData } = await supabase
+          .from('players')
+          .select('team_id, is_active')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (playerData) {
+          setSelectedTeam(playerData.team_id || '');
+          setIsPlayerActive(playerData.is_active);
+        }
+
+        // Fetch parent relationships
+        const { data: relationships } = await supabase
+          .from('parent_child_relationships')
+          .select('parent_id')
+          .eq('child_id', userId);
+
+        if (relationships) {
+          setSelectedParents(relationships.map(r => r.parent_id));
+        }
+      } catch (error) {
+        console.error('Error fetching player details:', error);
+      }
+    };
+
+    const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      
+      // Add additional form data
+      formData.append('team_id', selectedTeam);
+      formData.append('is_active', isPlayerActive.toString());
+      formData.append('parent_ids', JSON.stringify(selectedParents));
+      
+      await handleSaveUser(formData);
+    };
+
+    return (
+      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedUser ? 'Edit User' : 'Add New User'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  defaultValue={selectedUser?.full_name || ''}
+                  placeholder="Enter full name"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  defaultValue={selectedUser?.email || ''}
+                  placeholder="Enter email"
+                  required
+                />
+              </div>
+            </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="phone">Phone Number</Label>
               <Input
-                id="fullName"
-                name="fullName"
-                defaultValue={selectedUser?.full_name || ''}
-                placeholder="Enter full name"
-                required
+                id="phone"
+                name="phone"
+                defaultValue={selectedUser?.phone || ''}
+                placeholder="Enter phone number"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                defaultValue={selectedUser?.email || ''}
-                placeholder="Enter email"
-                required
-              />
+              <Label htmlFor="role">Role</Label>
+              <Select 
+                name="role" 
+                value={selectedRole} 
+                onValueChange={setSelectedRole}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="coach">Coach</SelectItem>
+                  <SelectItem value="player">Player</SelectItem>
+                  <SelectItem value="parent">Parent</SelectItem>
+                  <SelectItem value="medical">Medical</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              name="phone"
-              defaultValue={selectedUser?.phone || ''}
-              placeholder="Enter phone number"
-            />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select name="role" defaultValue={selectedUser?.roles?.[0] || ''}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="staff">Staff</SelectItem>
-                <SelectItem value="coach">Coach</SelectItem>
-                <SelectItem value="player">Player</SelectItem>
-                <SelectItem value="parent">Parent</SelectItem>
-                <SelectItem value="medical">Medical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Player-specific fields */}
+            {selectedRole === 'player' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                <h4 className="font-medium text-sm text-muted-foreground">Player Settings</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="team">Assign to Team</Label>
+                    <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Team</SelectItem>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name} ({team.age_group})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => setShowUserDialog(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {selectedUser ? 'Update User' : 'Create User'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+                  <div className="space-y-2">
+                    <Label htmlFor="is_active">Player Status</Label>
+                    <div className="flex items-center space-x-2 pt-2">
+                      <Switch
+                        id="is_active"
+                        checked={isPlayerActive}
+                        onCheckedChange={setIsPlayerActive}
+                      />
+                      <Label htmlFor="is_active" className="text-sm">
+                        {isPlayerActive ? 'Active' : 'Inactive'}
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Assign Parents/Guardians</Label>
+                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded p-2">
+                    {parents.map((parent) => (
+                      <div key={parent.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`parent-${parent.id}`}
+                          checked={selectedParents.includes(parent.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedParents([...selectedParents, parent.id]);
+                            } else {
+                              setSelectedParents(selectedParents.filter(id => id !== parent.id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`parent-${parent.id}`} className="text-sm">
+                          {parent.full_name} ({parent.email})
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {parents.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No parent users found</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={() => setShowUserDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {selectedUser ? 'Update User' : 'Create User'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   if (loading) {
     return (
