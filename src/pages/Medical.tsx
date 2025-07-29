@@ -11,6 +11,7 @@ import HealthWellnessForm from '@/components/forms/HealthWellnessForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { format } from 'date-fns';
 
 interface HealthRecord {
@@ -42,6 +43,7 @@ const Medical = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
 
   const currentUser = {
     name: user?.user_metadata?.full_name || user?.email || "Medical Team",
@@ -200,13 +202,14 @@ const Medical = () => {
             <h1 className="text-3xl font-bold text-gray-900">Medical</h1>
             <p className="text-gray-600">Health and injury management</p>
           </div>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Record
-              </Button>
-            </DialogTrigger>
+          {isSuperAdmin && (
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Record
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
@@ -228,6 +231,7 @@ const Medical = () => {
               />
             </DialogContent>
           </Dialog>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -349,22 +353,26 @@ const Medical = () => {
                           {getInjuryStatusBadge(record.injury_status)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEditForm(record)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(record.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
+                          {isSuperAdmin ? (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditForm(record)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(record.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

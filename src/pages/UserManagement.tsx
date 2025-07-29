@@ -28,6 +28,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface UserData {
   id: string;
@@ -79,6 +80,7 @@ const UserManagement = () => {
   const [selectedTeam, setSelectedTeam] = useState<TeamData | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
 
   const currentUser = {
     name: user?.user_metadata?.full_name || user?.email || "User",
@@ -784,52 +786,56 @@ const UserManagement = () => {
                   <TableCell>{team.age_group}</TableCell>
                   <TableCell>{team.season}</TableCell>
                   <TableCell>{team.coach_name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTeam(team);
-                          setShowTeamEditDialog(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-red-600"
-                        onClick={async () => {
-                          if (confirm(`Are you sure you want to delete team "${team.name}"?`)) {
-                            try {
-                              const { error } = await supabase
-                                .from('teams')
-                                .delete()
-                                .eq('id', team.id);
-                              
-                              if (error) throw error;
-                              
-                              toast({
-                                title: "Success",
-                                description: "Team deleted successfully.",
-                              });
-                              
-                              fetchTeams();
-                            } catch (error) {
-                              console.error('Error deleting team:', error);
-                              toast({
-                                title: "Error",
-                                description: "Failed to delete team.", 
-                                variant: "destructive",
-                              });
+                   <TableCell>
+                    {isSuperAdmin ? (
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedTeam(team);
+                            setShowTeamEditDialog(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600"
+                          onClick={async () => {
+                            if (confirm(`Are you sure you want to delete team "${team.name}"?`)) {
+                              try {
+                                const { error } = await supabase
+                                  .from('teams')
+                                  .delete()
+                                  .eq('id', team.id);
+                                
+                                if (error) throw error;
+                                
+                                toast({
+                                  title: "Success",
+                                  description: "Team deleted successfully.",
+                                });
+                                
+                                fetchTeams();
+                              } catch (error) {
+                                console.error('Error deleting team:', error);
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to delete team.", 
+                                  variant: "destructive",
+                                });
+                              }
                             }
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -1353,26 +1359,30 @@ const UserManagement = () => {
                       {new Date(user.last_sign_in || user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowUserDialog(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {isSuperAdmin ? (
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowUserDialog(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
