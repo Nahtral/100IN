@@ -181,9 +181,9 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Users className="h-5 w-5" />
             Attendance - {eventTitle}
           </DialogTitle>
@@ -196,25 +196,25 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         ) : (
           <div className="space-y-6">
             {/* Stats Overview */}
-            <Card>
+            <Card className="animate-fade-in">
               <CardHeader>
-                <CardTitle className="text-lg">Attendance Summary</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Attendance Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-4 flex-wrap">
-                  <Badge className="bg-green-100 text-green-800">
+                <div className="flex gap-2 sm:gap-4 flex-wrap">
+                  <Badge className="bg-green-100 text-green-800 transition-all duration-200 hover:scale-105">
                     Present: {attendanceStats.present || 0}
                   </Badge>
-                  <Badge className="bg-yellow-100 text-yellow-800">
+                  <Badge className="bg-yellow-100 text-yellow-800 transition-all duration-200 hover:scale-105">
                     Late: {attendanceStats.late || 0}
                   </Badge>
-                  <Badge className="bg-red-100 text-red-800">
+                  <Badge className="bg-red-100 text-red-800 transition-all duration-200 hover:scale-105">
                     Absent: {attendanceStats.absent || 0}
                   </Badge>
-                  <Badge className="bg-blue-100 text-blue-800">
+                  <Badge className="bg-blue-100 text-blue-800 transition-all duration-200 hover:scale-105">
                     Excused: {attendanceStats.excused || 0}
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
                     Total: {players.length}
                   </Badge>
                 </div>
@@ -223,28 +223,32 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
             {/* Player List */}
             <div className="space-y-3">
-              {players.map((player) => (
-                <Card key={player.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-4">
+              {players.map((player, index) => (
+                <Card 
+                  key={player.id}
+                  className="animate-fade-in transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(attendance[player.id]?.status || 'present')}
                           <div>
                             <p className="font-medium">{player.profiles?.full_name || 'Unknown Player'}</p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs sm:text-sm text-gray-600">
                               #{player.jersey_number} • {player.position}
                             </p>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                         <Select
                           value={attendance[player.id]?.status || 'present'}
                           onValueChange={(value) => updateAttendance(player.id, 'status', value)}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-full sm:w-32 transition-all duration-200 hover:scale-105">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -259,7 +263,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                           placeholder="Notes (optional)"
                           value={attendance[player.id]?.notes || ''}
                           onChange={(e) => updateAttendance(player.id, 'notes', e.target.value)}
-                          className="w-48 min-h-[40px] max-h-[80px]"
+                          className="w-full sm:w-48 min-h-[40px] max-h-[80px] transition-all duration-200 focus:scale-105"
                           rows={1}
                         />
                       </div>
@@ -270,11 +274,11 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={onClose} disabled={saving}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={onClose} disabled={saving} className="transition-all duration-200 hover:scale-105">
                 Cancel
               </Button>
-              <Button onClick={saveAttendance} disabled={saving}>
+              <Button onClick={saveAttendance} disabled={saving} className="transition-all duration-200 hover:scale-105">
                 {saving ? 'Saving...' : 'Save Attendance'}
               </Button>
             </div>

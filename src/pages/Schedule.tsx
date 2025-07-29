@@ -11,6 +11,8 @@ import AttendanceModal from '@/components/attendance/AttendanceModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -52,6 +54,8 @@ const Schedule = () => {
   });
   const { user } = useAuth();
   const { userRole, isSuperAdmin } = useUserRole();
+  const { trackPageView, trackUserAction } = useAnalytics();
+  const { metrics, measureApiCall } = usePerformanceMonitoring('Schedule');
   const { toast } = useToast();
 
   const currentUser = {
@@ -61,18 +65,22 @@ const Schedule = () => {
   };
 
   useEffect(() => {
+    trackPageView('Schedule');
     fetchEvents();
-  }, []);
+  }, [trackPageView]);
 
   const fetchEvents = async () => {
     try {
-      const { data, error } = await supabase
-        .from('schedules')
-        .select('*')
-        .order('start_time', { ascending: true });
+      const result = await measureApiCall('fetch_schedules', async () => {
+        const { data, error } = await supabase
+          .from('schedules')
+          .select('*')
+          .order('start_time', { ascending: true });
 
-      if (error) throw error;
-      setEvents(data || []);
+        if (error) throw error;
+        return data;
+      });
+      setEvents(result || []);
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -86,6 +94,7 @@ const Schedule = () => {
   };
 
   const handleSubmit = async (formData: any) => {
+    trackUserAction('schedule_form_submit', editingEvent ? 'edit' : 'create');
     setIsSubmitting(true);
     try {
       const eventData = {
@@ -145,9 +154,11 @@ const Schedule = () => {
   };
 
   const handleDelete = async (eventId: string) => {
+    trackUserAction('schedule_delete_attempt', 'event');
     if (!confirm('Are you sure you want to delete this event?')) return;
 
     try {
+      trackUserAction('schedule_delete_confirmed', 'event');
       const { error } = await supabase
         .from('schedules')
         .delete()
@@ -172,16 +183,19 @@ const Schedule = () => {
   };
 
   const openEditForm = (event: ScheduleEvent) => {
+    trackUserAction('schedule_edit_open', 'event');
     setEditingEvent(event);
     setIsFormOpen(true);
   };
 
   const openAddForm = () => {
+    trackUserAction('schedule_add_open', 'form');
     setEditingEvent(null);
     setIsFormOpen(true);
   };
 
   const openAttendanceModal = (event: ScheduleEvent) => {
+    trackUserAction('attendance_modal_open', 'event');
     setAttendanceModal({
       isOpen: true,
       eventId: event.id,
@@ -213,16 +227,16 @@ const Schedule = () => {
 
   return (
     <Layout currentUser={currentUser}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Schedule</h1>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="animate-fade-in">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Schedule</h1>
             <p className="text-gray-600">Manage games and training sessions</p>
           </div>
           {(isSuperAdmin || userRole === 'staff') && (
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600 transition-all duration-200 hover:scale-105 w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Event
                 </Button>
@@ -258,9 +272,9 @@ const Schedule = () => {
           )}
         </div>
         
-        <Card>
+        <Card className="animate-scale-in">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Calendar className="h-5 w-5" />
               Upcoming Events ({events.length})
             </CardTitle>
@@ -276,21 +290,29 @@ const Schedule = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {events.map((event) => (
-                  <div key={event.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                {events.map((event, index) => (
+                  <div 
+                    key={event.id} 
+                    className="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in bg-white"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{event.title}</h3>
-                          <Badge className={getEventTypeColor(event.event_type)}>
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                        <h3 className="text-lg font-semibold">{event.title}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className={`${getEventTypeColor(event.event_type)} transition-all duration-200 hover:scale-105`}>
                             {event.event_type}
                           </Badge>
                           {event.opponent && (
-                            <Badge variant="outline">vs {event.opponent}</Badge>
+                            <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
+                              vs {event.opponent}
+                            </Badge>
                           )}
                         </div>
+                      </div>
                         
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-2">
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             <span>
@@ -309,31 +331,34 @@ const Schedule = () => {
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0 sm:ml-4">
                         {canManageAttendance && event.team_ids && event.team_ids.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openAttendanceModal(event)}
-                            title="Track Attendance"
-                          >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openAttendanceModal(event)}
+                              title="Track Attendance"
+                              className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
+                            >
                             <Users className="h-4 w-4" />
                           </Button>
                         )}
                         {(isSuperAdmin || userRole === 'staff') && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEditForm(event)}
-                            >
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditForm(event)}
+                                className="transition-all duration-200 hover:scale-110 hover:bg-gray-50"
+                              >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(event.id)}
-                            >
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(event.id)}
+                                className="transition-all duration-200 hover:scale-110 hover:bg-red-50"
+                              >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </>

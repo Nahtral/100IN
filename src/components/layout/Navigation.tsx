@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -16,9 +16,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Navigation = () => {
   const location = useLocation();
+  const { trackUserAction } = useAnalytics();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isSuperAdmin, loading } = useUserRole();
 
   const navItems = [
