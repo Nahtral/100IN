@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       daily_health_checkins: {
         Row: {
           additional_notes: string | null
@@ -83,6 +116,36 @@ export type Database = {
           symptoms?: string[] | null
           training_readiness?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      dashboard_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          layout_preferences: Json | null
+          theme_preferences: Json | null
+          updated_at: string
+          user_id: string
+          widget_preferences: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout_preferences?: Json | null
+          theme_preferences?: Json | null
+          updated_at?: string
+          user_id: string
+          widget_preferences?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout_preferences?: Json | null
+          theme_preferences?: Json | null
+          updated_at?: string
+          user_id?: string
+          widget_preferences?: Json | null
         }
         Relationships: []
       }
@@ -440,6 +503,92 @@ export type Database = {
           relationship_type?: string
         }
         Relationships: []
+      }
+      partner_organizations: {
+        Row: {
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          partnership_status: string
+          partnership_type: string
+          partnership_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          partnership_status?: string
+          partnership_type?: string
+          partnership_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          partnership_status?: string
+          partnership_type?: string
+          partnership_value?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      partner_user_relationships: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary_contact: boolean | null
+          partner_organization_id: string
+          role_in_organization: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary_contact?: boolean | null
+          partner_organization_id: string
+          role_in_organization?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary_contact?: boolean | null
+          partner_organization_id?: string
+          role_in_organization?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_user_relationships_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -805,6 +954,57 @@ export type Database = {
           team_ids?: string[] | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      staff_tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string
+          task_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
