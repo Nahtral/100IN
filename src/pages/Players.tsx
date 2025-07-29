@@ -54,20 +54,43 @@ const Players = () => {
 
   const fetchPlayers = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch all players
+      const { data: playersData, error: playersError } = await supabase
         .from('players')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            email,
-            phone
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPlayers((data as any) || []);
+      if (playersError) throw playersError;
+
+      if (!playersData || playersData.length === 0) {
+        setPlayers([]);
+        return;
+      }
+
+      // Get all unique user_ids
+      const userIds = [...new Set(playersData.map(player => player.user_id))];
+
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map();
+      profilesData?.forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
+
+      // Combine players with their profiles
+      const playersWithProfiles = playersData.map(player => ({
+        ...player,
+        profiles: profilesMap.get(player.user_id) || null
+      }));
+
+      setPlayers(playersWithProfiles);
     } catch (error) {
       console.error('Error fetching players:', error);
       toast({
