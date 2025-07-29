@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Trophy, Mail, Lock, User, Phone } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Mail, Lock, User, Phone } from 'lucide-react';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -16,7 +15,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('player');
+  
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -88,8 +87,7 @@ const Auth = () => {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
-            phone: phone,
-            role: role,
+            phone: phone
           }
         }
       });
@@ -236,20 +234,12 @@ const Auth = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-role">Role</Label>
-                    <Select value={role} onValueChange={setRole}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="player">Player</SelectItem>
-                        <SelectItem value="parent">Parent</SelectItem>
-                        <SelectItem value="coach">Coach</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
-                        <SelectItem value="medical">Medical Team</SelectItem>
-                        <SelectItem value="partner">Partner</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <p className="text-sm text-blue-800">
+                        📝 <strong>Role Assignment:</strong> Your account will be created with basic access. 
+                        Please contact an administrator to request specific role permissions.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-2">

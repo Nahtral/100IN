@@ -977,6 +977,36 @@ export type Database = {
           },
         ]
       }
+      role_change_audit: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          new_role: string
+          old_role: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_role: string
+          old_role?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_role?: string
+          old_role?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       schedules: {
         Row: {
           created_at: string | null
