@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      evaluations: {
+        Row: {
+          analysis_data: Json | null
+          analysis_status: string
+          body_alignment_score: number | null
+          created_at: string
+          created_by: string
+          development_plan: string | null
+          dribbling_score: number | null
+          feedback: string | null
+          foot_speed_score: number | null
+          id: string
+          injury_risk_level: string | null
+          movement_score: number | null
+          passing_score: number | null
+          player_id: string
+          shooting_score: number | null
+          updated_at: string
+          vertical_jump_score: number | null
+          video_filename: string
+          video_size_mb: number
+          video_url: string
+        }
+        Insert: {
+          analysis_data?: Json | null
+          analysis_status?: string
+          body_alignment_score?: number | null
+          created_at?: string
+          created_by: string
+          development_plan?: string | null
+          dribbling_score?: number | null
+          feedback?: string | null
+          foot_speed_score?: number | null
+          id?: string
+          injury_risk_level?: string | null
+          movement_score?: number | null
+          passing_score?: number | null
+          player_id: string
+          shooting_score?: number | null
+          updated_at?: string
+          vertical_jump_score?: number | null
+          video_filename: string
+          video_size_mb: number
+          video_url: string
+        }
+        Update: {
+          analysis_data?: Json | null
+          analysis_status?: string
+          body_alignment_score?: number | null
+          created_at?: string
+          created_by?: string
+          development_plan?: string | null
+          dribbling_score?: number | null
+          feedback?: string | null
+          foot_speed_score?: number | null
+          id?: string
+          injury_risk_level?: string | null
+          movement_score?: number | null
+          passing_score?: number | null
+          player_id?: string
+          shooting_score?: number | null
+          updated_at?: string
+          vertical_jump_score?: number | null
+          video_filename?: string
+          video_size_mb?: number
+          video_url?: string
+        }
+        Relationships: []
+      }
       health_wellness: {
         Row: {
           body_fat_percentage: number | null
