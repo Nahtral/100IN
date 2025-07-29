@@ -96,49 +96,49 @@ export const ChatList: React.FC<ChatListProps> = ({
           <div
             key={chat.id}
             className={cn(
-              "p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors",
-              isSelected && "bg-muted"
+              "mobile-card cursor-pointer transition-all duration-200 touch-manipulation border-b border-border last:border-b-0",
+              isSelected ? "bg-primary text-primary-foreground shadow-lg" : "hover:bg-muted/50 active:bg-muted/30"
             )}
             onClick={() => onSelectChat(chat.id)}
           >
             <div className="flex items-start gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback>
+              <Avatar className="h-12 w-12 sm:h-14 sm:w-14 shrink-0">
+                <AvatarFallback className="text-sm sm:text-base">
                   {chat.chat_type === 'group' ? (
-                    <Users className="h-6 w-6" />
+                    <Users className="h-6 w-6 sm:h-7 sm:w-7" />
                   ) : (
-                    <MessageCircle className="h-6 w-6" />
+                    <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
                   )}
                 </AvatarFallback>
               </Avatar>
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-foreground truncate">
+                  <h4 className="font-medium text-foreground truncate text-sm sm:text-base">
                     {getChatDisplayName(chat)}
                   </h4>
                   {lastMessage && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs opacity-70 shrink-0 ml-2">
                       {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })}
                     </span>
                   )}
                 </div>
                 
                 <div className="flex items-center justify-between mt-1">
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-xs sm:text-sm opacity-70 truncate leading-relaxed">
                     {getChatDisplayContent(lastMessage)}
                   </p>
                   {unreadCount > 0 && (
-                    <Badge variant="destructive" className="text-xs">
+                    <Badge variant="destructive" className="text-xs ml-2 shrink-0">
                       {unreadCount}
                     </Badge>
                   )}
                 </div>
                 
                 {chat.chat_type === 'group' && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Users className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1 mt-2">
+                    <Users className="h-3 w-3 opacity-60" />
+                    <span className="text-xs opacity-60">
                       {chat.chat_participants?.length || 0} members
                     </span>
                   </div>
@@ -150,10 +150,10 @@ export const ChatList: React.FC<ChatListProps> = ({
       })}
       
       {chats.length === 0 && (
-        <div className="p-8 text-center">
-          <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No chats yet</p>
-          <p className="text-sm text-muted-foreground mt-1">
+        <div className="p-6 sm:p-8 text-center">
+          <MessageCircle className="h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground mx-auto mb-4" />
+          <p className="text-base sm:text-lg text-muted-foreground mb-2">No chats yet</p>
+          <p className="text-sm text-muted-foreground">
             Start a conversation to begin chatting
           </p>
         </div>
