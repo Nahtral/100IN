@@ -34,7 +34,7 @@ const Analytics = () => {
   const [timeFilter, setTimeFilter] = useState('30');
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { isSuperAdmin, hasRole, loading: roleLoading } = useUserRole();
 
   const currentUser = {
     name: user?.user_metadata?.full_name || user?.email || "User",
@@ -131,6 +131,8 @@ const Analytics = () => {
     return { grade: 'D', color: 'text-red-600' };
   };
 
+  const canAccessAnalytics = isSuperAdmin || hasRole('staff') || hasRole('coach');
+
   return (
     <Layout currentUser={currentUser}>
       <div className="space-y-6">
@@ -139,7 +141,7 @@ const Analytics = () => {
             <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
             <p className="text-gray-600">Performance metrics and insights</p>
           </div>
-          {isSuperAdmin && (
+          {canAccessAnalytics && (
             <div className="flex items-center gap-4">
               <Select value={timeFilter} onValueChange={setTimeFilter}>
                 <SelectTrigger className="w-32">
@@ -160,7 +162,7 @@ const Analytics = () => {
           <div className="text-center py-8">
             <p className="text-gray-600">Loading...</p>
           </div>
-        ) : !isSuperAdmin ? (
+        ) : !canAccessAnalytics ? (
           <Card>
             <CardContent className="p-8 text-center">
               <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -168,7 +170,7 @@ const Analytics = () => {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Restricted</h3>
               <p className="text-gray-600">
-                Analytics data is only available to super administrators. 
+                Analytics data is only available to super administrators, staff, and coaches. 
                 Contact your system administrator if you need access to this feature.
               </p>
             </CardContent>
