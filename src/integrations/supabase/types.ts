@@ -257,6 +257,50 @@ export type Database = {
           },
         ]
       }
+      player_attendance: {
+        Row: {
+          created_at: string
+          id: string
+          marked_at: string
+          marked_by: string
+          notes: string | null
+          player_id: string
+          schedule_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marked_at?: string
+          marked_by: string
+          notes?: string | null
+          player_id: string
+          schedule_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marked_at?: string
+          marked_by?: string
+          notes?: string | null
+          player_id?: string
+          schedule_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_attendance_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_performance: {
         Row: {
           assists: number | null
@@ -512,6 +556,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      team_attendance: {
+        Row: {
+          absent_count: number
+          attendance_percentage: number
+          created_at: string
+          excused_count: number
+          id: string
+          late_count: number
+          present_count: number
+          schedule_id: string
+          team_id: string
+          total_players: number
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          absent_count?: number
+          attendance_percentage?: number
+          created_at?: string
+          excused_count?: number
+          id?: string
+          late_count?: number
+          present_count?: number
+          schedule_id: string
+          team_id: string
+          total_players?: number
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          absent_count?: number
+          attendance_percentage?: number
+          created_at?: string
+          excused_count?: number
+          id?: string
+          late_count?: number
+          present_count?: number
+          schedule_id?: string
+          team_id?: string
+          total_players?: number
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_attendance_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teams: {
         Row: {

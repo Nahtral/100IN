@@ -1,0 +1,288 @@
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, UserCheck, UserX, Clock, FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+interface Player {
+  id: string;
+  user_id: string;
+  jersey_number?: number;
+  position?: string;
+  profiles?: {
+    full_name: string;
+  } | null;
+}
+
+interface AttendanceRecord {
+  player_id: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
+  notes?: string;
+}
+
+interface AttendanceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  eventId: string;
+  eventTitle: string;
+  teamIds: string[];
+}
+
+const AttendanceModal: React.FC<AttendanceModalProps> = ({
+  isOpen,
+  onClose,
+  eventId,
+  eventTitle,
+  teamIds
+}) => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen && teamIds.length > 0) {
+      fetchPlayersAndAttendance();
+    }
+  }, [isOpen, teamIds, eventId]);
+
+  const fetchPlayersAndAttendance = async () => {
+    setLoading(true);
+    try {
+      // Fetch players from selected teams
+      const { data: playersData, error: playersError } = await supabase
+        .from('players')
+        .select(`
+          id,
+          user_id,
+          jersey_number,
+          position,
+          profiles(full_name)
+        `)
+        .in('team_id', teamIds)
+        .eq('is_active', true);
+
+      if (playersError) throw playersError;
+
+      // Fetch existing attendance records
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('player_attendance')
+        .select('*')
+        .eq('schedule_id', eventId);
+
+      if (attendanceError) throw attendanceError;
+
+      setPlayers((playersData as unknown as Player[]) || []);
+      
+      // Initialize attendance state
+      const attendanceMap: Record<string, AttendanceRecord> = {};
+      playersData?.forEach(player => {
+        const existingRecord = attendanceData?.find(a => a.player_id === player.id);
+        attendanceMap[player.id] = {
+          player_id: player.id,
+          status: (existingRecord?.status as 'present' | 'absent' | 'late' | 'excused') || 'present',
+          notes: existingRecord?.notes || ''
+        };
+      });
+      
+      setAttendance(attendanceMap);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load players and attendance data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateAttendance = (playerId: string, field: keyof AttendanceRecord, value: any) => {
+    setAttendance(prev => ({
+      ...prev,
+      [playerId]: {
+        ...prev[playerId],
+        [field]: value
+      }
+    }));
+  };
+
+  const saveAttendance = async () => {
+    setSaving(true);
+    try {
+      const attendanceRecords = Object.values(attendance).map(record => ({
+        player_id: record.player_id,
+        schedule_id: eventId,
+        status: record.status,
+        notes: record.notes || null,
+        marked_by: user?.id
+      }));
+
+      const { error } = await supabase
+        .from('player_attendance')
+        .upsert(attendanceRecords, {
+          onConflict: 'player_id,schedule_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Attendance updated successfully.",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save attendance.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'present': return <UserCheck className="h-4 w-4 text-green-600" />;
+      case 'late': return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'absent': return <UserX className="h-4 w-4 text-red-600" />;
+      case 'excused': return <FileText className="h-4 w-4 text-blue-600" />;
+      default: return <UserCheck className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'present': return 'bg-green-100 text-green-800';
+      case 'late': return 'bg-yellow-100 text-yellow-800';
+      case 'absent': return 'bg-red-100 text-red-800';
+      case 'excused': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const attendanceStats = players.reduce((stats, player) => {
+    const status = attendance[player.id]?.status || 'present';
+    stats[status] = (stats[status] || 0) + 1;
+    return stats;
+  }, {} as Record<string, number>);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Attendance - {eventTitle}
+          </DialogTitle>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Loading players...</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Stats Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Attendance Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4 flex-wrap">
+                  <Badge className="bg-green-100 text-green-800">
+                    Present: {attendanceStats.present || 0}
+                  </Badge>
+                  <Badge className="bg-yellow-100 text-yellow-800">
+                    Late: {attendanceStats.late || 0}
+                  </Badge>
+                  <Badge className="bg-red-100 text-red-800">
+                    Absent: {attendanceStats.absent || 0}
+                  </Badge>
+                  <Badge className="bg-blue-100 text-blue-800">
+                    Excused: {attendanceStats.excused || 0}
+                  </Badge>
+                  <Badge variant="outline">
+                    Total: {players.length}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Player List */}
+            <div className="space-y-3">
+              {players.map((player) => (
+                <Card key={player.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(attendance[player.id]?.status || 'present')}
+                          <div>
+                            <p className="font-medium">{player.profiles?.full_name || 'Unknown Player'}</p>
+                            <p className="text-sm text-gray-600">
+                              #{player.jersey_number} • {player.position}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <Select
+                          value={attendance[player.id]?.status || 'present'}
+                          onValueChange={(value) => updateAttendance(player.id, 'status', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="present">Present</SelectItem>
+                            <SelectItem value="late">Late</SelectItem>
+                            <SelectItem value="absent">Absent</SelectItem>
+                            <SelectItem value="excused">Excused</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <Textarea
+                          placeholder="Notes (optional)"
+                          value={attendance[player.id]?.notes || ''}
+                          onChange={(e) => updateAttendance(player.id, 'notes', e.target.value)}
+                          className="w-48 min-h-[40px] max-h-[80px]"
+                          rows={1}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={onClose} disabled={saving}>
+                Cancel
+              </Button>
+              <Button onClick={saveAttendance} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Attendance'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default AttendanceModal;

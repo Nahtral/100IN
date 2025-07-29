@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Plus, Edit, Trash2, Clock, MapPin } from 'lucide-react';
+import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import ScheduleForm from '@/components/forms/ScheduleForm';
+import AttendanceModal from '@/components/attendance/AttendanceModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -37,7 +39,19 @@ const Schedule = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attendanceModal, setAttendanceModal] = useState<{
+    isOpen: boolean;
+    eventId: string;
+    eventTitle: string;
+    teamIds: string[];
+  }>({
+    isOpen: false,
+    eventId: '',
+    eventTitle: '',
+    teamIds: []
+  });
   const { user } = useAuth();
+  const { userRole, isSuperAdmin } = useUserRole();
   const { toast } = useToast();
 
   const currentUser = {
@@ -167,6 +181,26 @@ const Schedule = () => {
     setIsFormOpen(true);
   };
 
+  const openAttendanceModal = (event: ScheduleEvent) => {
+    setAttendanceModal({
+      isOpen: true,
+      eventId: event.id,
+      eventTitle: event.title,
+      teamIds: event.team_ids || []
+    });
+  };
+
+  const closeAttendanceModal = () => {
+    setAttendanceModal({
+      isOpen: false,
+      eventId: '',
+      eventTitle: '',
+      teamIds: []
+    });
+  };
+
+  const canManageAttendance = isSuperAdmin || userRole === 'staff' || userRole === 'coach';
+
   const getEventTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
       case 'game': return 'bg-red-100 text-red-800';
@@ -185,13 +219,14 @@ const Schedule = () => {
             <h1 className="text-3xl font-bold text-gray-900">Schedule</h1>
             <p className="text-gray-600">Manage games and training sessions</p>
           </div>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Event
-              </Button>
-            </DialogTrigger>
+          {(isSuperAdmin || userRole === 'staff') && (
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Event
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
@@ -220,6 +255,7 @@ const Schedule = () => {
               />
             </DialogContent>
           </Dialog>
+          )}
         </div>
         
         <Card>
@@ -274,20 +310,34 @@ const Schedule = () => {
                       </div>
                       
                       <div className="flex items-center gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditForm(event)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(event.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                        {canManageAttendance && event.team_ids && event.team_ids.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openAttendanceModal(event)}
+                            title="Track Attendance"
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {(isSuperAdmin || userRole === 'staff') && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditForm(event)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(event.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -296,6 +346,14 @@ const Schedule = () => {
             )}
           </CardContent>
         </Card>
+
+        <AttendanceModal
+          isOpen={attendanceModal.isOpen}
+          onClose={closeAttendanceModal}
+          eventId={attendanceModal.eventId}
+          eventTitle={attendanceModal.eventTitle}
+          teamIds={attendanceModal.teamIds}
+        />
       </div>
     </Layout>
   );
