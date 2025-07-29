@@ -91,10 +91,11 @@ const Evaluations = () => {
         return;
       }
 
-      const playersWithProfiles = data.map(player => {
+      const playersWithProfiles: Player[] = data.map(player => {
         const profile = profiles?.find(p => p.id === player.user_id);
         return {
-          ...player,
+          id: player.id,
+          user_id: player.user_id,
           profiles: { full_name: profile?.full_name || 'Unknown' }
         };
       });
@@ -140,11 +141,26 @@ const Evaluations = () => {
       }
 
       // Combine the data
-      const evaluationsWithProfiles = data.map(evaluation => {
+      const evaluationsWithProfiles: Evaluation[] = data.map(evaluation => {
         const player = players?.find(p => p.id === evaluation.player_id);
         const profile = profiles?.find(p => p.id === player?.user_id);
         return {
-          ...evaluation,
+          id: evaluation.id,
+          player_id: evaluation.player_id,
+          video_filename: evaluation.video_filename,
+          video_size_mb: evaluation.video_size_mb,
+          analysis_status: evaluation.analysis_status,
+          shooting_score: evaluation.shooting_score,
+          passing_score: evaluation.passing_score,
+          dribbling_score: evaluation.dribbling_score,
+          foot_speed_score: evaluation.foot_speed_score,
+          vertical_jump_score: evaluation.vertical_jump_score,
+          movement_score: evaluation.movement_score,
+          body_alignment_score: evaluation.body_alignment_score,
+          injury_risk_level: evaluation.injury_risk_level,
+          development_plan: evaluation.development_plan,
+          feedback: evaluation.feedback,
+          created_at: evaluation.created_at,
           players: {
             profiles: {
               full_name: profile?.full_name || 'Unknown'
@@ -281,7 +297,7 @@ const Evaluations = () => {
   };
 
   return (
-    <Layout currentUser={{ name: "Admin", role: "Super Admin", avatar: "" }}>
+    <Layout currentUser={{ name: "Super Admin", role: "Super Admin", avatar: "" }}>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
