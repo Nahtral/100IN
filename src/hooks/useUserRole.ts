@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const useUserRole = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -36,6 +37,8 @@ export const useUserRole = () => {
         if (rolesError) {
           console.error('Error fetching user roles:', rolesError);
         } else {
+          const rolesList = roles?.map(r => r.role) || [];
+          setUserRoles(rolesList);
           const primaryRole = roles?.[0]?.role || null;
           setUserRole(primaryRole);
         }
@@ -49,5 +52,25 @@ export const useUserRole = () => {
     fetchUserRole();
   }, [user]);
 
-  return { userRole, isSuperAdmin, loading };
+  const hasRole = (role: string) => {
+    return userRoles.includes(role);
+  };
+
+  const canAccessMedical = () => {
+    return isSuperAdmin || hasRole('medical');
+  };
+
+  const canAccessPartners = () => {
+    return isSuperAdmin || hasRole('partner');
+  };
+
+  return { 
+    userRole, 
+    userRoles, 
+    isSuperAdmin, 
+    loading, 
+    hasRole, 
+    canAccessMedical, 
+    canAccessPartners 
+  };
 };

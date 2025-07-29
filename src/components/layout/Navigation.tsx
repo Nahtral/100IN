@@ -22,53 +22,64 @@ const Navigation = () => {
   const location = useLocation();
   const { trackUserAction } = useAnalytics();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isSuperAdmin, loading } = useUserRole();
+  const { isSuperAdmin, loading, canAccessMedical, canAccessPartners } = useUserRole();
 
   const navItems = [
     {
       title: 'Home',
       href: '/',
-      icon: Home
+      icon: Home,
+      showForAll: true
     },
     {
       title: 'Dashboard',
       href: '/dashboard',
-      icon: BarChart3
+      icon: BarChart3,
+      showForAll: true
     },
     {
       title: 'Players',
       href: '/players',
-      icon: Users
+      icon: Users,
+      showForAll: true
     },
     {
       title: 'Schedule',
       href: '/schedule',
-      icon: Calendar
+      icon: Calendar,
+      showForAll: true
     },
     {
       title: 'Analytics',
       href: '/analytics',
-      icon: BarChart3
+      icon: BarChart3,
+      showForAll: true
     },
     {
       title: 'Medical',
       href: '/medical',
-      icon: Heart
+      icon: Heart,
+      showForAll: false,
+      showCondition: () => canAccessMedical()
     },
     {
       title: 'Health & Wellness',
       href: '/health-wellness',
-      icon: Activity
+      icon: Activity,
+      showForAll: true
     },
     {
       title: 'Partners',
       href: '/partners',
-      icon: Handshake
+      icon: Handshake,
+      showForAll: false,
+      showCondition: () => canAccessPartners()
     },
     {
       title: 'Settings',
       href: '/settings',
-      icon: Settings
+      icon: Settings,
+      showForAll: true
     }
   ];
 
@@ -102,6 +113,11 @@ const Navigation = () => {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
+            
+            // Check if item should be shown
+            const shouldShow = item.showForAll || (item.showCondition && !loading && item.showCondition());
+            
+            if (!shouldShow) return null;
             
             return (
               <li key={item.href}>
