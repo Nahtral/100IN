@@ -1,7 +1,8 @@
 
 import React, { useEffect } from 'react';
-import Navigation from './Navigation';
 import Header from './Header';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useErrorBoundary } from '@/hooks/useErrorBoundary';
 
@@ -36,15 +37,31 @@ const Layout = ({ children, currentUser }: LayoutProps) => {
   }, [trackUserAction, reportError]);
 
   return (
-    <div className="min-h-screen bg-gray-50 animate-fade-in">
-      <Navigation />
-      <Header currentUser={currentUser} />
-      <main className="ml-64 pt-20 p-4 sm:p-6 transition-all duration-300 ease-in-out">
-        <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-          {children}
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        
+        <div className="flex-1 flex flex-col">
+          {/* Mobile header with hamburger menu */}
+          <header className="flex items-center justify-between p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="lg:hidden" />
+              <div className="hidden lg:block">
+                <SidebarTrigger />
+              </div>
+            </div>
+            <Header currentUser={currentUser} />
+          </header>
+
+          {/* Main content */}
+          <main className="flex-1 p-4 sm:p-6 animate-fade-in">
+            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+              {children}
+            </div>
+          </main>
         </div>
-      </main>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
