@@ -22,7 +22,7 @@ const Navigation = () => {
   const location = useLocation();
   const { trackUserAction } = useAnalytics();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isSuperAdmin, loading, canAccessMedical, canAccessPartners } = useUserRole();
+  const { isSuperAdmin, hasRole, loading, canAccessMedical, canAccessPartners } = useUserRole();
 
   const navItems = [
     {
@@ -53,7 +53,8 @@ const Navigation = () => {
       title: 'Analytics',
       href: '/analytics',
       icon: BarChart3,
-      showForAll: true
+      showForAll: false,
+      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach')
     },
     {
       title: 'Medical',
