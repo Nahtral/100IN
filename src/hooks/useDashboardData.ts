@@ -120,7 +120,7 @@ export const useUpcomingSchedule = (teamId?: string) => {
           .limit(5);
 
         if (teamId) {
-          query = query.eq('team_id', teamId);
+          query = query.contains('team_ids', [teamId]);
         }
 
         const { data, error } = await query;

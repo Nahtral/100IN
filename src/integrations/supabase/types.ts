@@ -422,11 +422,12 @@ export type Database = {
           is_recurring: boolean | null
           location: string
           opponent: string | null
+          recurrence_days_of_week: number[] | null
           recurrence_end_date: string | null
           recurrence_interval: number | null
           recurrence_pattern: string | null
           start_time: string
-          team_id: string | null
+          team_ids: string[] | null
           title: string
           updated_at: string | null
         }
@@ -440,11 +441,12 @@ export type Database = {
           is_recurring?: boolean | null
           location: string
           opponent?: string | null
+          recurrence_days_of_week?: number[] | null
           recurrence_end_date?: string | null
           recurrence_interval?: number | null
           recurrence_pattern?: string | null
           start_time: string
-          team_id?: string | null
+          team_ids?: string[] | null
           title: string
           updated_at?: string | null
         }
@@ -458,23 +460,16 @@ export type Database = {
           is_recurring?: boolean | null
           location?: string
           opponent?: string | null
+          recurrence_days_of_week?: number[] | null
           recurrence_end_date?: string | null
           recurrence_interval?: number | null
           recurrence_pattern?: string | null
           start_time?: string
-          team_id?: string | null
+          team_ids?: string[] | null
           title?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "schedules_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       system_alerts: {
         Row: {

@@ -21,10 +21,14 @@ interface ScheduleEvent {
   location: string;
   opponent?: string;
   description?: string;
-  team_id?: string;
+  team_ids?: string[];
   created_by: string;
   created_at: string;
   updated_at: string;
+  is_recurring?: boolean;
+  recurrence_end_date?: string;
+  recurrence_pattern?: string;
+  recurrence_days_of_week?: number[];
 }
 
 const Schedule = () => {
@@ -78,6 +82,11 @@ const Schedule = () => {
         location: formData.location,
         opponent: formData.opponent,
         description: formData.description,
+        team_ids: formData.teamIds || [],
+        is_recurring: formData.isRecurring || false,
+        recurrence_end_date: formData.isRecurring && formData.recurrenceEndDate ? formData.recurrenceEndDate : null,
+        recurrence_pattern: formData.isRecurring ? formData.recurrencePattern : null,
+        recurrence_days_of_week: formData.isRecurring ? formData.recurrenceDaysOfWeek : null,
         created_by: user?.id,
       };
 
@@ -201,6 +210,11 @@ const Schedule = () => {
                   location: editingEvent.location,
                   opponent: editingEvent.opponent,
                   description: editingEvent.description,
+                  teamIds: editingEvent.team_ids || [],
+                  isRecurring: editingEvent.is_recurring || false,
+                  recurrenceEndDate: editingEvent.recurrence_end_date || '',
+                  recurrencePattern: editingEvent.recurrence_pattern as 'weekly' | 'monthly' | undefined,
+                  recurrenceDaysOfWeek: editingEvent.recurrence_days_of_week || [],
                 } : undefined}
                 isLoading={isSubmitting}
               />
