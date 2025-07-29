@@ -12,7 +12,8 @@ import {
   Heart,
   Handshake,
   Shield,
-  Brain
+  Brain,
+  Newspaper
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -90,6 +91,11 @@ const Navigation = () => {
       title: 'Evaluations',
       href: '/evaluations',
       icon: Brain
+    },
+    {
+      title: 'News Manager',
+      href: '/news-manager',
+      icon: Newspaper
     }
   ];
 

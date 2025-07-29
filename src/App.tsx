@@ -18,6 +18,7 @@ import UserManagement from "./pages/UserManagement";
 import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
 import HealthWellness from "./pages/HealthWellness";
+import NewsManager from "./pages/NewsManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,11 @@ const App = () => (
             <Route path="/health-wellness" element={
               <ProtectedRoute>
                 <HealthWellness />
+              </ProtectedRoute>
+            } />
+            <Route path="/news-manager" element={
+              <ProtectedRoute>
+                <NewsManager />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

@@ -334,6 +334,62 @@ export type Database = {
         }
         Relationships: []
       }
+      media_uploads: {
+        Row: {
+          created_at: string
+          dimensions: Json | null
+          file_name: string
+          file_size_bytes: number
+          file_type: string
+          file_url: string
+          id: string
+          media_type: string
+          news_id: string | null
+          orientation: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          dimensions?: Json | null
+          file_name: string
+          file_size_bytes: number
+          file_type: string
+          file_url: string
+          id?: string
+          media_type: string
+          news_id?: string | null
+          orientation?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          dimensions?: Json | null
+          file_name?: string
+          file_size_bytes?: number
+          file_type?: string
+          file_url?: string
+          id?: string
+          media_type?: string
+          news_id?: string | null
+          orientation?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_uploads_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_appointments: {
         Row: {
           appointment_date: string
@@ -439,36 +495,60 @@ export type Database = {
           category: string
           content: string
           created_at: string | null
+          excerpt: string | null
+          featured_image_url: string | null
           id: string
+          is_featured: boolean | null
+          media_urls: string[] | null
           priority: string
           published_at: string | null
+          tags: string[] | null
           team_id: string | null
+          thumbnail_url: string | null
           title: string
           updated_at: string | null
+          video_url: string | null
+          view_count: number | null
         }
         Insert: {
           author_id: string
           category?: string
           content: string
           created_at?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
           id?: string
+          is_featured?: boolean | null
+          media_urls?: string[] | null
           priority?: string
           published_at?: string | null
+          tags?: string[] | null
           team_id?: string | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string | null
+          video_url?: string | null
+          view_count?: number | null
         }
         Update: {
           author_id?: string
           category?: string
           content?: string
           created_at?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
           id?: string
+          is_featured?: boolean | null
+          media_urls?: string[] | null
           priority?: string
           published_at?: string | null
+          tags?: string[] | null
           team_id?: string | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
+          video_url?: string | null
+          view_count?: number | null
         }
         Relationships: [
           {
