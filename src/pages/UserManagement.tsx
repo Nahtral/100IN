@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Users, 
   UserPlus, 
@@ -25,9 +23,7 @@ import {
   UserCheck,
   Settings,
   Link,
-  Plus,
-  DollarSign,
-  CreditCard
+  Plus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,21 +60,6 @@ interface PlayerTeamData {
   jersey_number?: number;
 }
 
-interface PaymentData {
-  id: string;
-  payer_id: string | null;
-  team_id: string | null;
-  amount: number;
-  currency: string;
-  payment_type: string;
-  payment_status: string;
-  description: string | null;
-  payment_date: string;
-  created_at: string;
-  payer_name?: string;
-  team_name?: string;
-}
-
 const UserManagement = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
@@ -93,9 +74,7 @@ const UserManagement = () => {
   const [players, setPlayers] = useState<PlayerTeamData[]>([]);
   const [coaches, setCoaches] = useState<UserData[]>([]);
   const [parents, setParents] = useState<UserData[]>([]);
-  const [payments, setPayments] = useState<PaymentData[]>([]);
   const [selectedTab, setSelectedTab] = useState('users');
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -108,9 +87,6 @@ const UserManagement = () => {
   useEffect(() => {
     fetchUsers();
     fetchPendingApprovals();
-    fetchTeams();
-    fetchPlayers();
-    fetchPayments();
   }, []);
 
   useEffect(() => {
@@ -294,9 +270,6 @@ const UserManagement = () => {
       const email = formData.get('email') as string;
       const phone = formData.get('phone') as string;
       const role = formData.get('role') as string;
-      const teamId = formData.get('team_id') as string;
-      const isActive = formData.get('is_active') === 'true';
-      const parentIds = JSON.parse(formData.get('parent_ids') as string || '[]');
 
       if (selectedUser) {
         // Update existing user
@@ -332,62 +305,6 @@ const UserManagement = () => {
 
           if (roleError) throw roleError;
         }
-
-        // Handle player-specific updates
-        if (role === 'player') {
-          // Check if player record exists
-          const { data: existingPlayer } = await supabase
-            .from('players')
-            .select('id')
-            .eq('user_id', selectedUser.id)
-            .maybeSingle();
-
-          if (existingPlayer) {
-            // Update existing player
-            const { error: playerError } = await supabase
-              .from('players')
-              .update({
-                team_id: teamId || null,
-                is_active: isActive
-              })
-              .eq('user_id', selectedUser.id);
-
-            if (playerError) throw playerError;
-          } else {
-            // Create new player record
-            const { error: playerError } = await supabase
-              .from('players')
-              .insert({
-                user_id: selectedUser.id,
-                team_id: teamId || null,
-                is_active: isActive
-              });
-
-            if (playerError) throw playerError;
-          }
-
-          // Update parent-child relationships
-          // First, remove existing relationships
-          await supabase
-            .from('parent_child_relationships')
-            .delete()
-            .eq('child_id', selectedUser.id);
-
-          // Add new relationships
-          if (parentIds.length > 0) {
-            const relationships = parentIds.map((parentId: string) => ({
-              parent_id: parentId,
-              child_id: selectedUser.id,
-              relationship_type: 'parent'
-            }));
-
-            const { error: relationshipError } = await supabase
-              .from('parent_child_relationships')
-              .insert(relationships);
-
-            if (relationshipError) throw relationshipError;
-          }
-        }
       } else {
         // Create new user - this would typically be done via invitation
         toast({
@@ -406,9 +323,6 @@ const UserManagement = () => {
       setShowUserDialog(false);
       fetchUsers();
       fetchPendingApprovals();
-      fetchTeams();
-      fetchPlayers();
-      fetchPayments();
     } catch (error) {
       console.error('Error saving user:', error);
       toast({
@@ -554,58 +468,6 @@ const UserManagement = () => {
       setPlayers(playersWithDetails);
     } catch (error) {
       console.error('Error fetching players:', error);
-    }
-  };
-
-  const fetchPayments = async () => {
-    try {
-      const { data: paymentsData, error } = await supabase
-        .from('payments')
-        .select('*')
-        .order('payment_date', { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch payer names and team names
-      const payerIds = paymentsData?.map(payment => payment.payer_id).filter(Boolean) || [];
-      const teamIds = paymentsData?.map(payment => payment.team_id).filter(Boolean) || [];
-      
-      let payerNames: { [key: string]: string } = {};
-      let teamNames: { [key: string]: string } = {};
-      
-      if (payerIds.length > 0) {
-        const { data: payers } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', payerIds);
-        
-        payerNames = payers?.reduce((acc, payer) => {
-          acc[payer.id] = payer.full_name;
-          return acc;
-        }, {} as { [key: string]: string }) || {};
-      }
-
-      if (teamIds.length > 0) {
-        const { data: teams } = await supabase
-          .from('teams')
-          .select('id, name')
-          .in('id', teamIds);
-        
-        teamNames = teams?.reduce((acc, team) => {
-          acc[team.id] = team.name;
-          return acc;
-        }, {} as { [key: string]: string }) || {};
-      }
-
-      const paymentsWithDetails = paymentsData?.map(payment => ({
-        ...payment,
-        payer_name: payment.payer_id ? payerNames[payment.payer_id] || 'Unknown' : 'No payer',
-        team_name: payment.team_id ? teamNames[payment.team_id] || 'Unknown team' : 'No team'
-      })) || [];
-
-      setPayments(paymentsWithDetails);
-    } catch (error) {
-      console.error('Error fetching payments:', error);
     }
   };
 
@@ -1034,499 +896,82 @@ const UserManagement = () => {
     </div>
   );
 
-  const UserDialog = () => {
-    const [selectedRole, setSelectedRole] = useState(selectedUser?.roles?.[0] || '');
-    const [selectedTeam, setSelectedTeam] = useState('');
-    const [isPlayerActive, setIsPlayerActive] = useState(true);
-    const [selectedParents, setSelectedParents] = useState<string[]>([]);
-
-    useEffect(() => {
-      if (selectedUser) {
-        setSelectedRole(selectedUser?.roles?.[0] || '');
-        // Fetch player data if user is a player
-        if (selectedUser.roles?.includes('player')) {
-          fetchPlayerDetails(selectedUser.id);
-        }
-      } else {
-        setSelectedRole('');
-        setSelectedTeam('');
-        setIsPlayerActive(true);
-        setSelectedParents([]);
-      }
-    }, [selectedUser]);
-
-    const fetchPlayerDetails = async (userId: string) => {
-      try {
-        const { data: playerData } = await supabase
-          .from('players')
-          .select('team_id, is_active')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (playerData) {
-          setSelectedTeam(playerData.team_id || '');
-          setIsPlayerActive(playerData.is_active);
-        }
-
-        // Fetch parent relationships
-        const { data: relationships } = await supabase
-          .from('parent_child_relationships')
-          .select('parent_id')
-          .eq('child_id', userId);
-
-        if (relationships) {
-          setSelectedParents(relationships.map(r => r.parent_id));
-        }
-      } catch (error) {
-        console.error('Error fetching player details:', error);
-      }
-    };
-
-    const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      
-      // Add additional form data
-      formData.append('team_id', selectedTeam);
-      formData.append('is_active', isPlayerActive.toString());
-      formData.append('parent_ids', JSON.stringify(selectedParents));
-      
-      await handleSaveUser(formData);
-    };
-
-    return (
-      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedUser ? 'Edit User' : 'Add New User'}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleFormSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  defaultValue={selectedUser?.full_name || ''}
-                  placeholder="Enter full name"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  defaultValue={selectedUser?.email || ''}
-                  placeholder="Enter email"
-                  required
-                />
-              </div>
-            </div>
-            
+  const UserDialog = () => (
+    <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {selectedUser ? 'Edit User' : 'Add New User'}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          handleSaveUser(formData);
+        }} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="fullName">Full Name</Label>
               <Input
-                id="phone"
-                name="phone"
-                defaultValue={selectedUser?.phone || ''}
-                placeholder="Enter phone number"
+                id="fullName"
+                name="fullName"
+                defaultValue={selectedUser?.full_name || ''}
+                placeholder="Enter full name"
+                required
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select 
-                name="role" 
-                value={selectedRole} 
-                onValueChange={setSelectedRole}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="coach">Coach</SelectItem>
-                  <SelectItem value="player">Player</SelectItem>
-                  <SelectItem value="parent">Parent</SelectItem>
-                  <SelectItem value="medical">Medical</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                defaultValue={selectedUser?.email || ''}
+                placeholder="Enter email"
+                required
+              />
             </div>
-
-            {/* Player-specific fields */}
-            {selectedRole === 'player' && (
-              <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                <h4 className="font-medium text-sm text-muted-foreground">Player Settings</h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="team">Assign to Team</Label>
-                    <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a team" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">No Team</SelectItem>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name} ({team.age_group})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="is_active">Player Status</Label>
-                    <div className="flex items-center space-x-2 pt-2">
-                      <Switch
-                        id="is_active"
-                        checked={isPlayerActive}
-                        onCheckedChange={setIsPlayerActive}
-                      />
-                      <Label htmlFor="is_active" className="text-sm">
-                        {isPlayerActive ? 'Active' : 'Inactive'}
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Assign Parents/Guardians</Label>
-                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto border rounded p-2">
-                    {parents.map((parent) => (
-                      <div key={parent.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`parent-${parent.id}`}
-                          checked={selectedParents.includes(parent.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedParents([...selectedParents, parent.id]);
-                            } else {
-                              setSelectedParents(selectedParents.filter(id => id !== parent.id));
-                            }
-                          }}
-                        />
-                        <Label htmlFor={`parent-${parent.id}`} className="text-sm">
-                          {parent.full_name} ({parent.email})
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                  {parents.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No parent users found</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setShowUserDialog(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {selectedUser ? 'Update User' : 'Create User'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
-  const PaymentsManagement = () => {
-    const totalRevenue = payments.reduce((sum, payment) => 
-      payment.payment_status === 'completed' ? sum + payment.amount : sum, 0
-    );
-
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-semibold">Revenue & Payments</h2>
-            <p className="text-muted-foreground">Track player payments and revenue</p>
           </div>
-          <Button 
-            onClick={() => setShowPaymentDialog(true)}
-            className="bg-gradient-to-r from-green-500 to-green-600"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Payment
-          </Button>
-        </div>
-
-        {/* Revenue Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CreditCard className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Payments</p>
-                  <p className="text-2xl font-bold">{payments.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              name="phone"
+              defaultValue={selectedUser?.phone || ''}
+              placeholder="Enter phone number"
+            />
+          </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Activity className="h-8 w-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold">
-                    {payments.filter(p => p.payment_status === 'completed').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select name="role" defaultValue={selectedUser?.roles?.[0] || ''}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="coach">Coach</SelectItem>
+                <SelectItem value="player">Player</SelectItem>
+                <SelectItem value="parent">Parent</SelectItem>
+                <SelectItem value="medical">Medical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* Payments Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Payer</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium">
-                      {payment.payer_name}
-                    </TableCell>
-                    <TableCell>{payment.team_name}</TableCell>
-                    <TableCell>
-                      {payment.amount.toLocaleString()} {payment.currency.toUpperCase()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {payment.payment_type.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        className={
-                          payment.payment_status === 'completed' 
-                            ? 'bg-green-100 text-green-800'
-                            : payment.payment_status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }
-                      >
-                        {payment.payment_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(payment.payment_date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{payment.description || '-'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {payments.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                No payment records found. Create your first payment record.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
-
-  const PaymentDialog = () => {
-    const handleCreatePayment = async (formData: FormData) => {
-      try {
-        const payerId = formData.get('payer_id') as string;
-        const teamId = formData.get('team_id') as string;
-        const amount = parseFloat(formData.get('amount') as string);
-        const currency = formData.get('currency') as string;
-        const paymentType = formData.get('payment_type') as string;
-        const description = formData.get('description') as string;
-
-        const { error } = await supabase
-          .from('payments')
-          .insert({
-            payer_id: payerId || null,
-            team_id: teamId || null,
-            amount,
-            currency,
-            payment_type: paymentType,
-            payment_status: 'completed',
-            description: description || null
-          });
-
-        if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Payment record created successfully.",
-        });
-
-        setShowPaymentDialog(false);
-        fetchPayments();
-      } catch (error) {
-        console.error('Error creating payment:', error);
-        toast({
-          title: "Error",
-          description: "Failed to create payment record.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    return (
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add Payment Record</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            await handleCreatePayment(formData);
-          }} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="payer_id">Player/Payer</Label>
-                <Select name="payer_id">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select player/payer" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    <SelectItem value="">No specific player</SelectItem>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.full_name} ({user.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="team_id">Team</Label>
-                <Select name="team_id">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    <SelectItem value="">No specific team</SelectItem>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name} ({team.age_group})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Select name="currency" defaultValue="usd">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    <SelectItem value="usd">USD ($)</SelectItem>
-                    <SelectItem value="eur">EUR (€)</SelectItem>
-                    <SelectItem value="gbp">GBP (£)</SelectItem>
-                    <SelectItem value="cad">CAD (C$)</SelectItem>
-                    <SelectItem value="aud">AUD (A$)</SelectItem>
-                    <SelectItem value="jpy">JPY (¥)</SelectItem>
-                    <SelectItem value="cny">CNY (¥)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="payment_type">Payment Type</Label>
-              <Select name="payment_type" defaultValue="registration">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select payment type" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border z-50">
-                  <SelectItem value="registration">Registration Fee</SelectItem>
-                  <SelectItem value="monthly">Monthly Fee</SelectItem>
-                  <SelectItem value="tournament">Tournament Fee</SelectItem>
-                  <SelectItem value="equipment">Equipment</SelectItem>
-                  <SelectItem value="uniform">Uniform</SelectItem>
-                  <SelectItem value="camp">Training Camp</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
-              <Input
-                id="description"
-                name="description"
-                placeholder="Additional details about this payment"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setShowPaymentDialog(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-gradient-to-r from-green-500 to-green-600">
-                Create Payment
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={() => setShowUserDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              {selectedUser ? 'Update User' : 'Create User'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 
   if (loading) {
     return (
@@ -1549,7 +994,7 @@ const UserManagement = () => {
         </div>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Users & Roles
@@ -1561,10 +1006,6 @@ const UserManagement = () => {
             <TabsTrigger value="assignments" className="flex items-center gap-2">
               <Link className="h-4 w-4" />
               Assignments
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Revenue/Payments
             </TabsTrigger>
           </TabsList>
 
@@ -1832,14 +1273,9 @@ const UserManagement = () => {
           <TabsContent value="assignments">
             <AssignmentsManagement />
           </TabsContent>
-
-          <TabsContent value="payments">
-            <PaymentsManagement />
-          </TabsContent>
         </Tabs>
 
         <UserDialog />
-        <PaymentDialog />
       </div>
     </Layout>
   );
