@@ -13,11 +13,21 @@ import {
   MessageSquare,
   Trophy
 } from "lucide-react";
+import Layout from "@/components/layout/Layout";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const PartnerDashboard = () => {
+  const { user } = useAuth();
+  const { userRole } = useUserRole();
   return (
-    <div className="space-y-6">
-      {/* Partnership Overview */}
+    <Layout currentUser={{ 
+      name: user?.user_metadata?.full_name || 'Partner',
+      role: userRole || 'Partner',
+      avatar: '' 
+    }}>
+      <div className="space-y-6">
+        {/* Partnership Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -257,7 +267,8 @@ const PartnerDashboard = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
