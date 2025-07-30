@@ -17,6 +17,16 @@ export const useUserRole = () => {
       }
 
       try {
+        // Check if user is super admin using the database function
+        const { data: superAdminResult, error: superAdminError } = await supabase
+          .rpc('is_super_admin', { _user_id: user.id });
+
+        if (superAdminError) {
+          console.error('Error checking super admin status:', superAdminError);
+        } else {
+          setIsSuperAdmin(superAdminResult || false);
+        }
+
         // Get user roles
         const { data: roles, error: rolesError } = await supabase
           .from('user_roles')
@@ -29,17 +39,8 @@ export const useUserRole = () => {
         } else {
           const rolesList = roles?.map(r => r.role) || [];
           setUserRoles(rolesList);
-          
-          // Determine super admin status from roles
-          setIsSuperAdmin(rolesList.includes('super_admin'));
-          
-          // Set primary role, prioritizing super_admin
-          if (rolesList.includes('super_admin')) {
-            setUserRole('super_admin');
-          } else {
-            const primaryRole = roles?.[0]?.role || null;
-            setUserRole(primaryRole);
-          }
+          const primaryRole = roles?.[0]?.role || null;
+          setUserRole(primaryRole);
         }
       } catch (error) {
         console.error('Error in fetchUserRole:', error);

@@ -126,38 +126,28 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans text-base leading-relaxed;
+    @apply bg-background text-foreground font-sans;
   }
 
-  /* Mobile-First Typography Hierarchy */
+  /* Bold Typography Hierarchy */
   h1 {
-    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight;
+    @apply text-4xl font-bold tracking-tight;
   }
   
   h2 {
-    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight;
+    @apply text-3xl font-bold tracking-tight;
   }
   
   h3 {
-    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight;
+    @apply text-2xl font-semibold tracking-tight;
   }
   
   h4 {
-    @apply text-base sm:text-lg md:text-xl lg:text-2xl font-semibold;
+    @apply text-xl font-semibold;
   }
   
   h5 {
-    @apply text-sm sm:text-base md:text-lg lg:text-xl font-medium;
-  }
-
-  /* Base text sizing for better mobile readability */
-  p {
-    @apply text-sm sm:text-base leading-relaxed;
-  }
-
-  /* Larger touch targets for mobile */
-  button, a {
-    @apply min-h-[44px] min-w-[44px];
+    @apply text-lg font-medium;
   }
 }
 
@@ -183,45 +173,13 @@ All colors MUST be HSL.
     background: var(--gradient-gold);
   }
   
-  /* Mobile-First Responsive Grid Utilities */
+  /* Responsive grid utilities */
   .dashboard-grid {
-    @apply grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+    @apply grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
   }
   
   .metrics-grid {
-    @apply grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
-  }
-
-  /* Mobile-optimized spacing */
-  .mobile-container {
-    @apply px-4 sm:px-6 lg:px-8;
-  }
-
-  .mobile-card {
-    @apply w-full p-4 sm:p-6 rounded-lg shadow-soft;
-  }
-
-  /* Mobile-friendly tables */
-  .mobile-table {
-    @apply overflow-x-auto;
-  }
-
-  .mobile-table table {
-    @apply min-w-full text-sm;
-  }
-
-  /* Enhanced button styles for mobile */
-  .mobile-btn {
-    @apply min-h-[48px] px-6 py-3 text-base font-medium rounded-lg transition-all duration-200;
-  }
-
-  .mobile-btn-sm {
-    @apply min-h-[44px] px-4 py-2 text-sm font-medium rounded-md;
-  }
-
-  /* Mobile navigation */
-  .mobile-nav-item {
-    @apply flex items-center gap-3 p-3 sm:p-4 text-base font-medium rounded-lg transition-colors;
+    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
   }
   
   /* Panthers color utilities */

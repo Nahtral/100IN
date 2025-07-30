@@ -12,8 +12,7 @@ import {
   Handshake,
   Shield,
   Brain,
-  Newspaper,
-  MessageCircle
+  Newspaper
 } from 'lucide-react';
 import {
   Sidebar,
@@ -59,12 +58,6 @@ export function AppSidebar() {
       title: 'Schedule',
       href: '/schedule',
       icon: Calendar,
-      showForAll: true,
-    },
-    {
-      title: 'Chat',
-      href: '/chat',
-      icon: MessageCircle,
       showForAll: true,
     },
     {
@@ -140,47 +133,43 @@ export function AppSidebar() {
   
   return (
     <Sidebar className={cn(
-      "border-r border-border bg-background transition-all duration-300",
-      collapsed ? "w-14" : "w-64",
-      isMobile && "fixed inset-y-0 left-0 z-50"
+      "border-r border-border bg-background",
+      collapsed ? "w-16" : "w-64"
     )}>
       <SidebarContent>
-        {/* Mobile-optimized Logo/Brand Section */}
+        {/* Logo/Brand Section */}
         <div className={cn(
-          "flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-b border-border min-h-[60px]",
+          "flex items-center gap-3 p-4 border-b border-border",
           collapsed ? "justify-center" : "justify-start"
         )}>
-          <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white p-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-primary">Panthers</h1>
+              <h1 className="text-lg font-bold text-primary">Panthers</h1>
               <p className="text-xs text-muted-foreground">Court Connect</p>
             </div>
           )}
         </div>
 
-        {/* Mobile-optimized Main Navigation */}
+        {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-xs sm:text-sm px-3 sm:px-4"}>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu>
               {navItems.filter(shouldShowItem).map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild className="min-h-[44px] sm:min-h-[48px]">
+                  <SidebarMenuButton asChild>
                     <NavLink
                       to={item.href}
-                      className={({ isActive }) => cn(
-                        "mobile-nav-item w-full",
-                        getNavClassName(isActive)
-                      )}
+                      className={({ isActive }) => getNavClassName(isActive)}
                       onClick={() => handleNavClick(item.title)}
                     >
-                      <item.icon className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
-                      {!collapsed && <span className="text-sm sm:text-base font-medium">{item.title}</span>}
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -189,27 +178,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Mobile-optimized Super Admin Section */}
+        {/* Super Admin Section */}
         {isSuperAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel className={collapsed ? "sr-only" : "text-xs sm:text-sm px-3 sm:px-4"}>
+            <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Administration
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu>
                 {superAdminItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild className="min-h-[44px] sm:min-h-[48px]">
+                    <SidebarMenuButton asChild>
                       <NavLink
                         to={item.href}
-                        className={({ isActive }) => cn(
-                          "mobile-nav-item w-full",
-                          getNavClassName(isActive)
-                        )}
+                        className={({ isActive }) => getNavClassName(isActive)}
                         onClick={() => handleNavClick(item.title)}
                       >
-                        <item.icon className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
-                        {!collapsed && <span className="text-sm sm:text-base font-medium">{item.title}</span>}
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

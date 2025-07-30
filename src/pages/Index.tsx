@@ -54,15 +54,9 @@ const Index = () => {
         setUserProfile(profile);
         setUserRoles(roles?.map(r => r.role) || []);
         
-        // Set the primary role for demo switcher - prioritize super_admin
+        // Set the primary role for demo switcher
         if (roles && roles.length > 0) {
-          const rolesList = roles.map(r => r.role);
-          // If user has super_admin role, show that first
-          if (rolesList.includes('super_admin')) {
-            setCurrentRole('super_admin');
-          } else {
-            setCurrentRole(roles[0].role as UserRole);
-          }
+          setCurrentRole(roles[0].role as UserRole);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
