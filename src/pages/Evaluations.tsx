@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ interface Evaluation {
 }
 
 const Evaluations = () => {
+  const { currentUser } = useCurrentUser();
   const [players, setPlayers] = useState<Player[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
@@ -297,7 +299,7 @@ const Evaluations = () => {
   };
 
   return (
-    <Layout currentUser={{ name: "Super Admin", role: "Super Admin", avatar: "" }}>
+    <Layout currentUser={currentUser}>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>

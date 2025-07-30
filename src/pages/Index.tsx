@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,46 +29,20 @@ type UserRole = 'super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medic
 
 const Index = () => {
   const { user } = useAuth();
+  const { currentUser, loading: userLoading } = useCurrentUser();
+  const { userRole, userRoles, isSuperAdmin, loading: roleLoading } = useUserRole();
   const [currentRole, setCurrentRole] = useState<UserRole>('super_admin');
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  const loading = userLoading || roleLoading;
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user) return;
-      
-      try {
-        // Fetch user profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        // Fetch user roles
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('is_active', true);
-
-        setUserProfile(profile);
-        setUserRoles(roles?.map(r => r.role) || []);
-        
-        // Set the primary role for demo switcher
-        if (roles && roles.length > 0) {
-          setCurrentRole(roles[0].role as UserRole);
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [user]);
+    // Set the initial role for demo switcher based on actual user role
+    if (isSuperAdmin) {
+      setCurrentRole('super_admin');
+    } else if (userRole) {
+      setCurrentRole(userRole as UserRole);
+    }
+  }, [userRole, isSuperAdmin]);
   
   const roleConfigs = {
     super_admin: { 
@@ -113,11 +89,8 @@ const Index = () => {
     }
   };
 
-  const currentUser = {
-    name: userProfile?.full_name || user?.email || "User",
-    role: roleConfigs[currentRole].title,
-    avatar: userProfile?.full_name ? userProfile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : "U"
-  };
+  // Use the centralized currentUser from useCurrentUser hook
+  // This ensures super admin is properly detected and displayed
 
   if (loading) {
     return (

@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/use-toast';
 
 interface UserProfile {
@@ -42,6 +43,7 @@ interface AppSettings {
 }
 
 const Settings = () => {
+  const { currentUser } = useCurrentUser();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<AppSettings>({
     notifications: {
@@ -69,12 +71,6 @@ const Settings = () => {
   });
   const { user } = useAuth();
   const { toast } = useToast();
-
-  const currentUser = {
-    name: user?.user_metadata?.full_name || user?.email || "User",
-    role: "Super Admin",
-    avatar: user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('') || "U"
-  };
 
   useEffect(() => {
     fetchProfile();
