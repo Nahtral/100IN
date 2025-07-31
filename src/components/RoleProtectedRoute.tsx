@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
 
@@ -18,6 +19,7 @@ const RoleProtectedRoute = ({
 }: RoleProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { userRoles, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { isTestMode, effectiveIsSuperAdmin, testHasRole } = useRoleSwitcher();
 
   if (authLoading || roleLoading) {
     return (
@@ -39,15 +41,19 @@ const RoleProtectedRoute = ({
     return <Navigate to="/auth" replace />;
   }
 
+  // Use effective permissions based on test mode
+  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
+  const actualHasRole = (role: string) => isTestMode ? testHasRole(role) : userRoles.includes(role);
+
   // Super admins can access everything
-  if (isSuperAdmin) {
+  if (actualIsSuperAdmin) {
     return <>{children}</>;
   }
 
   // Check role permissions
   const hasPermission = requireAll 
-    ? allowedRoles.every(role => userRoles.includes(role))
-    : allowedRoles.some(role => userRoles.includes(role));
+    ? allowedRoles.every(role => actualHasRole(role))
+    : allowedRoles.some(role => actualHasRole(role));
 
   if (!hasPermission) {
     return (

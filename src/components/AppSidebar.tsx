@@ -27,6 +27,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
 import RoleSwitcher from '@/components/RoleSwitcher';
@@ -36,6 +37,13 @@ export function AppSidebar() {
   const location = useLocation();
   const { trackUserAction } = useAnalytics();
   const { isSuperAdmin, hasRole, canAccessMedical, canAccessPartners } = useUserRole();
+  const { isTestMode, effectiveIsSuperAdmin, testHasRole, testCanAccessMedical, testCanAccessPartners } = useRoleSwitcher();
+
+  // Use effective permissions based on test mode
+  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
+  const actualHasRole = (role: string) => isTestMode ? testHasRole(role) : hasRole(role);
+  const actualCanAccessMedical = () => isTestMode ? testCanAccessMedical() : canAccessMedical();
+  const actualCanAccessPartners = () => isTestMode ? testCanAccessPartners() : canAccessPartners();
 
   const navItems = [
     {
@@ -54,43 +62,43 @@ export function AppSidebar() {
       title: 'Players',
       href: '/players',
       icon: Users,
-      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player'),
+      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
     },
     {
       title: 'Schedule',
       href: '/schedule',
       icon: Calendar,
-      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player'),
+      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
     },
     {
       title: 'Analytics',
       href: '/analytics',
       icon: BarChart3,
-      showCondition: () => isSuperAdmin,
+      showCondition: () => actualIsSuperAdmin,
     },
     {
       title: 'Medical',
       href: '/medical',
       icon: Shield,
-      showCondition: () => canAccessMedical(),
+      showCondition: () => actualCanAccessMedical(),
     },
     {
       title: 'Health & Wellness',
       href: '/health-wellness',
       icon: Heart,
-      showCondition: () => isSuperAdmin || hasRole('medical') || hasRole('staff') || hasRole('coach') || hasRole('player'),
+      showCondition: () => actualIsSuperAdmin || actualHasRole('medical') || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
     },
     {
       title: 'Partners',
       href: '/partners',
       icon: Handshake,
-      showCondition: () => canAccessPartners(),
+      showCondition: () => actualCanAccessPartners(),
     },
     {
       title: 'Chat',
       href: '/chat',
       icon: MessageCircle,
-      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player'),
+      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
     },
     {
       title: 'Settings',
@@ -187,7 +195,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Super Admin Section */}
-        {isSuperAdmin && (
+        {actualIsSuperAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Administration
