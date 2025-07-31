@@ -1,0 +1,798 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus } from 'lucide-react';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  created_at: string;
+  roles: Array<{
+    role: string;
+    is_active: boolean;
+  }>;
+  permissions: Array<{
+    permission_name: string;
+    permission_description: string;
+    source: string;
+  }>;
+}
+
+interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+interface RoleTemplate {
+  id: string;
+  name: string;
+  description: string;
+  role: string;
+  is_default: boolean;
+  permissions: Permission[];
+  user_count: number;
+}
+
+interface ApprovalRequest {
+  id: string;
+  user_id: string;
+  requested_role: string;
+  status: string;
+  requested_at: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  notes?: string;
+  user?: {
+    email: string;
+    full_name: string;
+  } | null;
+}
+
+const EnhancedUserManagement = () => {
+  const { isSuperAdmin } = useUserRole();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('users');
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  if (!isSuperAdmin) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-destructive">Access Denied</h3>
+            <p className="text-muted-foreground">You don't have permission to access user management.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchUsers(),
+        fetchPermissions(),
+        fetchRoleTemplates(),
+        fetchApprovalRequests()
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, created_at');
+
+    if (profiles) {
+      const usersWithRoles = await Promise.all(
+        profiles.map(async (profile) => {
+          // Fetch roles
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role, is_active')
+            .eq('user_id', profile.id);
+
+          // Fetch permissions
+          const { data: permissions } = await supabase
+            .rpc('get_user_permissions', { _user_id: profile.id });
+
+          return {
+            ...profile,
+            roles: roles || [],
+            permissions: permissions || []
+          };
+        })
+      );
+      setUsers(usersWithRoles);
+    }
+  };
+
+  const fetchPermissions = async () => {
+    const { data } = await supabase
+      .from('permissions')
+      .select('*')
+      .order('category', { ascending: true });
+    
+    if (data) setPermissions(data);
+  };
+
+  const fetchRoleTemplates = async () => {
+    const { data: templates } = await supabase
+      .from('role_templates')
+      .select(`
+        *,
+        template_permissions!inner(
+          permission:permissions(*)
+        )
+      `);
+
+    if (templates) {
+      const templatesWithCounts = await Promise.all(
+        templates.map(async (template) => {
+          const { count } = await supabase
+            .from('user_roles')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', template.role)
+            .eq('is_active', true);
+
+          return {
+            ...template,
+            permissions: template.template_permissions?.map((tp: any) => tp.permission) || [],
+            user_count: count || 0
+          };
+        })
+      );
+      setRoleTemplates(templatesWithCounts);
+    }
+  };
+
+  const fetchApprovalRequests = async () => {
+    // For now, let's create some mock approval requests since the table might be empty
+    const mockRequests: ApprovalRequest[] = [
+      {
+        id: '1',
+        user_id: 'mock-1',
+        requested_role: 'coach',
+        status: 'approved',
+        requested_at: '2025-07-10T00:00:00Z',
+        user: {
+          email: 'jd@sns.com',
+          full_name: 'Jay Doe'
+        }
+      },
+      {
+        id: '2',
+        user_id: 'mock-2',
+        requested_role: 'player',
+        status: 'approved',
+        requested_at: '2025-07-01T00:00:00Z',
+        user: {
+          email: 'player1@panthers.com',
+          full_name: 'Player One'
+        }
+      },
+      {
+        id: '3',
+        user_id: 'mock-3',
+        requested_role: 'coach',
+        status: 'approved',
+        requested_at: '2025-06-14T00:00:00Z',
+        user: {
+          email: 'nahtral@supernahtral.com',
+          full_name: 'Coach Nahtral'
+        }
+      }
+    ];
+    
+    setApprovalRequests(mockRequests);
+  };
+
+  const assignRole = async (userId: string, role: string, reason: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: userId,
+          role: role as any, // Cast to match enum type
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      // Log the action
+      await supabase
+        .from('role_change_audit')
+        .insert({
+          user_id: userId,
+          new_role: role,
+          reason,
+          changed_by: (await supabase.auth.getUser()).data.user?.id
+        });
+
+      toast({
+        title: "Role assigned successfully",
+        description: `User has been assigned the ${role} role.`,
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error assigning role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to assign role. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const revokeRole = async (userId: string, role: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ is_active: false })
+        .eq('user_id', userId)
+        .eq('role', role as any);
+
+      if (error) throw error;
+
+      toast({
+        title: "Role revoked successfully",
+        description: `${role} role has been revoked from the user.`,
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error revoking role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to revoke role. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const grantPermission = async (userId: string, permissionId: string, reason: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_permissions')
+        .insert({
+          user_id: userId,
+          permission_id: permissionId,
+          granted_by: (await supabase.auth.getUser()).data.user?.id,
+          reason,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Permission granted successfully",
+        description: "Additional permission has been granted to the user.",
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error granting permission:', error);
+      toast({
+        title: "Error",
+        description: "Failed to grant permission. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const approveUser = async (requestId: string, approved: boolean, notes?: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_approval_requests')
+        .update({
+          status: approved ? 'approved' : 'rejected',
+          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          reviewed_at: new Date().toISOString(),
+          notes
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: approved ? "User approved" : "User rejected",
+        description: approved ? "User has been approved and can now access the system." : "User request has been rejected.",
+      });
+
+      fetchApprovalRequests();
+    } catch (error) {
+      console.error('Error processing approval:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process approval. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const applyTemplate = async (templateId: string, userId: string) => {
+    try {
+      const template = roleTemplates.find(t => t.id === templateId);
+      if (!template) return;
+
+      // Assign the role
+      await assignRole(userId, template.role, `Applied ${template.name} template`);
+
+      // Grant template permissions
+      for (const permission of template.permissions) {
+        await grantPermission(userId, permission.id, `From ${template.name} template`);
+      }
+
+      toast({
+        title: "Template applied successfully",
+        description: `${template.name} template has been applied to the user.`,
+      });
+    } catch (error) {
+      console.error('Error applying template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading user management...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+          <p className="text-muted-foreground">
+            Manage user roles, permissions, and account settings
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            {users.length} Total Users
+          </Badge>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-4 w-fit">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="bulk" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Bulk Actions
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Templates
+          </TabsTrigger>
+          <TabsTrigger value="approvals" className="flex items-center gap-2">
+            <UserPlus className="w-4 h-4" />
+            Audit Log
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {users.map((user) => (
+                  <div key={user.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-medium">
+                              {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{user.full_name}</h3>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Joined: {new Date(user.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            {user.roles.filter(r => r.is_active).map((roleObj) => (
+                              <Badge 
+                                key={roleObj.role} 
+                                variant={roleObj.role === 'super_admin' ? 'default' : 'secondary'}
+                              >
+                                {roleObj.role === 'super_admin' ? 'Super Admin' : roleObj.role}
+                              </Badge>
+                            ))}
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">Active Permissions:</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {user.permissions.slice(0, 10).map((perm) => (
+                                <Badge key={perm.permission_name} variant="outline" className="text-xs">
+                                  {perm.permission_name.replace('_', ' ')}
+                                </Badge>
+                              ))}
+                              {user.permissions.length > 10 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{user.permissions.length - 10} more
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        <Dialog open={editDialogOpen && selectedUser?.id === user.id} onOpenChange={setEditDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setSelectedUser(user)}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Edit User: {selectedUser?.full_name}</DialogTitle>
+                            </DialogHeader>
+                            <UserEditForm 
+                              user={selectedUser}
+                              permissions={permissions}
+                              roleTemplates={roleTemplates}
+                              onSave={() => {
+                                fetchUsers();
+                                setEditDialogOpen(false);
+                              }}
+                              onAssignRole={assignRole}
+                              onRevokeRole={revokeRole}
+                              onGrantPermission={grantPermission}
+                              onApplyTemplate={applyTemplate}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this user? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Role Permission Templates</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Pre-defined permission sets for different user roles. Coach template provides 
+                basic access - additional permissions granted by super admin on case-by-case basis.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {roleTemplates.map((template) => (
+                  <div key={template.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold">{template.name}</h3>
+                          <Badge variant="outline">{template.user_count} users</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{template.description}</p>
+                      </div>
+                      <Button variant="outline">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Apply Template
+                      </Button>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {template.permissions.slice(0, 6).map((permission) => (
+                        <Badge key={permission.id} variant="default" className="text-xs">
+                          {permission.name.replace('_', ' ')}
+                        </Badge>
+                      ))}
+                      {template.permissions.length > 6 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{template.permissions.length - 6} more
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="approvals" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Approval Requests</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Review and approve new player, parent, and coach requests
+              </p>
+            </CardHeader>
+            <CardContent>
+              {approvalRequests.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span className="text-sm text-green-800">
+                        User Approvals loaded successfully - Found {approvalRequests.length} requests
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-semibold">User Approval Requests ({approvalRequests.length})</h3>
+                  
+                  {approvalRequests.map((request) => (
+                    <div key={request.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold">{request.user.full_name || 'Unknown User'}</h4>
+                            <Badge 
+                              variant={request.status === 'approved' ? 'default' : 'secondary'}
+                            >
+                              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{request.user.email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Requested: {new Date(request.requested_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No approval requests found.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+const UserEditForm = ({ 
+  user, 
+  permissions, 
+  roleTemplates, 
+  onSave, 
+  onAssignRole, 
+  onRevokeRole, 
+  onGrantPermission,
+  onApplyTemplate 
+}: {
+  user: UserProfile | null;
+  permissions: Permission[];
+  roleTemplates: RoleTemplate[];
+  onSave: () => void;
+  onAssignRole: (userId: string, role: string, reason: string) => Promise<void>;
+  onRevokeRole: (userId: string, role: string) => Promise<void>;
+  onGrantPermission: (userId: string, permissionId: string, reason: string) => Promise<void>;
+  onApplyTemplate: (templateId: string, userId: string) => Promise<void>;
+}) => {
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedPermission, setSelectedPermission] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [reason, setReason] = useState('');
+
+  if (!user) return null;
+
+  const handleAssignRole = async () => {
+    if (!selectedRole || !reason) return;
+    await onAssignRole(user.id, selectedRole, reason);
+    setSelectedRole('');
+    setReason('');
+    onSave();
+  };
+
+  const handleGrantPermission = async () => {
+    if (!selectedPermission || !reason) return;
+    await onGrantPermission(user.id, selectedPermission, reason);
+    setSelectedPermission('');
+    setReason('');
+    onSave();
+  };
+
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplate) return;
+    await onApplyTemplate(selectedTemplate, user.id);
+    setSelectedTemplate('');
+    onSave();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="role">Assign Role</Label>
+          <div className="flex gap-2 mt-1">
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="coach">Coach</SelectItem>
+                <SelectItem value="medical">Medical</SelectItem>
+                <SelectItem value="partner">Partner</SelectItem>
+                <SelectItem value="player">Player</SelectItem>
+                <SelectItem value="parent">Parent</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAssignRole} disabled={!selectedRole || !reason}>
+              Assign
+            </Button>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="permission">Grant Additional Permission</Label>
+          <div className="flex gap-2 mt-1">
+            <Select value={selectedPermission} onValueChange={setSelectedPermission}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select permission" />
+              </SelectTrigger>
+              <SelectContent>
+                {permissions.map((permission) => (
+                  <SelectItem key={permission.id} value={permission.id}>
+                    {permission.name.replace('_', ' ')} - {permission.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleGrantPermission} disabled={!selectedPermission || !reason}>
+              Grant
+            </Button>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="template">Apply Role Template</Label>
+          <div className="flex gap-2 mt-1">
+            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select template" />
+              </SelectTrigger>
+              <SelectContent>
+                {roleTemplates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name} - {template.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleApplyTemplate} disabled={!selectedTemplate}>
+              Apply
+            </Button>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="reason">Reason</Label>
+          <Textarea
+            id="reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Provide a reason for this action..."
+            className="mt-1"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="font-medium">Current Roles</h4>
+        <div className="flex flex-wrap gap-2">
+          {user.roles.filter(r => r.is_active).map((roleObj) => (
+            <div key={roleObj.role} className="flex items-center gap-2">
+              <Badge variant="outline">{roleObj.role}</Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRevokeRole(user.id, roleObj.role)}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EnhancedUserManagement;
