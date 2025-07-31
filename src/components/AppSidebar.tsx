@@ -12,7 +12,8 @@ import {
   Handshake,
   Shield,
   Brain,
-  Newspaper
+  Newspaper,
+  MessageCircle
 } from 'lucide-react';
 import {
   Sidebar,
@@ -28,6 +29,7 @@ import {
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
+import RoleSwitcher from '@/components/RoleSwitcher';
 
 export function AppSidebar() {
   const { state, isMobile } = useSidebar();
@@ -52,25 +54,19 @@ export function AppSidebar() {
       title: 'Players',
       href: '/players',
       icon: Users,
-      showForAll: true,
+      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player'),
     },
     {
       title: 'Schedule',
       href: '/schedule',
       icon: Calendar,
-      showForAll: true,
+      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player'),
     },
     {
       title: 'Analytics',
       href: '/analytics',
       icon: BarChart3,
-      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach'),
-    },
-    {
-      title: 'Health & Wellness',
-      href: '/health-wellness',
-      icon: Heart,
-      showCondition: () => canAccessMedical(),
+      showCondition: () => isSuperAdmin,
     },
     {
       title: 'Medical',
@@ -79,10 +75,22 @@ export function AppSidebar() {
       showCondition: () => canAccessMedical(),
     },
     {
+      title: 'Health & Wellness',
+      href: '/health-wellness',
+      icon: Heart,
+      showCondition: () => isSuperAdmin || hasRole('medical') || hasRole('staff') || hasRole('coach') || hasRole('player'),
+    },
+    {
       title: 'Partners',
       href: '/partners',
       icon: Handshake,
       showCondition: () => canAccessPartners(),
+    },
+    {
+      title: 'Chat',
+      href: '/chat',
+      icon: MessageCircle,
+      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player'),
     },
     {
       title: 'Settings',
@@ -201,6 +209,17 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Role Switcher for Super Admin */}
+        {isSuperAdmin && !collapsed && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <div className="px-2">
+                <RoleSwitcher />
+              </div>
             </SidebarGroupContent>
           </SidebarGroup>
         )}

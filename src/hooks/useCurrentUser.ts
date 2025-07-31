@@ -5,7 +5,8 @@ export const useCurrentUser = () => {
   const { user } = useAuth();
   const { userRole, isSuperAdmin, loading } = useUserRole();
 
-  // Priority order for role display: super_admin > actual user role > fallback
+  // For super admin, always show "Super Admin" regardless of other roles
+  // This ensures consistent role display across all pages
   const displayRole = isSuperAdmin ? 'Super Admin' : (userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User');
   
   const currentUser = {

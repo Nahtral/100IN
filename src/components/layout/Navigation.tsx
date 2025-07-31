@@ -43,20 +43,22 @@ const Navigation = () => {
       title: 'Players',
       href: '/players',
       icon: Users,
-      showForAll: true
+      showForAll: false,
+      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player')
     },
     {
       title: 'Schedule',
       href: '/schedule',
       icon: Calendar,
-      showForAll: true
+      showForAll: false,
+      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player')
     },
     {
       title: 'Analytics',
       href: '/analytics',
       icon: BarChart3,
       showForAll: false,
-      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach')
+      showCondition: () => isSuperAdmin
     },
     {
       title: 'Medical',
@@ -69,7 +71,8 @@ const Navigation = () => {
       title: 'Health & Wellness',
       href: '/health-wellness',
       icon: Activity,
-      showForAll: true
+      showForAll: false,
+      showCondition: () => isSuperAdmin || hasRole('medical') || hasRole('staff') || hasRole('coach') || hasRole('player')
     },
     {
       title: 'Partners',
@@ -82,7 +85,8 @@ const Navigation = () => {
       title: 'Chat',
       href: '/chat',
       icon: MessageCircle,
-      showForAll: true
+      showForAll: false,
+      showCondition: () => isSuperAdmin || hasRole('staff') || hasRole('coach') || hasRole('player')
     },
     {
       title: 'Settings',
@@ -92,8 +96,13 @@ const Navigation = () => {
     }
   ];
 
-  // Add Evaluations for super admins only
+  // Add super admin only items
   const superAdminItems = [
+    {
+      title: 'User Management',
+      href: '/user-management',
+      icon: Shield
+    },
     {
       title: 'Evaluations',
       href: '/evaluations',
@@ -156,7 +165,7 @@ const Navigation = () => {
             <>
               <li className="pt-4">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-2">
-                  Super Admin
+                  Administration
                 </div>
               </li>
               {superAdminItems.map((item) => {
