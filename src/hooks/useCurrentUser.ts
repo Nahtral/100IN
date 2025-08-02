@@ -21,13 +21,11 @@ export const useCurrentUser = () => {
     };
   }
 
-  // Use effective role/admin status if in test mode, otherwise use actual role
-  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
-  const actualRole = isTestMode ? effectiveRole : userRole;
-
-  // For super admin, always show "Super Admin" regardless of other roles
-  // This ensures consistent role display across all pages
-  const displayRole = actualIsSuperAdmin ? 'Super Admin' : (actualRole ? actualRole.charAt(0).toUpperCase() + actualRole.slice(1) : 'User');
+  // For role display: Only show test role if super admin is actively testing
+  // Otherwise, always show the true role to prevent confusion
+  const displayRole = isSuperAdmin 
+    ? (isTestMode && effectiveRole ? `Super Admin (Testing: ${effectiveRole})` : 'Super Admin')
+    : (userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User');
   
   const currentUser = {
     name: user?.user_metadata?.full_name || user?.email || 'User',

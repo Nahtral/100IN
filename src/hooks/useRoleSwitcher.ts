@@ -30,7 +30,7 @@ export const useRoleSwitcher = () => {
     setIsTestMode(false);
   };
 
-  // Return effective role for testing
+  // Return effective role for testing (but preserve super admin status in display)
   const effectiveRole = isTestMode && testRole ? testRole : userRole;
   const effectiveIsSuperAdmin = isTestMode ? testRole === 'super_admin' : isSuperAdmin;
 

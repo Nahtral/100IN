@@ -74,22 +74,11 @@ const EnhancedUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  if (!isSuperAdmin) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-destructive">Access Denied</h3>
-            <p className="text-muted-foreground">You don't have permission to access user management.</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isSuperAdmin) {
+      fetchData();
+    }
+  }, [isSuperAdmin]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -364,6 +353,19 @@ const EnhancedUserManagement = () => {
       });
     }
   };
+
+  if (!isSuperAdmin) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-destructive">Access Denied</h3>
+            <p className="text-muted-foreground">You don't have permission to access user management.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
