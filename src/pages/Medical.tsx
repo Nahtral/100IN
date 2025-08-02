@@ -4,7 +4,7 @@ import MedicalDashboard from '@/components/dashboards/MedicalDashboard';
 
 const Medical = () => {
   return (
-    <RoleProtectedRoute allowedRoles={['medical', 'staff']}>
+    <RoleProtectedRoute allowedRoles={['super_admin', 'medical']}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Medical Dashboard</h1>
