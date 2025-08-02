@@ -18,41 +18,42 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Panthers Red - Primary buttons, analytics and graphs */
-    --primary: 0 100% 58%;
+    /* Panthers Red #FF2A2A - Primary buttons, analytics and graphs */
+    --primary: 0 85% 58%;
     --primary-foreground: 0 0% 100%;
 
-    /* Black - Secondary buttons and primary text */
+    /* Black #000000 - Secondary buttons and primary text */
     --secondary: 0 0% 0%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    /* Panther Gold - Shadows and highlights */
+    /* Panther Gold #B38F54 - Shadows and highlights */
     --accent: 40 36% 52%;
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 0 0% 0%;
 
     /* Panthers Red for destructive actions */
-    --destructive: 0 100% 58%;
+    --destructive: 0 85% 58%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 100% 58%;
+    --ring: 0 85% 58%;
 
-    /* Design tokens */
-    --radius: 0.75rem;
+    /* Design tokens - Rounded corners */
+    --radius: 12px;
     
-    /* Panthers Color Palette */
-    --panthers-red: 0 100% 58%;
-    --panther-gold: 40 36% 52%;
-    --deep-teal: 188 100% 16%;
-    --panther-blue: 218 100% 22%;
+    /* Panthers Color Palette - Exact hex conversions */
+    --panthers-red: 0 85% 58%; /* #FF2A2A */
+    --panther-gold: 40 36% 52%; /* #B38F54 */
+    --deep-teal: 188 100% 16%; /* #004953 */
+    --panther-blue: 218 100% 22%; /* #002d72 */
     
-    /* Shadows */
-    --shadow-gold: 0 10px 30px -10px hsl(var(--panther-gold) / 0.3);
-    --shadow-soft: 0 4px 20px -2px hsl(var(--panther-gold) / 0.2);
+    /* Soft Gold Shadows */
+    --shadow-gold: 0 12px 40px -8px hsl(var(--panther-gold) / 0.4);
+    --shadow-soft: 0 6px 25px -5px hsl(var(--panther-gold) / 0.25);
+    --shadow-gold-glow: 0 0 30px hsl(var(--panther-gold) / 0.3);
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--panthers-red)), hsl(var(--panther-blue)));
@@ -152,13 +153,31 @@ All colors MUST be HSL.
 }
 
 @layer components {
-  /* Panthers-themed utility classes */
+  /* Panthers-themed utility classes with soft gold shadows */
   .shadow-gold {
     box-shadow: var(--shadow-gold);
   }
   
   .shadow-soft {
     box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-gold-glow {
+    box-shadow: var(--shadow-gold-glow);
+  }
+  
+  /* Enhanced card styling with rounded corners and soft shadows */
+  .card-enhanced {
+    @apply rounded-xl shadow-gold border border-accent/20 bg-card;
+  }
+  
+  /* Button variants with Panthers styling */
+  .btn-panthers {
+    @apply bg-panthers-red text-white font-semibold rounded-lg shadow-soft hover:shadow-gold transition-all duration-300;
+  }
+  
+  .btn-secondary-panthers {
+    @apply bg-secondary text-secondary-foreground font-semibold rounded-lg shadow-soft hover:shadow-gold transition-all duration-300;
   }
   
   .gradient-primary {
