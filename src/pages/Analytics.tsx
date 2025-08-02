@@ -2,8 +2,12 @@ import React from 'react';
 import RoleProtectedRoute from '@/components/RoleProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import Layout from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Analytics = () => {
+  const { user } = useAuth();
+  
   // Sample data for analytics
   const performanceData = [
     { month: 'Jan', wins: 8, losses: 2 },
@@ -31,7 +35,12 @@ const Analytics = () => {
 
   return (
     <RoleProtectedRoute allowedRoles={['super_admin']}>
-      <div className="space-y-6">
+      <Layout currentUser={{ 
+        name: user?.user_metadata?.full_name || 'User',
+        role: user?.user_metadata?.role || 'User',
+        avatar: '' 
+      }}>
+        <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
           <p className="text-muted-foreground">
@@ -176,8 +185,9 @@ const Analytics = () => {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
-      </div>
+      </Layout>
     </RoleProtectedRoute>
   );
 };
