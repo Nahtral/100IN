@@ -59,7 +59,7 @@ const Header = ({ currentUser }: HeaderProps) => {
             
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
+                <span className="text-white text-sm font-medium">{currentUser.avatar}</span>
               </div>
               <div>
                 <p className="text-sm font-medium">{currentUser.name}</p>
