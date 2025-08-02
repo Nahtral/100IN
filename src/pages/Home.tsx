@@ -10,10 +10,12 @@ import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const Home = () => {
   const { user } = useAuth();
   const { currentUser } = useCurrentUser();
+  const { isSuperAdmin } = useUserRole();
   
   // Fetch recent news (limited for home page)
   const { data: recentNews } = useQuery({
@@ -180,12 +182,14 @@ const Home = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
-                <Link to="/players">
-                  <Users className="h-6 w-6" />
-                  <span>Manage Players</span>
-                </Link>
-              </Button>
+              {isSuperAdmin && (
+                <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                  <Link to="/players">
+                    <Users className="h-6 w-6" />
+                    <span>Manage Players</span>
+                  </Link>
+                </Button>
+              )}
               
               <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
                 <Link to="/schedule">
@@ -194,12 +198,14 @@ const Home = () => {
                 </Link>
               </Button>
               
-              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
-                <Link to="/analytics">
-                  <Target className="h-6 w-6" />
-                  <span>View Analytics</span>
-                </Link>
-              </Button>
+              {isSuperAdmin && (
+                <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                  <Link to="/analytics">
+                    <Target className="h-6 w-6" />
+                    <span>View Analytics</span>
+                  </Link>
+                </Button>
+              )}
               
               <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
                 <Link to="/dashboard">
