@@ -262,7 +262,7 @@ const Players = () => {
                          <TableCell>
                            <div>
                              <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
-                             {isSuperAdmin && (
+                             {(isSuperAdmin || player.user_id === user?.id) && (
                                <p className="text-sm text-gray-600">{player.profiles?.email}</p>
                              )}
                            </div>
@@ -288,7 +288,7 @@ const Players = () => {
                           </div>
                         </TableCell>
                          <TableCell>
-                           {isSuperAdmin ? (
+                           {(isSuperAdmin || player.user_id === user?.id) ? (
                              <div className="text-sm">
                                <p>{player.emergency_contact_name || '-'}</p>
                                <p className="text-gray-600">{player.emergency_contact_phone || '-'}</p>
