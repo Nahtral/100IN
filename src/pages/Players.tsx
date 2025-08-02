@@ -259,12 +259,14 @@ const Players = () => {
                   <TableBody>
                     {players.map((player) => (
                       <TableRow key={player.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
-                            <p className="text-sm text-gray-600">{player.profiles?.email}</p>
-                          </div>
-                        </TableCell>
+                         <TableCell>
+                           <div>
+                             <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
+                             {isSuperAdmin && (
+                               <p className="text-sm text-gray-600">{player.profiles?.email}</p>
+                             )}
+                           </div>
+                         </TableCell>
                         <TableCell>
                           {player.jersey_number ? (
                             <Badge variant="outline">#{player.jersey_number}</Badge>
@@ -285,12 +287,16 @@ const Players = () => {
                             <p className="text-gray-600">{player.weight || '-'}</p>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <p>{player.emergency_contact_name || '-'}</p>
-                            <p className="text-gray-600">{player.emergency_contact_phone || '-'}</p>
-                          </div>
-                        </TableCell>
+                         <TableCell>
+                           {isSuperAdmin ? (
+                             <div className="text-sm">
+                               <p>{player.emergency_contact_name || '-'}</p>
+                               <p className="text-gray-600">{player.emergency_contact_phone || '-'}</p>
+                             </div>
+                           ) : (
+                             <span className="text-gray-400">-</span>
+                           )}
+                         </TableCell>
                         <TableCell>
                           {isSuperAdmin ? (
                             <div className="flex items-center gap-2">
