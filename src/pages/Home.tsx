@@ -9,9 +9,11 @@ import { format } from 'date-fns';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const Home = () => {
   const { user } = useAuth();
+  const { currentUser } = useCurrentUser();
   
   // Fetch recent news (limited for home page)
   const { data: recentNews } = useQuery({
@@ -63,11 +65,7 @@ const Home = () => {
   });
 
   return (
-    <Layout currentUser={{ 
-      name: user?.user_metadata?.full_name || 'User',
-      role: user?.user_metadata?.role || 'User',
-      avatar: '' 
-    }}>
+    <Layout currentUser={currentUser}>
       <div className="space-y-8 p-6">
         {/* Welcome Header */}
         <div className="text-center space-y-4">

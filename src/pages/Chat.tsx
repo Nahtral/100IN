@@ -7,10 +7,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Plus, Users } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
+import Layout from '@/components/layout/Layout';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export default function Chat() {
   const { user } = useAuth();
   const { isSuperAdmin } = useUserRole();
+  const { currentUser } = useCurrentUser();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [chats, setChats] = useState<any[]>([]);
@@ -63,7 +66,8 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <Layout currentUser={currentUser}>
+      <div className="flex h-[calc(100vh-4rem)]">
       {/* Chat List Sidebar */}
       <div className="w-80 border-r border-border bg-background">
         <div className="p-4 border-b border-border">
@@ -123,6 +127,7 @@ export default function Chat() {
           fetchChats();
         }}
       />
-    </div>
+      </div>
+    </Layout>
   );
 }

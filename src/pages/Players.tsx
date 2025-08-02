@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface Player {
   id: string;
@@ -43,12 +44,7 @@ const Players = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isSuperAdmin } = useUserRole();
-
-  const currentUser = {
-    name: user?.user_metadata?.full_name || user?.email || "User",
-    role: "Coach",
-    avatar: user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('') || "U"
-  };
+  const { currentUser } = useCurrentUser();
 
   useEffect(() => {
     fetchPlayers();
