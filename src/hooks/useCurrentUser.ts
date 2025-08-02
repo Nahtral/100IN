@@ -4,8 +4,22 @@ import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 
 export const useCurrentUser = () => {
   const { user } = useAuth();
-  const { userRole, isSuperAdmin, loading } = useUserRole();
+  const { userRole, isSuperAdmin, loading, initialized } = useUserRole();
   const { isTestMode, effectiveRole, effectiveIsSuperAdmin } = useRoleSwitcher();
+
+  // Don't process role data until roles are fully initialized
+  if (!initialized || loading) {
+    return { 
+      currentUser: {
+        name: user?.user_metadata?.full_name || user?.email || 'User',
+        role: 'Loading...',
+        avatar: user?.user_metadata?.full_name 
+          ? user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase() 
+          : 'U'
+      }, 
+      loading: true 
+    };
+  }
 
   // Use effective role/admin status if in test mode, otherwise use actual role
   const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
@@ -23,5 +37,5 @@ export const useCurrentUser = () => {
       : 'U'
   };
 
-  return { currentUser, loading };
+  return { currentUser, loading: false };
 };

@@ -18,10 +18,11 @@ const RoleProtectedRoute = ({
   requireAll = false 
 }: RoleProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { userRoles, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { userRoles, isSuperAdmin, loading: roleLoading, initialized } = useUserRole();
   const { isTestMode, effectiveIsSuperAdmin, testHasRole } = useRoleSwitcher();
 
-  if (authLoading || roleLoading) {
+  // Wait for both auth and roles to be fully initialized
+  if (authLoading || roleLoading || !initialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
         <Card className="w-96 shadow-xl border-0">

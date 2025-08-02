@@ -24,7 +24,7 @@ const Navigation = () => {
   const location = useLocation();
   const { trackUserAction } = useAnalytics();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isSuperAdmin, hasRole, loading, canAccessMedical, canAccessPartners } = useUserRole();
+  const { isSuperAdmin, hasRole, loading, initialized, canAccessMedical, canAccessPartners } = useUserRole();
 
   const navItems = [
     {
@@ -137,8 +137,8 @@ const Navigation = () => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
             
-            // Check if item should be shown
-            const shouldShow = item.showForAll || (item.showCondition && !loading && item.showCondition());
+            // Check if item should be shown - wait for initialization
+            const shouldShow = item.showForAll || (item.showCondition && initialized && !loading && item.showCondition());
             
             if (!shouldShow) return null;
             
@@ -161,7 +161,7 @@ const Navigation = () => {
           })}
           
           {/* Super Admin only items */}
-          {!loading && isSuperAdmin && (
+          {initialized && !loading && isSuperAdmin && (
             <>
               <li className="pt-4">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-2">

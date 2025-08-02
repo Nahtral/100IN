@@ -36,7 +36,7 @@ export function AppSidebar() {
   const { state, isMobile } = useSidebar();
   const location = useLocation();
   const { trackUserAction } = useAnalytics();
-  const { isSuperAdmin, hasRole, canAccessMedical, canAccessPartners } = useUserRole();
+  const { isSuperAdmin, hasRole, canAccessMedical, canAccessPartners, loading, initialized } = useUserRole();
   const { isTestMode, effectiveIsSuperAdmin, testHasRole, testCanAccessMedical, testCanAccessPartners } = useRoleSwitcher();
 
   // Use effective permissions based on test mode
@@ -146,6 +146,33 @@ export function AppSidebar() {
   };
 
   const collapsed = state === "collapsed";
+
+  // Show loading state until roles are initialized
+  if (!initialized || loading) {
+    return (
+      <Sidebar className={cn(
+        "border-r border-border bg-background",
+        collapsed ? "w-16" : "w-64"
+      )}>
+        <SidebarContent>
+          <div className={cn(
+            "flex items-center gap-3 p-4 border-b border-border",
+            collapsed ? "justify-center" : "justify-start"
+          )}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1">
+              <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
+            </div>
+            {!collapsed && (
+              <div>
+                <h1 className="text-lg font-bold text-primary">Panthers</h1>
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              </div>
+            )}
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    );
+  }
   
   return (
     <Sidebar className={cn(
