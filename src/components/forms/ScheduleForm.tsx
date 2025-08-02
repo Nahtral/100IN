@@ -68,7 +68,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
   });
 
   const isRecurring = form.watch('isRecurring');
-  const eventTypes = ['game', 'practice', 'meeting', 'event', 'tournament'];
+  const eventTypes = ['game', 'practice', 'meeting', 'scrimmage', 'tournament'];
   const daysOfWeek = [
     { label: 'Monday', value: 1 },
     { label: 'Tuesday', value: 2 },

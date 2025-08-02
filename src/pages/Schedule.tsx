@@ -96,6 +96,17 @@ const Schedule = () => {
   const handleSubmit = async (formData: any) => {
     trackUserAction('schedule_form_submit', editingEvent ? 'edit' : 'create');
     setIsSubmitting(true);
+    
+    // Add timeout for long-running requests
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      toast({
+        title: "Timeout",
+        description: "Request took too long. Please try again.",
+        variant: "destructive",
+      });
+    }, 30000); // 30 second timeout
+
     try {
       const eventData = {
         title: formData.title,
@@ -103,49 +114,72 @@ const Schedule = () => {
         start_time: `${formData.startDate}T${formData.startTime}:00`,
         end_time: `${formData.endDate}T${formData.endTime}:00`,
         location: formData.location,
-        opponent: formData.opponent,
-        description: formData.description,
+        opponent: formData.opponent || null,
+        description: formData.description || null,
         team_ids: formData.teamIds || [],
         is_recurring: formData.isRecurring || false,
         recurrence_end_date: formData.isRecurring && formData.recurrenceEndDate ? formData.recurrenceEndDate : null,
         recurrence_pattern: formData.isRecurring ? formData.recurrencePattern : null,
-        recurrence_days_of_week: formData.isRecurring ? formData.recurrenceDaysOfWeek : null,
+        recurrence_days_of_week: formData.isRecurring && formData.recurrenceDaysOfWeek ? formData.recurrenceDaysOfWeek : null,
+        recurrence_interval: formData.isRecurring ? 1 : null,
         created_by: user?.id,
       };
 
+      console.log('Submitting event data:', eventData);
+
       if (editingEvent) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('schedules')
           .update(eventData)
-          .eq('id', editingEvent.id);
+          .eq('id', editingEvent.id)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
 
+        console.log('Update successful:', data);
         toast({
           title: "Success",
           description: "Event updated successfully.",
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('schedules')
-          .insert([eventData]);
+          .insert([eventData])
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
 
+        console.log('Insert successful:', data);
         toast({
           title: "Success",
           description: "Event created successfully.",
         });
       }
 
+      clearTimeout(timeoutId);
       setIsFormOpen(false);
       setEditingEvent(null);
       fetchEvents();
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error('Error saving event:', error);
+      
+      let errorMessage = "Failed to save event.";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.code) {
+        errorMessage = `Database error (${error.code}): ${error.details || error.hint || 'Unknown error'}`;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to save event.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
