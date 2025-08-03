@@ -20,6 +20,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Link } from 'react-router-dom';
 import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
 import PlayerDashboard from '@/components/dashboards/PlayerDashboard';
@@ -32,7 +34,13 @@ import PartnerDashboard from '@/components/dashboards/PartnerDashboard';
 const Dashboard = () => {
   const { user } = useAuth();
   const { isSuperAdmin, userRole, loading: roleLoading } = useUserRole();
+  const { isTestMode, effectiveRole, effectiveIsSuperAdmin } = useRoleSwitcher();
+  const { currentUser } = useCurrentUser();
   const { stats, loading, error } = useDashboardData();
+
+  // Use effective role and admin status based on test mode
+  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
+  const actualUserRole = isTestMode ? effectiveRole : userRole;
 
   // Fetch recent activities
   const { data: recentActivities } = useQuery({
@@ -96,11 +104,7 @@ const Dashboard = () => {
 
   if (loading || roleLoading) {
     return (
-      <Layout currentUser={{ 
-        name: user?.user_metadata?.full_name || 'User',
-        role: userRole || 'User',
-        avatar: '' 
-      }}>
+      <Layout currentUser={currentUser}>
         <div className="p-6">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
@@ -116,12 +120,12 @@ const Dashboard = () => {
   }
 
   // Render role-specific dashboard
-  if (isSuperAdmin) {
+  if (actualIsSuperAdmin) {
     return <SuperAdminDashboard />;
   }
 
-  // Render specific dashboard based on user role
-  switch (userRole) {
+  // Render specific dashboard based on user role (or test role)
+  switch (actualUserRole) {
     case 'player':
       return <PlayerDashboard />;
     case 'coach':
@@ -141,11 +145,7 @@ const Dashboard = () => {
 
   // Default dashboard for users without specific roles - only shows Top Performers
   return (
-    <Layout currentUser={{ 
-      name: user?.user_metadata?.full_name || 'User',
-      role: userRole || 'User',
-      avatar: '' 
-    }}>
+    <Layout currentUser={currentUser}>
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">

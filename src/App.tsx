@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Players from "./pages/Players";
@@ -55,19 +56,19 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/analytics" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin']}>
                 <Analytics />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/medical" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin', 'medical']}>
                 <Medical />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/partners" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
                 <Partners />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute>
@@ -75,34 +76,34 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/user-management" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin']}>
                 <UserManagement />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/evaluations" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin']}>
                 <Evaluations />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/health-wellness" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin', 'medical', 'staff', 'coach', 'player']}>
                 <HealthWellness />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/news-manager" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin']}>
                 <NewsManager />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/chat" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach', 'player']}>
                 <Chat />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/hr-management" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
                 <HRManagement />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>
