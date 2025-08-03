@@ -173,7 +173,7 @@ export function AppSidebar() {
             </div>
             {!collapsed && (
               <div>
-                <h1 className="text-lg font-bold text-primary">Panthers</h1>
+                <h1 className="text-lg font-bold text-black" style={{ textShadow: '1px 1px 0px #B38F54, -1px -1px 0px #B38F54, 1px -1px 0px #B38F54, -1px 1px 0px #B38F54' }}>Panthers</h1>
                 <p className="text-xs text-muted-foreground">Loading...</p>
               </div>
             )}
@@ -199,8 +199,8 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-primary">Panthers</h1>
-              <p className="text-xs text-muted-foreground">Court Connect</p>
+              <h1 className="text-lg font-bold text-black" style={{ textShadow: '1px 1px 0px #B38F54, -1px -1px 0px #B38F54, 1px -1px 0px #B38F54, -1px 1px 0px #B38F54' }}>Panthers</h1>
+              <p className="text-xs text-muted-foreground">Court Vision</p>
             </div>
           )}
         </div>

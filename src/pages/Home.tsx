@@ -75,11 +75,11 @@ const Home = () => {
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl font-bold text-black mb-2" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
               Welcome to Court Vision
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Panthers Basketball - Your central hub for team updates, performance tracking, and team management
+              Your Central Hub for Panthers Basketball
             </p>
           </div>
         </div>
