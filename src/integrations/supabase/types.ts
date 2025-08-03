@@ -408,6 +408,45 @@ export type Database = {
           },
         ]
       }
+      error_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          message: string
+          severity: string | null
+          stack: string | null
+          url: string
+          user_agent: string | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          severity?: string | null
+          stack?: string | null
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          severity?: string | null
+          stack?: string | null
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       evaluations: {
         Row: {
           analysis_data: Json | null
@@ -1221,6 +1260,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      performance_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          metric: string
+          url: string
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          metric: string
+          url: string
+          user_id?: string | null
+          value: number
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          metric?: string
+          url?: string
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: []
       }
       permissions: {
         Row: {
