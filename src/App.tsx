@@ -15,6 +15,7 @@ import Medical from "./pages/Medical";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
 import Chat from "./pages/Chat";
+import HRManagement from "./pages/HRManagement";
 import UserManagement from "./pages/UserManagement";
 import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
@@ -96,6 +97,11 @@ const App = () => (
             <Route path="/chat" element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            } />
+            <Route path="/hr-management" element={
+              <ProtectedRoute>
+                <HRManagement />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

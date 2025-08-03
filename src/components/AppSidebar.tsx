@@ -108,6 +108,15 @@ export function AppSidebar() {
     },
   ];
 
+  const internalToolsItems = [
+    {
+      title: 'HR Management',
+      href: '/hr-management',
+      icon: Users,
+      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach'),
+    },
+  ];
+
   const superAdminItems = [
     {
       title: 'User Management',
@@ -220,6 +229,33 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Internal Tools Section */}
+        {(actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach')) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+              Internal Tools
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {internalToolsItems.filter(shouldShowItem).map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.href}
+                        className={({ isActive }) => getNavClassName(isActive)}
+                        onClick={() => handleNavClick(item.title)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Super Admin Section */}
         {actualIsSuperAdmin && (
