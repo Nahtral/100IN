@@ -18,6 +18,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import Layout from '@/components/layout/Layout';
 import EmployeeList from '@/components/hr/EmployeeList';
 import TimeTracking from '@/components/hr/TimeTracking';
 import TimeOffManagement from '@/components/hr/TimeOffManagement';
@@ -28,6 +30,7 @@ import OnboardingTasks from '@/components/hr/OnboardingTasks';
 const HRManagement = () => {
   const { toast } = useToast();
   const { isSuperAdmin, hasRole } = useUserRole();
+  const { currentUser } = useCurrentUser();
   const [stats, setStats] = useState({
     totalEmployees: 0,
     activeTimeOff: 0,
@@ -124,7 +127,8 @@ const HRManagement = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <Layout currentUser={currentUser}>
+      <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold gradient-text">HR Management</h1>
@@ -213,7 +217,7 @@ const HRManagement = () => {
             <Card className="card-enhanced">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
+                  <span className="text-lg">¥</span>
                   Payroll Overview
                 </CardTitle>
               </CardHeader>
@@ -278,7 +282,8 @@ const HRManagement = () => {
           <OnboardingTasks onStatsUpdate={fetchStats} />
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
