@@ -55,7 +55,15 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
         </div>
         {(isSuperAdmin || hasRole('staff')) && (
           <div className="flex gap-2">
-            <Button className="btn-panthers">
+            <Button 
+              className="btn-panthers"
+              onClick={() => {
+                toast({
+                  title: "Feature Coming Soon",
+                  description: "Benefit plan creation will be available soon.",
+                });
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Benefit Plan
             </Button>
@@ -102,7 +110,7 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Monthly Cost</p>
-                    <p className="text-2xl font-bold text-orange-500">$0</p>
+                    <p className="text-2xl font-bold text-orange-500">¥0</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-orange-500" />
                 </div>
@@ -203,7 +211,15 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
               <div className="flex items-center justify-between">
                 <CardTitle>Benefit Plans</CardTitle>
                 {(isSuperAdmin || hasRole('staff')) && (
-                  <Button className="btn-panthers">
+                  <Button 
+                    className="btn-panthers"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Benefit plan creation will be available soon.",
+                      });
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Plan
                   </Button>
@@ -247,7 +263,16 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
                   <p className="text-sm text-muted-foreground mb-4">
                     Overview of all employee enrollments
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Report generation will be available soon.",
+                      });
+                    }}
+                  >
                     Generate Report
                   </Button>
                 </Card>
@@ -257,7 +282,16 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
                   <p className="text-sm text-muted-foreground mb-4">
                     Benefits cost breakdown and trends
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Report generation will be available soon.",
+                      });
+                    }}
+                  >
                     Generate Report
                   </Button>
                 </Card>
@@ -267,7 +301,16 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
                   <p className="text-sm text-muted-foreground mb-4">
                     Benefits compliance and regulations
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Report generation will be available soon.",
+                      });
+                    }}
+                  >
                     Generate Report
                   </Button>
                 </Card>

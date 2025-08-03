@@ -332,7 +332,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onSuccess, onCanc
             name="hourlyRate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Hourly Rate ($)</FormLabel>
+                <FormLabel>Hourly Rate (¥)</FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" placeholder="25.00" {...field} />
                 </FormControl>
@@ -346,7 +346,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onSuccess, onCanc
             name="salary"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Annual Salary ($)</FormLabel>
+                <FormLabel>Annual Salary (¥)</FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" placeholder="50000.00" {...field} />
                 </FormControl>

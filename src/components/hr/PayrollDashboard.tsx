@@ -50,16 +50,33 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Payroll Dashboard</h2>
+          <h2 className="text-2xl font-bold">¥ Payroll Overview</h2>
           <p className="text-muted-foreground">Manage payroll periods, generate payslips, and track payments</p>
         </div>
         {(isSuperAdmin || hasRole('staff')) && (
           <div className="flex gap-2">
-            <Button className="btn-panthers">
+            <Button 
+              className="btn-panthers"
+              onClick={() => {
+                toast({
+                  title: "Feature Coming Soon",
+                  description: "Payroll period creation will be available soon.",
+                });
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Payroll Period
             </Button>
-            <Button variant="outline" className="btn-secondary-panthers">
+            <Button 
+              variant="outline" 
+              className="btn-secondary-panthers"
+              onClick={() => {
+                toast({
+                  title: "Feature Coming Soon",
+                  description: "Payroll settings will be available soon.",
+                });
+              }}
+            >
               <Settings className="h-4 w-4 mr-2" />
               Payroll Settings
             </Button>
@@ -82,7 +99,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Payroll</p>
-                    <p className="text-2xl font-bold text-primary">$0</p>
+                    <p className="text-2xl font-bold text-primary">¥0</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-primary" />
                 </div>
@@ -161,7 +178,15 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
               <div className="flex items-center justify-between">
                 <CardTitle>Payroll Periods</CardTitle>
                 {(isSuperAdmin || hasRole('staff')) && (
-                  <Button className="btn-panthers">
+                  <Button 
+                    className="btn-panthers"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Payroll period creation will be available soon.",
+                      });
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Period
                   </Button>
@@ -184,12 +209,28 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
               <div className="flex items-center justify-between">
                 <CardTitle>Employee Payslips</CardTitle>
                 <div className="flex gap-2">
-                  <Button variant="outline">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Export functionality will be available soon.",
+                      });
+                    }}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Export All
                   </Button>
                   {(isSuperAdmin || hasRole('staff')) && (
-                    <Button className="btn-panthers">
+                    <Button 
+                      className="btn-panthers"
+                      onClick={() => {
+                        toast({
+                          title: "Feature Coming Soon",
+                          description: "Payslip generation will be available soon.",
+                        });
+                      }}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Generate Payslips
                     </Button>
@@ -219,7 +260,16 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                   <p className="text-sm text-muted-foreground mb-4">
                     Comprehensive monthly payroll breakdown
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Report generation will be available soon.",
+                      });
+                    }}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Generate
                   </Button>
@@ -230,7 +280,16 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                   <p className="text-sm text-muted-foreground mb-4">
                     Tax deductions and contributions
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Report generation will be available soon.",
+                      });
+                    }}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Generate
                   </Button>
@@ -241,7 +300,16 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                   <p className="text-sm text-muted-foreground mb-4">
                     Individual employee earnings report
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Report generation will be available soon.",
+                      });
+                    }}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Generate
                   </Button>
