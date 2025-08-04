@@ -70,12 +70,15 @@ const ShotIQ = () => {
         .select(`
           id,
           user_id,
-          profiles(full_name)
+          profiles!inner(
+            full_name,
+            email
+          )
         `)
         .eq('is_active', true);
 
       if (error) throw error;
-      return data as any[];
+      return data as Player[];
     }
   });
 
