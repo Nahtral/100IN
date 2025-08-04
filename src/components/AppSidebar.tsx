@@ -205,11 +205,13 @@ export function AppSidebar() {
       
       <Sidebar className={cn(
         "border-r border-border bg-background",
-        // Mobile-first: Full width overlay on mobile, fixed width on desktop
-        collapsed ? "md:w-16" : "w-80 md:w-64",
-        // Mobile overlay behavior
+        // Desktop: Always visible with proper width
+        collapsed ? "w-16" : "w-64",
+        // Mobile: Overlay behavior
         "md:relative md:translate-x-0 transition-transform duration-300 ease-in-out",
-        !collapsed && "fixed inset-y-0 left-0 z-50 md:static",
+        "md:static",
+        // Mobile overlay only when not collapsed
+        !collapsed && "fixed inset-y-0 left-0 z-50 md:static md:translate-x-0",
         collapsed && "md:static -translate-x-full md:translate-x-0"
       )}>
         <SidebarContent className="h-full overflow-y-auto">
