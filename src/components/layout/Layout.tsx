@@ -38,7 +38,7 @@ const Layout = ({ children, currentUser }: LayoutProps) => {
   }, [trackUserAction, reportError]);
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen w-full bg-background">
         {/* Mobile-first layout */}
         <div className="flex h-screen overflow-hidden">
