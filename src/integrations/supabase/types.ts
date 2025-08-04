@@ -219,6 +219,45 @@ export type Database = {
         }
         Relationships: []
       }
+      drill_messages: {
+        Row: {
+          created_at: string
+          drill_type: string
+          id: string
+          is_read: boolean
+          message: string
+          message_type: string
+          player_id: string
+          priority: string
+          session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          drill_type: string
+          id?: string
+          is_read?: boolean
+          message: string
+          message_type?: string
+          player_id: string
+          priority?: string
+          session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          drill_type?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          message_type?: string
+          player_id?: string
+          priority?: string
+          session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_benefits: {
         Row: {
           benefit_type: string
@@ -1923,6 +1962,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shotiq_settings: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          settings: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          settings?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          settings?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       shots: {
         Row: {
