@@ -28,9 +28,8 @@ import { useQuery } from '@tanstack/react-query';
 interface Player {
   id: string;
   user_id: string;
-  profiles: {
-    full_name: string;
-  };
+  full_name?: string;
+  email?: string;
 }
 
 interface ShotAnalysis {
@@ -65,20 +64,34 @@ const ShotIQ = () => {
   const { data: players, isLoading: playersLoading } = useQuery({
     queryKey: ['players'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get players
+      const { data: playersData, error: playersError } = await supabase
         .from('players')
-        .select(`
-          id,
-          user_id,
-          profiles!inner(
-            full_name,
-            email
-          )
-        `)
+        .select('id, user_id')
         .eq('is_active', true);
 
-      if (error) throw error;
-      return data as Player[];
+      if (playersError) throw playersError;
+
+      // Then get profiles for these users
+      const userIds = playersData?.map(p => p.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const combinedData = playersData?.map(player => {
+        const profile = profilesData?.find(p => p.id === player.user_id);
+        return {
+          ...player,
+          full_name: profile?.full_name || profile?.email || 'Unknown Player',
+          email: profile?.email
+        };
+      });
+
+      return combinedData as Player[];
     }
   });
 
@@ -144,7 +157,7 @@ const ShotIQ = () => {
       
       toast({
         title: "Session Started",
-        description: `Tracking session for ${players?.find(p => p.id === selectedPlayer)?.profiles?.full_name}`,
+        description: `Tracking session for ${players?.find(p => p.id === selectedPlayer)?.full_name}`,
       });
     } catch (error) {
       console.error('Error starting session:', error);
@@ -405,7 +418,7 @@ const ShotIQ = () => {
                         <SelectContent>
                           {players?.map((player) => (
                             <SelectItem key={player.id} value={player.id}>
-                              {player.profiles?.full_name}
+                              {player.full_name}
                             </SelectItem>
                           ))}
                         </SelectContent>
