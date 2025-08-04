@@ -22,6 +22,7 @@ import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
 import HealthWellness from "./pages/HealthWellness";
 import NewsManager from "./pages/NewsManager";
+import ShotIQ from "./pages/ShotIQ";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -103,6 +104,11 @@ const App = () => (
             <Route path="/hr-management" element={
               <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
                 <HRManagement />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/shotiq" element={
+              <RoleProtectedRoute allowedRoles={['super_admin']}>
+                <ShotIQ />
               </RoleProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

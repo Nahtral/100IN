@@ -1724,6 +1724,260 @@ export type Database = {
         }
         Relationships: []
       }
+      shot_analytics: {
+        Row: {
+          avg_arc_degrees: number | null
+          avg_depth_inches: number | null
+          consistency_score: number | null
+          court_zone: string
+          created_at: string
+          id: string
+          make_percentage: number | null
+          makes: number | null
+          player_id: string
+          session_id: string
+          shot_type: string
+          total_attempts: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_arc_degrees?: number | null
+          avg_depth_inches?: number | null
+          consistency_score?: number | null
+          court_zone: string
+          created_at?: string
+          id?: string
+          make_percentage?: number | null
+          makes?: number | null
+          player_id: string
+          session_id: string
+          shot_type: string
+          total_attempts?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_arc_degrees?: number | null
+          avg_depth_inches?: number | null
+          consistency_score?: number | null
+          court_zone?: string
+          created_at?: string
+          id?: string
+          make_percentage?: number | null
+          makes?: number | null
+          player_id?: string
+          session_id?: string
+          shot_type?: string
+          total_attempts?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shot_analytics_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shot_analytics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "shot_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shot_sessions: {
+        Row: {
+          avg_arc_degrees: number | null
+          avg_depth_inches: number | null
+          avg_lr_deviation_inches: number | null
+          created_at: string
+          id: string
+          location: string | null
+          makes: number | null
+          notes: string | null
+          player_id: string
+          rim_height_inches: number | null
+          session_duration_minutes: number | null
+          session_name: string
+          super_admin_id: string
+          total_shots: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_arc_degrees?: number | null
+          avg_depth_inches?: number | null
+          avg_lr_deviation_inches?: number | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          makes?: number | null
+          notes?: string | null
+          player_id: string
+          rim_height_inches?: number | null
+          session_duration_minutes?: number | null
+          session_name?: string
+          super_admin_id: string
+          total_shots?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_arc_degrees?: number | null
+          avg_depth_inches?: number | null
+          avg_lr_deviation_inches?: number | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          makes?: number | null
+          notes?: string | null
+          player_id?: string
+          rim_height_inches?: number | null
+          session_duration_minutes?: number | null
+          session_name?: string
+          super_admin_id?: string
+          total_shots?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shot_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shotiq_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message_type: string
+          player_id: string
+          priority: string | null
+          session_id: string | null
+          subject: string | null
+          super_admin_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message_type?: string
+          player_id: string
+          priority?: string | null
+          session_id?: string | null
+          subject?: string | null
+          super_admin_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message_type?: string
+          player_id?: string
+          priority?: string | null
+          session_id?: string | null
+          subject?: string | null
+          super_admin_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shotiq_messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shotiq_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "shot_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shots: {
+        Row: {
+          ai_analysis_data: Json | null
+          arc_degrees: number | null
+          audio_feedback: string | null
+          court_x_position: number | null
+          court_y_position: number | null
+          created_at: string
+          depth_inches: number | null
+          id: string
+          lr_deviation_inches: number | null
+          made: boolean
+          player_id: string
+          session_id: string
+          shot_number: number
+          shot_type: string | null
+          timestamp_in_session: number | null
+          video_filename: string | null
+          video_url: string | null
+        }
+        Insert: {
+          ai_analysis_data?: Json | null
+          arc_degrees?: number | null
+          audio_feedback?: string | null
+          court_x_position?: number | null
+          court_y_position?: number | null
+          created_at?: string
+          depth_inches?: number | null
+          id?: string
+          lr_deviation_inches?: number | null
+          made?: boolean
+          player_id: string
+          session_id: string
+          shot_number: number
+          shot_type?: string | null
+          timestamp_in_session?: number | null
+          video_filename?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          ai_analysis_data?: Json | null
+          arc_degrees?: number | null
+          audio_feedback?: string | null
+          court_x_position?: number | null
+          court_y_position?: number | null
+          created_at?: string
+          depth_inches?: number | null
+          id?: string
+          lr_deviation_inches?: number | null
+          made?: boolean
+          player_id?: string
+          session_id?: string
+          shot_number?: number
+          shot_type?: string | null
+          timestamp_in_session?: number | null
+          video_filename?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "shot_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_tasks: {
         Row: {
           assigned_to: string | null

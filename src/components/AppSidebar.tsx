@@ -13,7 +13,8 @@ import {
   Shield,
   Brain,
   Newspaper,
-  MessageCircle
+  MessageCircle,
+  Target
 } from 'lucide-react';
 import {
   Sidebar,
@@ -118,6 +119,11 @@ export function AppSidebar() {
   ];
 
   const superAdminItems = [
+    {
+      title: 'ShotIQ',
+      href: '/shotiq',
+      icon: Target,
+    },
     {
       title: 'User Management',
       href: '/user-management',
