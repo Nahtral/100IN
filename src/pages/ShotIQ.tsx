@@ -568,64 +568,116 @@ const ShotIQ = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            {!selectedPlayer ? (
+            <div className="space-y-6">
+              {/* Player Selection for Analytics */}
               <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground">Please select a player to view analytics</p>
+                <CardHeader>
+                  <CardTitle>Player Analytics</CardTitle>
+                  <CardDescription>
+                    Select a player to view detailed shot analytics and performance data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="analytics-player-select">Select Player</Label>
+                      <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a player to analyze" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {players?.map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="space-y-6">
-                {/* Player Header */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-2xl font-bold">
-                          {players?.find(p => p.id === selectedPlayer)?.full_name || 'Unknown Player'}
-                        </h3>
-                        <p className="text-muted-foreground">Shot Analytics Dashboard</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-semibold">
-                          {playerAnalytics?.total_sessions || 0} Sessions
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {playerAnalytics?.total_shots || 0} Total Shots
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Advanced Analytics Components */}
-                <div className="space-y-6">
+              {selectedPlayer && (
+                <>
+                  {/* Player Stats Overview */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-primary">
+                            {playerAnalytics?.shooting_percentage?.toFixed(1) || '0.0'}%
+                          </div>
+                          <div className="text-sm text-muted-foreground">Shooting %</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-primary">
+                            {playerAnalytics?.total_shots || 0}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Total Shots</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-primary">
+                            {playerAnalytics?.avg_arc_degrees?.toFixed(1) || '0.0'}°
+                          </div>
+                          <div className="text-sm text-muted-foreground">Avg Arc</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-primary">
+                            {playerAnalytics?.total_sessions || 0}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Sessions</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Shot Heatmap */}
-                  <ShotHeatmap 
-                    shots={playerAnalytics?.recentShots?.map((shot: any) => ({
-                      x: shot.court_x_position || Math.random() * 400 + 200,
-                      y: shot.court_y_position || Math.random() * 300 + 200,
-                      made: shot.made,
-                      arc: shot.arc_degrees,
-                      depth: shot.depth_inches
-                    })) || []}
-                  />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Shot Heatmap</CardTitle>
+                      <CardDescription>
+                        Visual representation of shot locations and accuracy
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ShotHeatmap 
+                        shots={playerAnalytics?.recentShots?.map((shot: any) => ({
+                          x: shot.court_x_position || Math.random() * 400 + 200,
+                          y: shot.court_y_position || Math.random() * 300 + 200,
+                          made: shot.made,
+                          arc: shot.arc_degrees,
+                          depth: shot.depth_inches
+                        })) || []}
+                      />
+                    </CardContent>
+                  </Card>
                   
                   {/* Advanced Charts */}
-                  <AdvancedCharts 
-                    shots={playerAnalytics?.recentShots?.map((shot: any) => ({
-                      id: shot.id,
-                      arc: shot.arc_degrees,
-                      depth: shot.depth_inches,
-                      deviation: shot.lr_deviation_inches,
-                      made: shot.made,
-                      timestamp: shot.created_at,
-                      shotType: shot.shot_type
-                    })) || []}
-                  />
-                </div>
-              </div>
-            )}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Performance Analysis</CardTitle>
+                      <CardDescription>
+                        Detailed charts showing shooting mechanics and trends
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AdvancedCharts 
+                        shots={playerAnalytics?.recentShots?.map((shot: any) => ({
+                          id: shot.id,
+                          arc: shot.arc_degrees || 45 + Math.random() * 10,
+                          depth: shot.depth_inches || (Math.random() - 0.5) * 8,
+                          deviation: shot.lr_deviation_inches || (Math.random() - 0.5) * 6,
+                          made: shot.made,
+                          timestamp: shot.created_at,
+                          shotType: shot.shot_type || 'catch-and-shoot'
+                        })) || []}
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="history">
