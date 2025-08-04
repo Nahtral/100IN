@@ -26,6 +26,13 @@ interface Player {
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   medical_notes?: string;
+  total_shots?: number;
+  total_makes?: number;
+  shooting_percentage?: number;
+  avg_arc_degrees?: number;
+  avg_depth_inches?: number;
+  last_session_date?: string;
+  total_sessions?: number;
   created_at: string;
   updated_at: string;
   profiles?: {
@@ -251,6 +258,7 @@ const Players = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Jersey #</TableHead>
                       <TableHead>Position</TableHead>
+                      <TableHead>ShotIQ Stats</TableHead>
                       <TableHead>Height/Weight</TableHead>
                       <TableHead>Emergency Contact</TableHead>
                       <TableHead>Actions</TableHead>
@@ -281,12 +289,37 @@ const Players = () => {
                             <span className="text-gray-400">-</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <p>{player.height || '-'}</p>
-                            <p className="text-gray-600">{player.weight || '-'}</p>
-                          </div>
-                        </TableCell>
+                         <TableCell>
+                           <div className="text-sm space-y-1">
+                             {player.total_shots && player.total_shots > 0 ? (
+                               <>
+                                 <div className="flex items-center gap-2">
+                                   <Badge variant="outline" className="text-xs">
+                                     {player.shooting_percentage?.toFixed(1)}%
+                                   </Badge>
+                                   <span className="text-xs text-muted-foreground">
+                                     {player.total_makes}/{player.total_shots}
+                                   </span>
+                                 </div>
+                                 <div className="text-xs text-muted-foreground">
+                                   Arc: {player.avg_arc_degrees?.toFixed(1)}° | 
+                                   Depth: {player.avg_depth_inches?.toFixed(1)}"
+                                 </div>
+                                 <div className="text-xs text-muted-foreground">
+                                   {player.total_sessions} sessions
+                                 </div>
+                               </>
+                             ) : (
+                               <span className="text-xs text-gray-400">No ShotIQ data</span>
+                             )}
+                           </div>
+                         </TableCell>
+                         <TableCell>
+                           <div className="text-sm">
+                             <p>{player.height || '-'}</p>
+                             <p className="text-gray-600">{player.weight || '-'}</p>
+                           </div>
+                         </TableCell>
                          <TableCell>
                            {(isSuperAdmin || player.user_id === user?.id) ? (
                              <div className="text-sm">
