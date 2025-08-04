@@ -473,15 +473,156 @@ const ShotIQ = () => {
 
           <TabsContent value="analytics">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Shot Accuracy Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    Shot Accuracy
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-primary">67.8%</div>
+                      <div className="text-sm text-muted-foreground">Overall Accuracy</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Free Throws</span>
+                        <span className="font-medium">85%</span>
+                      </div>
+                      <Progress value={85} />
+                      <div className="flex justify-between text-sm">
+                        <span>Catch & Shoot</span>
+                        <span className="font-medium">72%</span>
+                      </div>
+                      <Progress value={72} />
+                      <div className="flex justify-between text-sm">
+                        <span>Off Dribble</span>
+                        <span className="font-medium">54%</span>
+                      </div>
+                      <Progress value={54} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Arc Analysis */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    Shot Charts Coming Soon
+                    Arc Analysis
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Advanced analytics and shot charts will be available in the next update.</p>
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-primary">47.2°</div>
+                      <div className="text-sm text-muted-foreground">Average Arc</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Optimal Range (45-50°)</span>
+                        <span className="font-medium text-green-600">78%</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Too Flat (&lt;45°)</span>
+                        <span className="font-medium text-red-600">12%</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Too High (&gt;50°)</span>
+                        <span className="font-medium text-yellow-600">10%</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Consistency Metrics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Consistency
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Arc Consistency</span>
+                        <span className="font-medium">89%</span>
+                      </div>
+                      <Progress value={89} />
+                      <div className="flex justify-between text-sm">
+                        <span>Depth Consistency</span>
+                        <span className="font-medium">76%</span>
+                      </div>
+                      <Progress value={76} />
+                      <div className="flex justify-between text-sm">
+                        <span>L/R Consistency</span>
+                        <span className="font-medium">82%</span>
+                      </div>
+                      <Progress value={82} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Shot Details */}
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle>Recent Shot Analysis</CardTitle>
+                  <CardDescription>Detailed breakdown of last 10 shots</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { id: 1, arc: 46.2, depth: 10.8, deviation: 1.2, type: "Catch-and-Shoot", result: "Miss" },
+                      { id: 2, arc: 48.5, depth: 8.3, deviation: -0.5, type: "Free Throw", result: "Make" },
+                      { id: 3, arc: 44.1, depth: 12.1, deviation: 2.1, type: "Off Dribble", result: "Miss" },
+                      { id: 4, arc: 47.8, depth: 9.2, deviation: 0.3, type: "Catch-and-Shoot", result: "Make" },
+                      { id: 5, arc: 49.3, depth: 7.9, deviation: -1.8, type: "Free Throw", result: "Make" },
+                    ].map((shot) => (
+                      <div key={shot.id} className="grid grid-cols-6 gap-4 p-3 border rounded-lg">
+                        <div>
+                          <div className="text-sm font-medium">Shot #{shot.id}</div>
+                          <div className="text-xs text-muted-foreground">{shot.type}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm">Arc: {shot.arc}°</div>
+                          <div className="text-xs text-muted-foreground">
+                            {shot.arc >= 45 && shot.arc <= 50 ? "Perfect" : shot.arc < 45 ? "Too flat" : "Too high"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm">Depth: {shot.depth}"</div>
+                          <div className="text-xs text-muted-foreground">
+                            {Math.abs(shot.depth - 9) < 2 ? "Good" : shot.depth > 11 ? "Long" : "Short"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm">L/R: {shot.deviation > 0 ? '+' : ''}{shot.deviation}"</div>
+                          <div className="text-xs text-muted-foreground">
+                            {Math.abs(shot.deviation) < 1 ? "Centered" : shot.deviation > 0 ? "Right" : "Left"}
+                          </div>
+                        </div>
+                        <div>
+                          <Badge variant={shot.result === "Make" ? "default" : "secondary"}>
+                            {shot.result}
+                          </Badge>
+                        </div>
+                        <div>
+                          <Button variant="outline" size="sm">
+                            <Video className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>
