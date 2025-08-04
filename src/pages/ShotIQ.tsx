@@ -3,6 +3,10 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ShotIQSettings from '@/components/shotiq/settings/ShotIQSettings';
 import TrainingHistory from '@/components/shotiq/history/TrainingHistory';
+import ShotHeatmap from '@/components/shotiq/analytics/ShotHeatmap';
+import AdvancedCharts from '@/components/shotiq/analytics/AdvancedCharts';
+import ShotTracker from '@/components/shotiq/ShotTracker';
+import VideoLogger from '@/components/shotiq/VideoLogger';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -399,8 +403,29 @@ const ShotIQ = () => {
 
           <TabsContent value="live" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Camera Feed */}
-              <Card className="lg:col-span-2">
+              {/* Shot Tracker Component */}
+              <div className="lg:col-span-2">
+                <ShotTracker
+                  playerId={selectedPlayer || ''}
+                  onShotTracked={(shot) => {
+                    setRealtimeAnalysis({
+                      arc_degrees: shot.arc,
+                      depth_inches: shot.depth,
+                      lr_deviation_inches: shot.deviation,
+                      made: shot.made,
+                      shot_type: 'live_tracking',
+                      court_x_position: Math.random() * 100,
+                      court_y_position: Math.random() * 100,
+                      audio_feedback: ''
+                    });
+                    setShotCount(prev => prev + 1);
+                    if (shot.made) setMakes(prev => prev + 1);
+                  }}
+                />
+              </div>
+
+              {/* Camera Feed - Secondary */}
+              <Card className="lg:col-span-2" style={{ display: 'none' }}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Camera className="h-5 w-5" />
@@ -573,189 +598,31 @@ const ShotIQ = () => {
                   </CardContent>
                 </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Shot Accuracy Chart */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Target className="h-5 w-5" />
-                        Shot Accuracy
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-primary">
-                            {playerAnalytics?.shooting_percentage?.toFixed(1) || '0.0'}%
-                          </div>
-                          <div className="text-sm text-muted-foreground">Overall Accuracy</div>
-                        </div>
-                        <div className="space-y-2">
-                          {Object.entries(playerAnalytics?.shotTypeStats || {}).map(([type, stats]: [string, any]) => (
-                            <div key={type} className="space-y-1">
-                              <div className="flex justify-between text-sm">
-                                <span className="capitalize">{type.replace('-', ' ')}</span>
-                                <span className="font-medium">
-                                  {stats.total > 0 ? ((stats.makes / stats.total) * 100).toFixed(1) : '0.0'}%
-                                </span>
-                              </div>
-                              <Progress value={stats.total > 0 ? (stats.makes / stats.total) * 100 : 0} />
-                            </div>
-                          ))}
-                          {Object.keys(playerAnalytics?.shotTypeStats || {}).length === 0 && (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                              No shot type data available
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Arc Analysis */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5" />
-                        Arc Analysis
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-primary">
-                            {playerAnalytics?.avg_arc_degrees?.toFixed(1) || '0.0'}°
-                          </div>
-                          <div className="text-sm text-muted-foreground">Average Arc</div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Optimal Range (45-50°)</span>
-                            <span className="font-medium text-green-600">
-                              {playerAnalytics?.recentShots 
-                                ? `${((playerAnalytics.recentShots.filter((s: any) => s.arc_degrees >= 45 && s.arc_degrees <= 50).length / playerAnalytics.recentShots.length) * 100).toFixed(0)}%`
-                                : '0%'
-                              }
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Too Flat (&lt;45°)</span>
-                            <span className="font-medium text-red-600">
-                              {playerAnalytics?.recentShots 
-                                ? `${((playerAnalytics.recentShots.filter((s: any) => s.arc_degrees < 45).length / playerAnalytics.recentShots.length) * 100).toFixed(0)}%`
-                                : '0%'
-                              }
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Too High (&gt;50°)</span>
-                            <span className="font-medium text-yellow-600">
-                              {playerAnalytics?.recentShots 
-                                ? `${((playerAnalytics.recentShots.filter((s: any) => s.arc_degrees > 50).length / playerAnalytics.recentShots.length) * 100).toFixed(0)}%`
-                                : '0%'
-                              }
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Consistency Metrics */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5" />
-                        Consistency
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Depth Average</span>
-                            <span className="font-medium">
-                              {playerAnalytics?.avg_depth_inches?.toFixed(1) || '0.0'}"
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Makes vs Attempts</span>
-                            <span className="font-medium">
-                              {playerAnalytics?.total_makes || 0}/{playerAnalytics?.total_shots || 0}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Session Count</span>
-                            <span className="font-medium">
-                              {playerAnalytics?.total_sessions || 0}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Recent Shot Details */}
-                  <Card className="lg:col-span-3">
-                    <CardHeader>
-                      <CardTitle>Recent Shot Analysis</CardTitle>
-                      <CardDescription>
-                        Detailed breakdown of last {playerAnalytics?.recentShots?.length || 0} shots
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {playerAnalytics?.recentShots?.length > 0 ? (
-                        <div className="space-y-3">
-                          {playerAnalytics.recentShots.map((shot: any, index: number) => (
-                            <div key={shot.id} className="grid grid-cols-6 gap-4 p-3 border rounded-lg">
-                              <div>
-                                <div className="text-sm font-medium">Shot #{shot.shot_number}</div>
-                                <div className="text-xs text-muted-foreground">{shot.shot_type}</div>
-                              </div>
-                              <div>
-                                <div className="text-sm">Arc: {shot.arc_degrees?.toFixed(1)}°</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {shot.arc_degrees >= 45 && shot.arc_degrees <= 50 ? "Perfect" : 
-                                   shot.arc_degrees < 45 ? "Too flat" : "Too high"}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-sm">Depth: {shot.depth_inches?.toFixed(1)}"</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {Math.abs(shot.depth_inches - 9) < 2 ? "Good" : 
-                                   shot.depth_inches > 11 ? "Long" : "Short"}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-sm">
-                                  L/R: {shot.lr_deviation_inches > 0 ? '+' : ''}{shot.lr_deviation_inches?.toFixed(1)}"
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {Math.abs(shot.lr_deviation_inches) < 1 ? "Centered" : 
-                                   shot.lr_deviation_inches > 0 ? "Right" : "Left"}
-                                </div>
-                              </div>
-                              <div>
-                                <Badge variant={shot.made ? "default" : "secondary"}>
-                                  {shot.made ? 'Make' : 'Miss'}
-                                </Badge>
-                              </div>
-                              <div>
-                                <Button variant="outline" size="sm">
-                                  <Video className="h-3 w-3 mr-1" />
-                                  View
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground">No recent shots found for this player</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                {/* Advanced Analytics Components */}
+                <div className="space-y-6">
+                  {/* Shot Heatmap */}
+                  <ShotHeatmap 
+                    shots={playerAnalytics?.recentShots?.map((shot: any) => ({
+                      x: shot.court_x_position || Math.random() * 400 + 200,
+                      y: shot.court_y_position || Math.random() * 300 + 200,
+                      made: shot.made,
+                      arc: shot.arc_degrees,
+                      depth: shot.depth_inches
+                    })) || []}
+                  />
+                  
+                  {/* Advanced Charts */}
+                  <AdvancedCharts 
+                    shots={playerAnalytics?.recentShots?.map((shot: any) => ({
+                      id: shot.id,
+                      arc: shot.arc_degrees,
+                      depth: shot.depth_inches,
+                      deviation: shot.lr_deviation_inches,
+                      made: shot.made,
+                      timestamp: shot.created_at,
+                      shotType: shot.shot_type
+                    })) || []}
+                  />
                 </div>
               </div>
             )}
