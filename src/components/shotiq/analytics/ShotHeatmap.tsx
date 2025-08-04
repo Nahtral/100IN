@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas as FabricCanvas, Circle, Rect, Line, FabricImage } from 'fabric';
+import { Canvas as FabricCanvas, Circle, Rect, Line } from 'fabric';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,7 @@ const ShotHeatmap: React.FC<ShotHeatmapProps> = ({
     const canvas = new FabricCanvas(canvasRef.current, {
       width: courtDimensions.width,
       height: courtDimensions.height,
-      backgroundColor: '#D4A574', // Wood court color
+      backgroundColor: '#1a4d3a', // Basketball court green
       selection: false,
     });
 
@@ -57,44 +57,28 @@ const ShotHeatmap: React.FC<ShotHeatmapProps> = ({
   }, [fabricCanvas, shots, heatmapMode, intensityLevel]);
 
   const drawBasketballCourt = (canvas: FabricCanvas) => {
-    // Draw the custom court design to match the uploaded image
-    drawCustomPantherCourt(canvas);
-  };
-
-  const drawCustomPantherCourt = (canvas: FabricCanvas) => {
     const { width, height } = courtDimensions;
     
-    // Court background with wood texture color
-    const courtBackground = new Rect({
-      left: 0,
-      top: 0,
-      width: width,
-      height: height,
-      fill: '#D4A574', // Wood color to match the court
-      selectable: false,
-    });
-    canvas.add(courtBackground);
-
     // Court boundary
     const courtBoundary = new Rect({
-      left: 20,
-      top: 20,
-      width: width - 40,
-      height: height - 40,
+      left: 50,
+      top: 50,
+      width: width - 100,
+      height: height - 100,
       fill: 'transparent',
-      stroke: '#000000',
+      stroke: '#ffffff',
       strokeWidth: 3,
       selectable: false,
     });
     canvas.add(courtBoundary);
 
-    // Three-point arc
+    // Three-point line (simplified arc)
     const threePointArc = new Circle({
-      left: width / 2 - 180,
-      top: height - 220,
-      radius: 180,
+      left: width / 2 - 150,
+      top: height - 200,
+      radius: 150,
       fill: 'transparent',
-      stroke: '#000000',
+      stroke: '#ffffff',
       strokeWidth: 2,
       startAngle: 0,
       endAngle: Math.PI,
@@ -105,67 +89,14 @@ const ShotHeatmap: React.FC<ShotHeatmapProps> = ({
     // Free throw circle
     const freeThrowCircle = new Circle({
       left: width / 2 - 60,
-      top: height - 260,
+      top: height - 240,
       radius: 60,
       fill: 'transparent',
-      stroke: '#000000',
+      stroke: '#ffffff',
       strokeWidth: 2,
       selectable: false,
     });
     canvas.add(freeThrowCircle);
-
-    // Paint area (key) - black rectangle
-    const paint = new Rect({
-      left: width / 2 - 95,
-      top: height - 220,
-      width: 190,
-      height: 160,
-      fill: '#000000',
-      selectable: false,
-    });
-    canvas.add(paint);
-
-    // Inner free throw circle (dashed)
-    const innerCircle = new Circle({
-      left: width / 2 - 30,
-      top: height - 230,
-      radius: 30,
-      fill: 'transparent',
-      stroke: '#000000',
-      strokeWidth: 1,
-      strokeDashArray: [5, 5],
-      selectable: false,
-    });
-    canvas.add(innerCircle);
-
-    // Add panther logo at top center
-    const pantherLogo = new Circle({
-      left: width / 2 - 40,
-      top: 60,
-      radius: 40,
-      fill: '#000000',
-      selectable: false,
-    });
-    canvas.add(pantherLogo);
-
-    // Simple panther head shape inside the circle
-    const pantherEye1 = new Circle({
-      left: width / 2 - 15,
-      top: 75,
-      radius: 4,
-      fill: '#D4A574',
-      selectable: false,
-    });
-    canvas.add(pantherEye1);
-
-    const pantherEye2 = new Circle({
-      left: width / 2 + 5,
-      top: 75,
-      radius: 4,
-      fill: '#D4A574',
-      selectable: false,
-    });
-    canvas.add(pantherEye2);
 
     // Rim
     const rim = new Circle({
@@ -173,7 +104,7 @@ const ShotHeatmap: React.FC<ShotHeatmapProps> = ({
       top: height - 70,
       radius: 9,
       fill: '#ff6b35',
-      stroke: '#000000',
+      stroke: '#ffffff',
       strokeWidth: 2,
       selectable: false,
     });
@@ -181,11 +112,24 @@ const ShotHeatmap: React.FC<ShotHeatmapProps> = ({
 
     // Backboard
     const backboard = new Line([width / 2 - 30, height - 50, width / 2 + 30, height - 50], {
-      stroke: '#000000',
+      stroke: '#ffffff',
       strokeWidth: 4,
       selectable: false,
     });
     canvas.add(backboard);
+
+    // Paint area (key)
+    const paint = new Rect({
+      left: width / 2 - 80,
+      top: height - 190,
+      width: 160,
+      height: 140,
+      fill: 'transparent',
+      stroke: '#ffffff',
+      strokeWidth: 2,
+      selectable: false,
+    });
+    canvas.add(paint);
   };
 
   const generateHeatmap = () => {
