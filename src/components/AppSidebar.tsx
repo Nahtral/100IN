@@ -190,37 +190,17 @@ export function AppSidebar() {
   }
   
   return (
-    <>
-      {/* Mobile backdrop overlay */}
-      {!collapsed && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => {
-            // Close sidebar on backdrop click (mobile only)
-            const sidebarTrigger = document.querySelector('[data-sidebar="trigger"]') as HTMLButtonElement;
-            sidebarTrigger?.click();
-          }}
-        />
-      )}
-      
-      <Sidebar className={cn(
-        "border-r border-border bg-background",
-        // Desktop: Always visible with proper width
-        collapsed ? "w-16" : "w-64",
-        // Mobile: Overlay behavior
-        "md:relative md:translate-x-0 transition-transform duration-300 ease-in-out",
-        "md:static",
-        // Mobile overlay only when not collapsed
-        !collapsed && "fixed inset-y-0 left-0 z-50 md:static md:translate-x-0",
-        collapsed && "md:static -translate-x-full md:translate-x-0"
-      )}>
-        <SidebarContent className="h-full overflow-y-auto">
+    <Sidebar className={cn(
+      "border-r border-border bg-background",
+      collapsed ? "w-16" : "w-64"
+    )}>
+      <SidebarContent>
         {/* Logo/Brand Section */}
         <div className={cn(
-          "flex items-center gap-3 p-4 border-b border-border min-h-[3.5rem]",
+          "flex items-center gap-3 p-4 border-b border-border",
           collapsed ? "justify-center" : "justify-start"
         )}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1 flex-shrink-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
@@ -237,24 +217,17 @@ export function AppSidebar() {
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu>
               {navItems.filter(shouldShowItem).map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild className="h-11 md:h-10">
+                  <SidebarMenuButton asChild>
                     <NavLink
                       to={item.href}
                       className={({ isActive }) => getNavClassName(isActive)}
-                      onClick={() => {
-                        handleNavClick(item.title);
-                        // Auto-close sidebar on mobile after navigation
-                        if (window.innerWidth < 768) {
-                          const sidebarTrigger = document.querySelector('[data-sidebar="trigger"]') as HTMLButtonElement;
-                          sidebarTrigger?.click();
-                        }
-                      }}
+                      onClick={() => handleNavClick(item.title)}
                     >
-                      <item.icon className="h-5 w-5 md:h-4 md:w-4" />
-                      {!collapsed && <span className="text-base md:text-sm">{item.title}</span>}
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -270,24 +243,17 @@ export function AppSidebar() {
               Internal Tools
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu>
                 {internalToolsItems.filter(shouldShowItem).map((item) => (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild className="h-11 md:h-10">
+                    <SidebarMenuButton asChild>
                       <NavLink
                         to={item.href}
                         className={({ isActive }) => getNavClassName(isActive)}
-                        onClick={() => {
-                          handleNavClick(item.title);
-                          // Auto-close sidebar on mobile after navigation
-                          if (window.innerWidth < 768) {
-                            const sidebarTrigger = document.querySelector('[data-sidebar="trigger"]') as HTMLButtonElement;
-                            sidebarTrigger?.click();
-                          }
-                        }}
+                        onClick={() => handleNavClick(item.title)}
                       >
-                        <item.icon className="h-5 w-5 md:h-4 md:w-4" />
-                        {!collapsed && <span className="text-base md:text-sm">{item.title}</span>}
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -304,24 +270,17 @@ export function AppSidebar() {
               Administration
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu>
                 {superAdminItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild className="h-11 md:h-10">
+                    <SidebarMenuButton asChild>
                       <NavLink
                         to={item.href}
                         className={({ isActive }) => getNavClassName(isActive)}
-                        onClick={() => {
-                          handleNavClick(item.title);
-                          // Auto-close sidebar on mobile after navigation
-                          if (window.innerWidth < 768) {
-                            const sidebarTrigger = document.querySelector('[data-sidebar="trigger"]') as HTMLButtonElement;
-                            sidebarTrigger?.click();
-                          }
-                        }}
+                        onClick={() => handleNavClick(item.title)}
                       >
-                        <item.icon className="h-5 w-5 md:h-4 md:w-4" />
-                        {!collapsed && <span className="text-base md:text-sm">{item.title}</span>}
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -343,6 +302,5 @@ export function AppSidebar() {
         )}
       </SidebarContent>
     </Sidebar>
-    </>
   );
 }
