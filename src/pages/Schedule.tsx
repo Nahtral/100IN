@@ -121,7 +121,6 @@ const Schedule = () => {
         recurrence_end_date: formData.isRecurring && formData.recurrenceEndDate ? formData.recurrenceEndDate : null,
         recurrence_pattern: formData.isRecurring ? formData.recurrencePattern : null,
         recurrence_days_of_week: formData.isRecurring && formData.recurrenceDaysOfWeek ? formData.recurrenceDaysOfWeek : null,
-        recurrence_interval: formData.isRecurring ? 1 : null,
         created_by: user?.id,
       };
 
