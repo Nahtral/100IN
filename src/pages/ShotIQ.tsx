@@ -60,6 +60,59 @@ const ShotIQ = () => {
   const [rimHeight, setRimHeight] = useState(120); // 10 feet in inches
   const [audioEnabled, setAudioEnabled] = useState(true);
 
+  // Fetch player analytics data
+  const { data: playerAnalytics } = useQuery({
+    queryKey: ['player-analytics', selectedPlayer],
+    queryFn: async () => {
+      if (!selectedPlayer) return null;
+      
+      // Get player's overall stats
+      const { data: playerData, error: playerError } = await supabase
+        .from('players')
+        .select('total_shots, total_makes, shooting_percentage, avg_arc_degrees, avg_depth_inches, total_sessions')
+        .eq('id', selectedPlayer)
+        .single();
+
+      if (playerError) throw playerError;
+
+      // Get recent shots
+      const { data: recentShots, error: shotsError } = await supabase
+        .from('shots')
+        .select('*')
+        .eq('player_id', selectedPlayer)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (shotsError) throw shotsError;
+
+      // Get shot type breakdown
+      const { data: shotTypes, error: typesError } = await supabase
+        .from('shots')
+        .select('shot_type, made')
+        .eq('player_id', selectedPlayer);
+
+      if (typesError) throw typesError;
+
+      // Calculate shot type percentages
+      const typeStats = shotTypes?.reduce((acc: any, shot: any) => {
+        const type = shot.shot_type || 'unknown';
+        if (!acc[type]) {
+          acc[type] = { total: 0, makes: 0 };
+        }
+        acc[type].total++;
+        if (shot.made) acc[type].makes++;
+        return acc;
+      }, {});
+
+      return {
+        ...playerData,
+        recentShots: recentShots || [],
+        shotTypeStats: typeStats || {}
+      };
+    },
+    enabled: !!selectedPlayer
+  });
+
   // Fetch players for selection
   const { data: players, isLoading: playersLoading } = useQuery({
     queryKey: ['players'],
@@ -488,160 +541,222 @@ const ShotIQ = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Shot Accuracy Chart */}
+            {!selectedPlayer ? (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Shot Accuracy
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">67.8%</div>
-                      <div className="text-sm text-muted-foreground">Overall Accuracy</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Free Throws</span>
-                        <span className="font-medium">85%</span>
-                      </div>
-                      <Progress value={85} />
-                      <div className="flex justify-between text-sm">
-                        <span>Catch & Shoot</span>
-                        <span className="font-medium">72%</span>
-                      </div>
-                      <Progress value={72} />
-                      <div className="flex justify-between text-sm">
-                        <span>Off Dribble</span>
-                        <span className="font-medium">54%</span>
-                      </div>
-                      <Progress value={54} />
-                    </div>
-                  </div>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">Please select a player to view analytics</p>
                 </CardContent>
               </Card>
-
-              {/* Arc Analysis */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Arc Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">47.2°</div>
-                      <div className="text-sm text-muted-foreground">Average Arc</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Optimal Range (45-50°)</span>
-                        <span className="font-medium text-green-600">78%</span>
+            ) : (
+              <div className="space-y-6">
+                {/* Player Header */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-2xl font-bold">
+                          {players?.find(p => p.id === selectedPlayer)?.full_name || 'Unknown Player'}
+                        </h3>
+                        <p className="text-muted-foreground">Shot Analytics Dashboard</p>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Too Flat (&lt;45°)</span>
-                        <span className="font-medium text-red-600">12%</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Too High (&gt;50°)</span>
-                        <span className="font-medium text-yellow-600">10%</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Consistency Metrics */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Consistency
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Arc Consistency</span>
-                        <span className="font-medium">89%</span>
-                      </div>
-                      <Progress value={89} />
-                      <div className="flex justify-between text-sm">
-                        <span>Depth Consistency</span>
-                        <span className="font-medium">76%</span>
-                      </div>
-                      <Progress value={76} />
-                      <div className="flex justify-between text-sm">
-                        <span>L/R Consistency</span>
-                        <span className="font-medium">82%</span>
-                      </div>
-                      <Progress value={82} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Shot Details */}
-              <Card className="lg:col-span-3">
-                <CardHeader>
-                  <CardTitle>Recent Shot Analysis</CardTitle>
-                  <CardDescription>Detailed breakdown of last 10 shots</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {[
-                      { id: 1, arc: 46.2, depth: 10.8, deviation: 1.2, type: "Catch-and-Shoot", result: "Miss" },
-                      { id: 2, arc: 48.5, depth: 8.3, deviation: -0.5, type: "Free Throw", result: "Make" },
-                      { id: 3, arc: 44.1, depth: 12.1, deviation: 2.1, type: "Off Dribble", result: "Miss" },
-                      { id: 4, arc: 47.8, depth: 9.2, deviation: 0.3, type: "Catch-and-Shoot", result: "Make" },
-                      { id: 5, arc: 49.3, depth: 7.9, deviation: -1.8, type: "Free Throw", result: "Make" },
-                    ].map((shot) => (
-                      <div key={shot.id} className="grid grid-cols-6 gap-4 p-3 border rounded-lg">
-                        <div>
-                          <div className="text-sm font-medium">Shot #{shot.id}</div>
-                          <div className="text-xs text-muted-foreground">{shot.type}</div>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold">
+                          {playerAnalytics?.total_sessions || 0} Sessions
                         </div>
-                        <div>
-                          <div className="text-sm">Arc: {shot.arc}°</div>
-                          <div className="text-xs text-muted-foreground">
-                            {shot.arc >= 45 && shot.arc <= 50 ? "Perfect" : shot.arc < 45 ? "Too flat" : "Too high"}
+                        <div className="text-sm text-muted-foreground">
+                          {playerAnalytics?.total_shots || 0} Total Shots
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Shot Accuracy Chart */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Target className="h-5 w-5" />
+                        Shot Accuracy
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-primary">
+                            {playerAnalytics?.shooting_percentage?.toFixed(1) || '0.0'}%
+                          </div>
+                          <div className="text-sm text-muted-foreground">Overall Accuracy</div>
+                        </div>
+                        <div className="space-y-2">
+                          {Object.entries(playerAnalytics?.shotTypeStats || {}).map(([type, stats]: [string, any]) => (
+                            <div key={type} className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="capitalize">{type.replace('-', ' ')}</span>
+                                <span className="font-medium">
+                                  {stats.total > 0 ? ((stats.makes / stats.total) * 100).toFixed(1) : '0.0'}%
+                                </span>
+                              </div>
+                              <Progress value={stats.total > 0 ? (stats.makes / stats.total) * 100 : 0} />
+                            </div>
+                          ))}
+                          {Object.keys(playerAnalytics?.shotTypeStats || {}).length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              No shot type data available
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Arc Analysis */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Arc Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-primary">
+                            {playerAnalytics?.avg_arc_degrees?.toFixed(1) || '0.0'}°
+                          </div>
+                          <div className="text-sm text-muted-foreground">Average Arc</div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Optimal Range (45-50°)</span>
+                            <span className="font-medium text-green-600">
+                              {playerAnalytics?.recentShots 
+                                ? `${((playerAnalytics.recentShots.filter((s: any) => s.arc_degrees >= 45 && s.arc_degrees <= 50).length / playerAnalytics.recentShots.length) * 100).toFixed(0)}%`
+                                : '0%'
+                              }
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Too Flat (&lt;45°)</span>
+                            <span className="font-medium text-red-600">
+                              {playerAnalytics?.recentShots 
+                                ? `${((playerAnalytics.recentShots.filter((s: any) => s.arc_degrees < 45).length / playerAnalytics.recentShots.length) * 100).toFixed(0)}%`
+                                : '0%'
+                              }
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Too High (&gt;50°)</span>
+                            <span className="font-medium text-yellow-600">
+                              {playerAnalytics?.recentShots 
+                                ? `${((playerAnalytics.recentShots.filter((s: any) => s.arc_degrees > 50).length / playerAnalytics.recentShots.length) * 100).toFixed(0)}%`
+                                : '0%'
+                              }
+                            </span>
                           </div>
                         </div>
-                        <div>
-                          <div className="text-sm">Depth: {shot.depth}"</div>
-                          <div className="text-xs text-muted-foreground">
-                            {Math.abs(shot.depth - 9) < 2 ? "Good" : shot.depth > 11 ? "Long" : "Short"}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Consistency Metrics */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Consistency
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Depth Average</span>
+                            <span className="font-medium">
+                              {playerAnalytics?.avg_depth_inches?.toFixed(1) || '0.0'}"
+                            </span>
                           </div>
-                        </div>
-                        <div>
-                          <div className="text-sm">L/R: {shot.deviation > 0 ? '+' : ''}{shot.deviation}"</div>
-                          <div className="text-xs text-muted-foreground">
-                            {Math.abs(shot.deviation) < 1 ? "Centered" : shot.deviation > 0 ? "Right" : "Left"}
+                          <div className="flex justify-between text-sm">
+                            <span>Makes vs Attempts</span>
+                            <span className="font-medium">
+                              {playerAnalytics?.total_makes || 0}/{playerAnalytics?.total_shots || 0}
+                            </span>
                           </div>
-                        </div>
-                        <div>
-                          <Badge variant={shot.result === "Make" ? "default" : "secondary"}>
-                            {shot.result}
-                          </Badge>
-                        </div>
-                        <div>
-                          <Button variant="outline" size="sm">
-                            <Video className="h-3 w-3 mr-1" />
-                            View
-                          </Button>
+                          <div className="flex justify-between text-sm">
+                            <span>Session Count</span>
+                            <span className="font-medium">
+                              {playerAnalytics?.total_sessions || 0}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Shot Details */}
+                  <Card className="lg:col-span-3">
+                    <CardHeader>
+                      <CardTitle>Recent Shot Analysis</CardTitle>
+                      <CardDescription>
+                        Detailed breakdown of last {playerAnalytics?.recentShots?.length || 0} shots
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {playerAnalytics?.recentShots?.length > 0 ? (
+                        <div className="space-y-3">
+                          {playerAnalytics.recentShots.map((shot: any, index: number) => (
+                            <div key={shot.id} className="grid grid-cols-6 gap-4 p-3 border rounded-lg">
+                              <div>
+                                <div className="text-sm font-medium">Shot #{shot.shot_number}</div>
+                                <div className="text-xs text-muted-foreground">{shot.shot_type}</div>
+                              </div>
+                              <div>
+                                <div className="text-sm">Arc: {shot.arc_degrees?.toFixed(1)}°</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {shot.arc_degrees >= 45 && shot.arc_degrees <= 50 ? "Perfect" : 
+                                   shot.arc_degrees < 45 ? "Too flat" : "Too high"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm">Depth: {shot.depth_inches?.toFixed(1)}"</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {Math.abs(shot.depth_inches - 9) < 2 ? "Good" : 
+                                   shot.depth_inches > 11 ? "Long" : "Short"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm">
+                                  L/R: {shot.lr_deviation_inches > 0 ? '+' : ''}{shot.lr_deviation_inches?.toFixed(1)}"
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {Math.abs(shot.lr_deviation_inches) < 1 ? "Centered" : 
+                                   shot.lr_deviation_inches > 0 ? "Right" : "Left"}
+                                </div>
+                              </div>
+                              <div>
+                                <Badge variant={shot.made ? "default" : "secondary"}>
+                                  {shot.made ? 'Make' : 'Miss'}
+                                </Badge>
+                              </div>
+                              <div>
+                                <Button variant="outline" size="sm">
+                                  <Video className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">No recent shots found for this player</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="history">
