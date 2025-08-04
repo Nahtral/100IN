@@ -1429,6 +1429,8 @@ export type Database = {
       }
       players: {
         Row: {
+          avg_arc_degrees: number | null
+          avg_depth_inches: number | null
           created_at: string | null
           date_of_birth: string | null
           emergency_contact_name: string | null
@@ -1437,14 +1439,21 @@ export type Database = {
           id: string
           is_active: boolean
           jersey_number: number | null
+          last_session_date: string | null
           medical_notes: string | null
           position: string | null
+          shooting_percentage: number | null
           team_id: string | null
+          total_makes: number | null
+          total_sessions: number | null
+          total_shots: number | null
           updated_at: string | null
           user_id: string
           weight: string | null
         }
         Insert: {
+          avg_arc_degrees?: number | null
+          avg_depth_inches?: number | null
           created_at?: string | null
           date_of_birth?: string | null
           emergency_contact_name?: string | null
@@ -1453,14 +1462,21 @@ export type Database = {
           id?: string
           is_active?: boolean
           jersey_number?: number | null
+          last_session_date?: string | null
           medical_notes?: string | null
           position?: string | null
+          shooting_percentage?: number | null
           team_id?: string | null
+          total_makes?: number | null
+          total_sessions?: number | null
+          total_shots?: number | null
           updated_at?: string | null
           user_id: string
           weight?: string | null
         }
         Update: {
+          avg_arc_degrees?: number | null
+          avg_depth_inches?: number | null
           created_at?: string | null
           date_of_birth?: string | null
           emergency_contact_name?: string | null
@@ -1469,9 +1485,14 @@ export type Database = {
           id?: string
           is_active?: boolean
           jersey_number?: number | null
+          last_session_date?: string | null
           medical_notes?: string | null
           position?: string | null
+          shooting_percentage?: number | null
           team_id?: string | null
+          total_makes?: number | null
+          total_sessions?: number | null
+          total_shots?: number | null
           updated_at?: string | null
           user_id?: string
           weight?: string | null
