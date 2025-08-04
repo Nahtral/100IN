@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import ShotIQSettings from '@/components/shotiq/settings/ShotIQSettings';
+import TrainingHistory from '@/components/shotiq/history/TrainingHistory';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -760,64 +762,11 @@ const ShotIQ = () => {
           </TabsContent>
 
           <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle>Session History</CardTitle>
-                <CardDescription>
-                  View past training sessions and progress over time
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Session history will be displayed here.</p>
-              </CardContent>
-            </Card>
+            <TrainingHistory playerId={selectedPlayer} />
           </TabsContent>
 
           <TabsContent value="settings">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    Camera Settings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="rim-height">Rim Height (inches)</Label>
-                    <Input
-                      id="rim-height"
-                      type="number"
-                      value={rimHeight}
-                      onChange={(e) => setRimHeight(Number(e.target.value))}
-                      min={96}
-                      max={144}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="audio-feedback"
-                      checked={audioEnabled}
-                      onChange={(e) => setAudioEnabled(e.target.checked)}
-                    />
-                    <Label htmlFor="audio-feedback">Enable Audio Feedback</Label>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Analysis Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    AI model configurations and shot detection sensitivity settings will be available here.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            <ShotIQSettings playerId={selectedPlayer} />
           </TabsContent>
         </Tabs>
       </div>
