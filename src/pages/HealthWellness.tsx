@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -32,16 +33,12 @@ import QuickCheckIn from '@/components/health/QuickCheckIn';
 const HealthWellness = () => {
   const { user } = useAuth();
   const { userRole, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { currentUser } = useCurrentUser();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [playerProfile, setPlayerProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const currentUser = {
-    name: user?.user_metadata?.full_name || user?.email || "User",
-    role: userRole || "User",
-    avatar: user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('') || "U"
-  };
 
   useEffect(() => {
     if (!roleLoading && user) {

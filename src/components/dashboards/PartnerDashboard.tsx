@@ -14,18 +14,12 @@ import {
   Trophy
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const PartnerDashboard = () => {
-  const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { currentUser } = useCurrentUser();
   return (
-    <Layout currentUser={{ 
-      name: user?.user_metadata?.full_name || 'Partner',
-      role: userRole || 'Partner',
-      avatar: '' 
-    }}>
+    <Layout currentUser={currentUser}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -34,7 +28,7 @@ const PartnerDashboard = () => {
               Partner Dashboard
             </h1>
             <p className="text-muted-foreground mt-2">
-              Welcome back, {user?.user_metadata?.full_name || 'Partner'}! Monitor your partnership.
+              Welcome back, {currentUser.name}! Monitor your partnership.
             </p>
           </div>
         </div>

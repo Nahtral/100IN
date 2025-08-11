@@ -13,18 +13,12 @@ import {
   Users
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const MedicalDashboard = () => {
-  const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { currentUser } = useCurrentUser();
   return (
-    <Layout currentUser={{ 
-      name: user?.user_metadata?.full_name || 'Medical Staff',
-      role: userRole || 'Medical',
-      avatar: '' 
-    }}>
+    <Layout currentUser={currentUser}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -33,7 +27,7 @@ const MedicalDashboard = () => {
               Medical Dashboard
             </h1>
             <p className="text-muted-foreground mt-2">
-              Welcome back, {user?.user_metadata?.full_name || 'Medical Staff'}! Monitor player health.
+              Welcome back, {currentUser.name}! Monitor player health.
             </p>
           </div>
         </div>

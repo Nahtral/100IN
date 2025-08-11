@@ -3,10 +3,10 @@ import RoleProtectedRoute from '@/components/RoleProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const Analytics = () => {
-  const { user } = useAuth();
+  const { currentUser } = useCurrentUser();
   
   // Sample data for analytics
   const performanceData = [
@@ -35,11 +35,7 @@ const Analytics = () => {
 
   return (
     <RoleProtectedRoute allowedRoles={['super_admin']}>
-      <Layout currentUser={{ 
-        name: user?.user_metadata?.full_name || 'User',
-        role: user?.user_metadata?.role || 'User',
-        avatar: '' 
-      }}>
+      <Layout currentUser={currentUser}>
         <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
