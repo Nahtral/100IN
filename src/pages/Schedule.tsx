@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users } from 'lucide-react';
+import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +51,13 @@ const Schedule = () => {
     eventId: '',
     eventTitle: '',
     teamIds: []
+  });
+  const [eventDetailModal, setEventDetailModal] = useState<{
+    isOpen: boolean;
+    event: ScheduleEvent | null;
+  }>({
+    isOpen: false,
+    event: null
   });
   const { user } = useAuth();
   const { userRole, isSuperAdmin } = useUserRole();
@@ -246,6 +253,21 @@ const Schedule = () => {
     });
   };
 
+  const openEventDetails = (event: ScheduleEvent) => {
+    trackUserAction('event_details_open', 'event');
+    setEventDetailModal({
+      isOpen: true,
+      event: event
+    });
+  };
+
+  const closeEventDetails = () => {
+    setEventDetailModal({
+      isOpen: false,
+      event: null
+    });
+  };
+
   const canManageAttendance = isSuperAdmin || userRole === 'staff' || userRole === 'coach';
 
   const getEventTypeColor = (type: string) => {
@@ -326,8 +348,9 @@ const Schedule = () => {
                 {events.map((event, index) => (
                   <div 
                     key={event.id} 
-                    className="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in bg-white"
+                    className="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in bg-white cursor-pointer"
                     style={{ animationDelay: `${index * 100}ms` }}
+                    onClick={() => openEventDetails(event)}
                   >
                     <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -365,11 +388,26 @@ const Schedule = () => {
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0 sm:ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEventDetails(event);
+                          }}
+                          title="View Details"
+                          className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         {canManageAttendance && event.team_ids && event.team_ids.length > 0 && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => openAttendanceModal(event)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openAttendanceModal(event);
+                              }}
                               title="Track Attendance"
                               className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
                             >
@@ -381,7 +419,10 @@ const Schedule = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => openEditForm(event)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditForm(event);
+                                }}
                                 className="transition-all duration-200 hover:scale-110 hover:bg-gray-50"
                               >
                               <Edit className="h-4 w-4" />
@@ -389,7 +430,10 @@ const Schedule = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDelete(event.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(event.id);
+                                }}
                                 className="transition-all duration-200 hover:scale-110 hover:bg-red-50"
                               >
                               <Trash2 className="h-4 w-4 text-red-500" />
@@ -412,6 +456,89 @@ const Schedule = () => {
           eventTitle={attendanceModal.eventTitle}
           teamIds={attendanceModal.teamIds}
         />
+
+        {/* Event Details Modal */}
+        <Dialog open={eventDetailModal.isOpen} onOpenChange={closeEventDetails}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Event Details
+              </DialogTitle>
+            </DialogHeader>
+            {eventDetailModal.event && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{eventDetailModal.event.title}</h3>
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <Badge className={getEventTypeColor(eventDetailModal.event.event_type)}>
+                      {eventDetailModal.event.event_type}
+                    </Badge>
+                    {eventDetailModal.event.opponent && (
+                      <Badge variant="outline">
+                        vs {eventDetailModal.event.opponent}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <p className="font-medium">Start Time</p>
+                        <p className="text-gray-600">
+                          {format(new Date(eventDetailModal.event.start_time), 'EEEE, MMM dd, yyyy • h:mm a')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <p className="font-medium">End Time</p>
+                        <p className="text-gray-600">
+                          {format(new Date(eventDetailModal.event.end_time), 'EEEE, MMM dd, yyyy • h:mm a')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <p className="font-medium">Location</p>
+                        <p className="text-gray-600">{eventDetailModal.event.location}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {eventDetailModal.event.description && (
+                  <div>
+                    <p className="font-medium mb-2">Description</p>
+                    <p className="text-gray-600 bg-gray-50 p-3 rounded">{eventDetailModal.event.description}</p>
+                  </div>
+                )}
+                
+                {eventDetailModal.event.is_recurring && (
+                  <div>
+                    <p className="font-medium mb-2">Recurring Event</p>
+                    <div className="bg-blue-50 p-3 rounded">
+                      <p className="text-sm text-blue-800">
+                        This is a {eventDetailModal.event.recurrence_pattern} recurring event
+                        {eventDetailModal.event.recurrence_end_date && 
+                          ` until ${format(new Date(eventDetailModal.event.recurrence_end_date), 'MMM dd, yyyy')}`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
