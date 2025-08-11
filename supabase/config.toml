@@ -9,8 +9,8 @@ max_rows = 1000
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
+site_url = "https://100in.app"
+additional_redirect_urls = ["https://localhost:3000", "https://100in.app", "https://9a7df55c-cf11-4367-ab0d-5ed7f247add9.lovableproject.com"]
 jwt_expiry = 3600
 refresh_token_rotation_enabled = true
 security_refresh_token_reuse_interval = 10
