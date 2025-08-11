@@ -11,6 +11,7 @@ import ScheduleForm from '@/components/forms/ScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
@@ -63,15 +64,10 @@ const Schedule = () => {
   });
   const { user } = useAuth();
   const { userRole, isSuperAdmin } = useUserRole();
+  const { currentUser } = useCurrentUser();
   const { trackPageView, trackUserAction } = useAnalytics();
   const { metrics, measureApiCall } = usePerformanceMonitoring('Schedule');
   const { toast } = useToast();
-
-  const currentUser = {
-    name: user?.user_metadata?.full_name || user?.email || "User",
-    role: "Coach",
-    avatar: user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('') || "U"
-  };
 
   useEffect(() => {
     trackPageView('Schedule');
