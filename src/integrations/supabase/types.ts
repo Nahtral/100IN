@@ -1104,6 +1104,60 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_team_sponsorships: {
+        Row: {
+          created_at: string | null
+          end_date: string | null
+          id: string
+          partner_organization_id: string | null
+          sponsorship_amount: number | null
+          sponsorship_type: string
+          start_date: string
+          status: string
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          partner_organization_id?: string | null
+          sponsorship_amount?: number | null
+          sponsorship_type?: string
+          start_date: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          partner_organization_id?: string | null
+          sponsorship_amount?: number | null
+          sponsorship_type?: string
+          start_date?: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_team_sponsorships_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_team_sponsorships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_user_relationships: {
         Row: {
           created_at: string
