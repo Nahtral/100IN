@@ -5,10 +5,10 @@ import PartnerDashboard from '@/components/dashboards/PartnerDashboard';
 const Partners = () => {
   return (
     <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
-      <div className="space-y-6">
+      <div className="mobile-section">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Partners</h1>
-          <p className="text-muted-foreground">
+          <h1 className="mobile-title">Partners</h1>
+          <p className="text-muted-foreground mobile-text">
             Manage partnerships and sponsor relationships
           </p>
         </div>

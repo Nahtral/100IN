@@ -191,21 +191,21 @@ export function AppSidebar() {
   
   return (
     <Sidebar className={cn(
-      "border-r border-border bg-background",
-      collapsed ? "w-16" : "w-64"
+      "border-r border-border bg-background transition-all duration-300",
+      collapsed ? "w-0 sm:w-16" : "w-64"
     )}>
-      <SidebarContent>
+      <SidebarContent className={cn(collapsed ? "hidden sm:block" : "block")}>
         {/* Logo/Brand Section */}
         <div className={cn(
-          "flex items-center gap-3 p-4 border-b border-border",
+          "flex items-center gap-3 p-3 sm:p-4 border-b border-border",
           collapsed ? "justify-center" : "justify-start"
         )}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1">
+          <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-white p-1">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-black" style={{ textShadow: '1px 1px 0px #B38F54, -1px -1px 0px #B38F54, 1px -1px 0px #B38F54, -1px 1px 0px #B38F54' }}>Panthers</h1>
+              <h1 className="text-sm sm:text-lg font-bold text-black" style={{ textShadow: '1px 1px 0px #B38F54, -1px -1px 0px #B38F54, 1px -1px 0px #B38F54, -1px 1px 0px #B38F54' }}>Panthers</h1>
               <p className="text-xs text-muted-foreground">Court Vision</p>
             </div>
           )}
@@ -225,9 +225,9 @@ export function AppSidebar() {
                       to={item.href}
                       className={({ isActive }) => getNavClassName(isActive)}
                       onClick={() => handleNavClick(item.title)}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        {!collapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

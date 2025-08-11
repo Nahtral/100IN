@@ -195,16 +195,16 @@ const Players = () => {
 
   return (
     <Layout currentUser={currentUser}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="mobile-section">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Players</h1>
-            <p className="text-gray-600">Manage your team roster</p>
+            <h1 className="mobile-title text-gray-900">Players</h1>
+            <p className="text-gray-600 mobile-text">Manage your team roster</p>
           </div>
           {isSuperAdmin && (
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={openAddForm} className="mobile-btn bg-orange-500 hover:bg-orange-600">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Player
                 </Button>
@@ -250,113 +250,128 @@ const Players = () => {
               <div className="text-center py-8">
                 <p className="text-gray-600">No players found. Add your first player to get started.</p>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Jersey #</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>ShotIQ Stats</TableHead>
-                      <TableHead>Height/Weight</TableHead>
-                      <TableHead>Emergency Contact</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {players.map((player) => (
-                      <TableRow key={player.id}>
-                         <TableCell>
-                           <div>
-                             <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
-                             {(isSuperAdmin || player.user_id === user?.id) && (
-                               <p className="text-sm text-gray-600">{player.profiles?.email}</p>
-                             )}
-                           </div>
-                         </TableCell>
-                        <TableCell>
-                          {player.jersey_number ? (
-                            <Badge variant="outline">#{player.jersey_number}</Badge>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {player.position ? (
-                            <Badge variant="secondary">{player.position}</Badge>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                         <TableCell>
-                           <div className="text-sm space-y-1">
-                             {player.total_shots && player.total_shots > 0 ? (
-                               <>
-                                 <div className="flex items-center gap-2">
-                                   <Badge variant="outline" className="text-xs">
-                                     {player.shooting_percentage?.toFixed(1)}%
-                                   </Badge>
-                                   <span className="text-xs text-muted-foreground">
-                                     {player.total_makes}/{player.total_shots}
-                                   </span>
-                                 </div>
-                                 <div className="text-xs text-muted-foreground">
-                                   Arc: {player.avg_arc_degrees?.toFixed(1)}° | 
-                                   Depth: {player.avg_depth_inches?.toFixed(1)}"
-                                 </div>
-                                 <div className="text-xs text-muted-foreground">
-                                   {player.total_sessions} sessions
-                                 </div>
-                               </>
-                             ) : (
-                               <span className="text-xs text-gray-400">No ShotIQ data</span>
-                             )}
-                           </div>
-                         </TableCell>
-                         <TableCell>
-                           <div className="text-sm">
-                             <p>{player.height || '-'}</p>
-                             <p className="text-gray-600">{player.weight || '-'}</p>
-                           </div>
-                         </TableCell>
-                         <TableCell>
-                           {(isSuperAdmin || player.user_id === user?.id) ? (
-                             <div className="text-sm">
-                               <p>{player.emergency_contact_name || '-'}</p>
-                               <p className="text-gray-600">{player.emergency_contact_phone || '-'}</p>
-                             </div>
-                           ) : (
-                             <span className="text-gray-400">-</span>
-                           )}
-                         </TableCell>
-                        <TableCell>
-                          {isSuperAdmin ? (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditForm(player)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(player.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
+              ) : (
+                <div className="overflow-x-auto">
+                  <div className="mobile-table">
+                    <div className="desktop-only">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Jersey #</TableHead>
+                          <TableHead>Position</TableHead>
+                          <TableHead>ShotIQ Stats</TableHead>
+                          <TableHead>Height/Weight</TableHead>
+                          <TableHead>Emergency Contact</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                    </div>
+                    <div>
+                      {players.map((player) => (
+                        <div key={player.id} className="mobile-table-row">
+                          <div className="mobile-table-cell">
+                            <span className="font-medium text-muted-foreground text-sm mobile-only">Name:</span>
+                            <div>
+                              <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
+                              {(isSuperAdmin || player.user_id === user?.id) && (
+                                <p className="text-sm text-gray-600">{player.profiles?.email}</p>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                          </div>
+                          
+                          <div className="mobile-table-cell">
+                            <span className="font-medium text-muted-foreground text-sm mobile-only">Jersey #:</span>
+                            {player.jersey_number ? (
+                              <Badge variant="outline">#{player.jersey_number}</Badge>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </div>
+                          
+                          <div className="mobile-table-cell">
+                            <span className="font-medium text-muted-foreground text-sm mobile-only">Position:</span>
+                            {player.position ? (
+                              <Badge variant="secondary">{player.position}</Badge>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </div>
+                          
+                          <div className="mobile-table-cell">
+                            <span className="font-medium text-muted-foreground text-sm mobile-only">ShotIQ Stats:</span>
+                            <div className="text-sm space-y-1">
+                              {player.total_shots && player.total_shots > 0 ? (
+                                <>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      {player.shooting_percentage?.toFixed(1)}%
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {player.total_makes}/{player.total_shots}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Arc: {player.avg_arc_degrees?.toFixed(1)}° | 
+                                    Depth: {player.avg_depth_inches?.toFixed(1)}"
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {player.total_sessions} sessions
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="text-xs text-gray-400">No ShotIQ data</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="mobile-table-cell">
+                            <span className="font-medium text-muted-foreground text-sm mobile-only">Height/Weight:</span>
+                            <div className="text-sm">
+                              <p>{player.height || '-'}</p>
+                              <p className="text-gray-600">{player.weight || '-'}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="mobile-table-cell">
+                            <span className="font-medium text-muted-foreground text-sm mobile-only">Emergency Contact:</span>
+                            {(isSuperAdmin || player.user_id === user?.id) ? (
+                              <div className="text-sm">
+                                <p>{player.emergency_contact_name || '-'}</p>
+                                <p className="text-gray-600">{player.emergency_contact_phone || '-'}</p>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </div>
+                          
+                          <div className="mobile-table-cell">
+                            <span className="font-medium text-muted-foreground text-sm mobile-only">Actions:</span>
+                            {isSuperAdmin ? (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditForm(player)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(player.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
             )}
           </CardContent>
         </Card>

@@ -192,13 +192,73 @@ All colors MUST be HSL.
     background: var(--gradient-gold);
   }
   
-  /* Responsive grid utilities */
+  /* Mobile-First Responsive Grid Utilities */
   .dashboard-grid {
-    @apply grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+    @apply grid gap-4 grid-cols-1 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
   }
   
   .metrics-grid {
-    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+    @apply grid gap-3 grid-cols-1 xs:grid-cols-2 sm:gap-4 lg:grid-cols-4;
+  }
+  
+  .card-grid {
+    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .mobile-table {
+    @apply block sm:table;
+  }
+  
+  .mobile-table-row {
+    @apply block border border-border rounded-lg p-4 mb-4 sm:table-row sm:border-none sm:rounded-none sm:p-0 sm:mb-0;
+  }
+  
+  .mobile-table-cell {
+    @apply block text-left border-none sm:table-cell sm:text-center sm:border;
+  }
+  
+  /* Mobile-optimized spacing */
+  .mobile-container {
+    @apply px-4 py-4 sm:px-6 sm:py-6 lg:px-8;
+  }
+  
+  .mobile-section {
+    @apply space-y-4 sm:space-y-6;
+  }
+  
+  /* Mobile typography */
+  .mobile-title {
+    @apply text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight;
+  }
+  
+  .mobile-subtitle {
+    @apply text-lg sm:text-xl lg:text-2xl font-semibold;
+  }
+  
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+  
+  /* Mobile button sizes */
+  .mobile-btn {
+    @apply px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base;
+  }
+  
+  .mobile-btn-sm {
+    @apply px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm;
+  }
+  
+  /* Hide/show utilities for mobile */
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+  
+  .desktop-only {
+    @apply hidden sm:block;
+  }
+  
+  .tablet-up {
+    @apply hidden md:block;
   }
   
   /* Panthers color utilities */
