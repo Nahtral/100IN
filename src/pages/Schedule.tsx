@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users, Eye } from 'lucide-react';
+import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users, Eye, Archive, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ScheduleForm from '@/components/forms/ScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,7 +15,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, isToday, isFuture, isPast } from 'date-fns';
 
 interface ScheduleEvent {
   id: string;
@@ -41,6 +42,7 @@ const Schedule = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('upcoming');
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
     eventId: string;
@@ -98,6 +100,28 @@ const Schedule = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter and sort events based on current date
+  const upcomingEvents = events
+    .filter(event => isFuture(new Date(event.start_time)) || isToday(new Date(event.start_time)))
+    .sort((a, b) => {
+      const aDate = new Date(a.start_time);
+      const bDate = new Date(b.start_time);
+      
+      // Prioritize today's events first
+      if (isToday(aDate) && !isToday(bDate)) return -1;
+      if (!isToday(aDate) && isToday(bDate)) return 1;
+      
+      return aDate.getTime() - bDate.getTime();
+    });
+
+  const pastEvents = events
+    .filter(event => isPast(new Date(event.start_time)) && !isToday(new Date(event.start_time)))
+    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+
+  const getDisplayEvents = () => {
+    return activeTab === 'upcoming' ? upcomingEvents : pastEvents;
   };
 
   const handleSubmit = async (formData: any) => {
@@ -327,46 +351,72 @@ const Schedule = () => {
           )}
         </div>
         
-        <Card className="animate-scale-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Calendar className="h-5 w-5" />
-              Upcoming Events ({events.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600">Loading events...</p>
-              </div>
-            ) : events.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No events scheduled. Add your first event to get started.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {events.map((event, index) => (
-                  <div 
-                    key={event.id} 
-                    className="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in bg-white cursor-pointer"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                    onClick={() => openEventDetails(event)}
-                  >
-                    <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{event.title}</h3>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge className={`${getEventTypeColor(event.event_type)} transition-all duration-200 hover:scale-105`}>
-                            {event.event_type}
-                          </Badge>
-                          {event.opponent && (
-                            <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
-                              vs {event.opponent}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upcoming" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Upcoming ({upcomingEvents.length})
+            </TabsTrigger>
+            <TabsTrigger value="past" className="flex items-center gap-2">
+              <Archive className="h-4 w-4" />
+              Past Events ({pastEvents.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value={activeTab} className="mt-6">
+            <Card className="animate-scale-in">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  {activeTab === 'upcoming' ? <CalendarDays className="h-5 w-5" /> : <Archive className="h-5 w-5" />}
+                  {activeTab === 'upcoming' ? 'Upcoming Events' : 'Past Events'} ({getDisplayEvents().length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">Loading events...</p>
+                  </div>
+                ) : getDisplayEvents().length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">
+                      {activeTab === 'upcoming' ? 'No upcoming events. Add your first event to get started.' : 'No past events found.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {getDisplayEvents().map((event, index) => {
+                      const eventDate = new Date(event.start_time);
+                      const isEventToday = isToday(eventDate);
+                      
+                      return (
+                      <div 
+                        key={event.id} 
+                        className={`border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in cursor-pointer ${
+                          isEventToday ? 'bg-blue-50 border-blue-200' : 'bg-white'
+                        }`}
+                        style={{ animationDelay: `${index * 100}ms` }}
+                        onClick={() => openEventDetails(event)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                              <h3 className="text-lg font-semibold">{event.title}</h3>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {isEventToday && (
+                                  <Badge className="bg-blue-500 text-white animate-pulse">
+                                    Today
+                                  </Badge>
+                                )}
+                                <Badge className={`${getEventTypeColor(event.event_type)} transition-all duration-200 hover:scale-105`}>
+                                  {event.event_type}
+                                </Badge>
+                                {event.opponent && (
+                                  <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
+                                    vs {event.opponent}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                         
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-2">
                           <div className="flex items-center gap-1">
@@ -439,15 +489,17 @@ const Schedule = () => {
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      </div>
+                    );})}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
         <AttendanceModal
           isOpen={attendanceModal.isOpen}
@@ -532,6 +584,38 @@ const Schedule = () => {
                           ` until ${format(new Date(eventDetailModal.event.recurrence_end_date), 'MMM dd, yyyy')}`
                         }
                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Attendance Actions in Detail Modal */}
+                {canManageAttendance && eventDetailModal.event.team_ids && eventDetailModal.event.team_ids.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-3">Event Management</h4>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => {
+                          closeEventDetails();
+                          openAttendanceModal(eventDetailModal.event);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Users className="h-4 w-4" />
+                        Track Attendance
+                      </Button>
+                      {(isSuperAdmin || userRole === 'staff') && (
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            closeEventDetails();
+                            openEditForm(eventDetailModal.event);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit Event
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
