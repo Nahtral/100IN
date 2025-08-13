@@ -192,9 +192,9 @@ export function AppSidebar() {
   return (
     <Sidebar className={cn(
       "border-r border-border bg-background transition-all duration-300",
-      collapsed ? "w-0 sm:w-16" : "w-64"
+      collapsed ? "w-16" : "w-64"
     )}>
-      <SidebarContent className={cn(collapsed ? "hidden sm:block" : "block")}>
+      <SidebarContent>
         {/* Logo/Brand Section */}
         <div className={cn(
           "flex items-center gap-3 p-3 sm:p-4 border-b border-border",
