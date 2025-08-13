@@ -373,13 +373,13 @@ const PartnerAnalytics = ({ partnerId, teamId }: PartnerAnalyticsProps) => {
                       <div>
                         <p className="font-medium">{item.category}</p>
                         <p className="text-sm text-muted-foreground">
-                          ${item.investment.toLocaleString()} invested
+                          ¥{item.investment.toLocaleString()} invested
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-green-600">{item.roi}x</p>
                         <p className="text-sm text-muted-foreground">
-                          ${item.return.toLocaleString()} return
+                          ¥{item.return.toLocaleString()} return
                         </p>
                       </div>
                     </div>

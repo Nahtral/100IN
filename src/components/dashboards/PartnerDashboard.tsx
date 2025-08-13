@@ -232,7 +232,7 @@ const PartnerDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${(partnerData?.totalInvestment || 0).toLocaleString()}
+                ¥{(partnerData?.totalInvestment || 0).toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">
                 This season
@@ -286,7 +286,7 @@ const PartnerDashboard = () => {
                     <div>
                       <p className="font-medium">{team.teamName}</p>
                       <p className="text-sm text-gray-600">{team.record} • {team.ranking}</p>
-                      <p className="text-xs text-gray-500">Sponsorship: ${team.sponsorshipAmount.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500">Sponsorship: ¥{team.sponsorshipAmount.toLocaleString()}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={
@@ -476,7 +476,7 @@ const PartnerDashboard = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-600">Amount:</span>
-                          <span className="font-medium">${selectedTeam.sponsorshipAmount.toLocaleString()}</span>
+                          <span className="font-medium">¥{selectedTeam.sponsorshipAmount.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-600">Type:</span>
