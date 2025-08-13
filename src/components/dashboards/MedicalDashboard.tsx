@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Calendar,
   FileText,
-  Users
+  Users,
+  Building2
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -249,6 +250,24 @@ const MedicalDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-4 mt-6">
+        <Button className="mobile-button">
+          <Calendar className="h-4 w-4 mr-2" />
+          Schedule Medical Check
+        </Button>
+        <Button variant="outline" className="mobile-button">
+          <FileText className="h-4 w-4 mr-2" />
+          Generate Report
+        </Button>
+        <Button variant="outline" asChild className="mobile-button">
+          <a href="/medical-management">
+            <Building2 className="h-4 w-4 mr-2" />
+            Manage Medical Partners
+          </a>
+        </Button>
+      </div>
       </div>
     </Layout>
   );

@@ -727,6 +727,68 @@ export type Database = {
           },
         ]
       }
+      medical_agreements: {
+        Row: {
+          agreement_name: string
+          agreement_type: string
+          auto_renewal: boolean | null
+          created_at: string
+          created_by: string | null
+          emergency_fee: number | null
+          end_date: string | null
+          id: string
+          medical_organization_id: string | null
+          monthly_fee: number | null
+          per_visit_fee: number | null
+          start_date: string
+          status: string
+          terms: string | null
+          updated_at: string
+        }
+        Insert: {
+          agreement_name: string
+          agreement_type?: string
+          auto_renewal?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          emergency_fee?: number | null
+          end_date?: string | null
+          id?: string
+          medical_organization_id?: string | null
+          monthly_fee?: number | null
+          per_visit_fee?: number | null
+          start_date: string
+          status?: string
+          terms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agreement_name?: string
+          agreement_type?: string
+          auto_renewal?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          emergency_fee?: number | null
+          end_date?: string | null
+          id?: string
+          medical_organization_id?: string | null
+          monthly_fee?: number | null
+          per_visit_fee?: number | null
+          start_date?: string
+          status?: string
+          terms?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_agreements_medical_organization_id_fkey"
+            columns: ["medical_organization_id"]
+            isOneToOne: false
+            referencedRelation: "medical_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_appointments: {
         Row: {
           appointment_date: string
@@ -822,6 +884,72 @@ export type Database = {
           related_player_id?: string | null
           sender_id?: string
           subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      medical_organizations: {
+        Row: {
+          address: Json | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          license_expiry_date: string | null
+          license_number: string | null
+          name: string
+          organization_type: string
+          partnership_status: string
+          partnership_type: string
+          partnership_value: number | null
+          specialties: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          address?: Json | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          license_expiry_date?: string | null
+          license_number?: string | null
+          name: string
+          organization_type?: string
+          partnership_status?: string
+          partnership_type?: string
+          partnership_value?: number | null
+          specialties?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          address?: Json | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          license_expiry_date?: string | null
+          license_number?: string | null
+          name?: string
+          organization_type?: string
+          partnership_status?: string
+          partnership_type?: string
+          partnership_value?: number | null
+          specialties?: string[] | null
           updated_at?: string
         }
         Relationships: []
