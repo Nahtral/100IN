@@ -8,7 +8,7 @@ import { useErrorBoundary } from '@/hooks/useErrorBoundary';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentUser: {
+  currentUser?: {
     name: string;
     role: string;
     avatar: string;

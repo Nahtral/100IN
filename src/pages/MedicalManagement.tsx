@@ -435,7 +435,7 @@ const MedicalManagement = () => {
 
   if (loading || currentUser.loading) {
     return (
-      <Layout currentUser={currentUser.loading ? undefined : currentUser.currentUser}>
+      <Layout>
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">Loading medical management...</div>
         </div>

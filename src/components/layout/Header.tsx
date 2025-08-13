@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface HeaderProps {
-  currentUser: {
+  currentUser?: {
     name: string;
     role: string;
     avatar: string;
@@ -59,12 +59,12 @@ const Header = ({ currentUser }: HeaderProps) => {
             
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">{currentUser.avatar}</span>
+                <span className="text-white text-sm font-medium">{currentUser?.avatar || 'U'}</span>
               </div>
               <div>
-                <p className="text-sm font-medium">{currentUser.name}</p>
+                <p className="text-sm font-medium">{currentUser?.name || 'User'}</p>
                 <Badge variant="secondary" className="text-xs">
-                  {currentUser.role}
+                  {currentUser?.role || 'Loading...'}
                 </Badge>
               </div>
             </div>
