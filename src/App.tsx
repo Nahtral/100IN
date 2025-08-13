@@ -22,6 +22,7 @@ import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
 import HealthWellness from "./pages/HealthWellness";
 import NewsManager from "./pages/NewsManager";
+import PartnershipManagement from "./pages/PartnershipManagement";
 import ShotIQ from "./pages/ShotIQ";
 import NotFound from "./pages/NotFound";
 
@@ -109,6 +110,11 @@ const App = () => (
             <Route path="/shotiq" element={
               <RoleProtectedRoute allowedRoles={['super_admin']}>
                 <ShotIQ />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/partnership-management" element={
+              <RoleProtectedRoute allowedRoles={['super_admin']}>
+                <PartnershipManagement />
               </RoleProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

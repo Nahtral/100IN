@@ -16,13 +16,15 @@ import {
   Trophy,
   Eye,
   Contact,
-  BarChart3
+  BarChart3,
+  Edit
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import PartnerAnalytics from "@/components/partners/PartnerAnalytics";
 import CommunicationCenter from "@/components/partners/CommunicationCenter";
 
@@ -45,6 +47,7 @@ const PartnerDashboard = () => {
   const { currentUser } = useCurrentUser();
   const { isSuperAdmin } = useUserRole();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [partnerData, setPartnerData] = useState<PartnerData | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<TeamPerformance | null>(null);
@@ -200,16 +203,25 @@ const PartnerDashboard = () => {
     <Layout currentUser={currentUser}>
       <div className="mobile-section">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
-              Partner Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-2 mobile-text">
-              Welcome back, {currentUser.name}! Monitor your partnership.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
+                Partner Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-2 mobile-text">
+                Welcome back, {currentUser.name}! Monitor your partnership.
+              </p>
+            </div>
+            {isSuperAdmin && (
+              <Button 
+                onClick={() => navigate('/partnership-management')}
+                className="mobile-btn bg-gradient-to-r from-purple-500 to-purple-600"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Manage Partnerships
+              </Button>
+            )}
           </div>
-        </div>
         {/* Partnership Overview */}
         <div className="metrics-grid">
           <Card className="border-blue-200">
