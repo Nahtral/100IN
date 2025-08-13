@@ -2552,6 +2552,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_safe_profile_info: {
+        Args: { profile_id: string }
+        Returns: {
+          id: string
+          display_name: string
+          access_level: string
+        }[]
+      }
       get_user_permissions: {
         Args: { _user_id: string }
         Returns: {
