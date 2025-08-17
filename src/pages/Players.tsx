@@ -37,7 +37,7 @@ interface Player {
   updated_at: string;
   profiles?: {
     full_name: string;
-    email: string;
+    email?: string;  // Optional since it may not always be accessible
     phone?: string;
   } | null;
 }
@@ -84,17 +84,19 @@ const Players = () => {
       const userIds = [...new Set(playersData.map(player => player.user_id))];
       console.log('User IDs to fetch profiles for:', userIds);
 
-      // Fetch profiles for these users
+      // Fetch profiles for these users - only get safe profile info
+      // This respects RLS policies and only returns data the current user is authorized to see
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, phone')
+        .select('id, full_name')  // Only fetch non-sensitive data
         .in('id', userIds);
 
       console.log('Profiles query result:', { data: profilesData, error: profilesError });
 
       if (profilesError) {
         console.error('Profiles fetch error:', profilesError);
-        throw profilesError;
+        // Don't throw error for profiles - some users might not have permission to see all profiles
+        console.warn('Some profile data may not be accessible due to permissions');
       }
 
       // Create a map of user_id to profile
@@ -288,8 +290,9 @@ const Players = () => {
                             <span className="font-medium text-muted-foreground text-sm mobile-only">Name:</span>
                             <div>
                               <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
-                              {(isSuperAdmin || player.user_id === user?.id) && (
-                                <p className="text-sm text-gray-600">{player.profiles?.email}</p>
+                              {/* Only show email to super admins and for the user's own data */}
+                              {(isSuperAdmin || player.user_id === user?.id) && player.profiles?.email && (
+                                <p className="text-sm text-gray-600">{player.profiles.email}</p>
                               )}
                             </div>
                           </div>

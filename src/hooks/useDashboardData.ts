@@ -24,7 +24,7 @@ export const useDashboardData = () => {
         
         // Fetch basic counts and real data
         const [usersResult, playersResult, teamsResult, performanceResult, schedulesResult, paymentsResult, alertsResult] = await Promise.all([
-          supabase.from('profiles').select('*', { count: 'exact', head: true }),
+          supabase.from('profiles').select('id', { count: 'exact', head: true }), // Only count, don't fetch sensitive data
           supabase.from('players').select('*', { count: 'exact', head: true }),
           supabase.from('teams').select('*', { count: 'exact', head: true }),
           supabase.from('player_performance').select('*', { count: 'exact', head: true }),
@@ -160,7 +160,7 @@ export const useTeamData = (coachId?: string) => {
           const teamIds = teamsData.map(team => team.id);
           const { data: playersData, error: playersError } = await supabase
             .from('players')
-            .select('*, profiles(full_name, email)')
+            .select('*, profiles(full_name)')  // Only fetch non-sensitive profile data
             .in('team_id', teamIds);
 
           if (playersError) throw playersError;
