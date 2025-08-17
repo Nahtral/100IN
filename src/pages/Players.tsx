@@ -59,21 +59,30 @@ const Players = () => {
 
   const fetchPlayers = async () => {
     try {
+      console.log('Fetching players...');
+      
       // First fetch all players
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (playersError) throw playersError;
+      console.log('Players query result:', { data: playersData, error: playersError });
+
+      if (playersError) {
+        console.error('Players fetch error:', playersError);
+        throw playersError;
+      }
 
       if (!playersData || playersData.length === 0) {
+        console.log('No players data found');
         setPlayers([]);
         return;
       }
 
       // Get all unique user_ids
       const userIds = [...new Set(playersData.map(player => player.user_id))];
+      console.log('User IDs to fetch profiles for:', userIds);
 
       // Fetch profiles for these users
       const { data: profilesData, error: profilesError } = await supabase
@@ -81,7 +90,12 @@ const Players = () => {
         .select('id, full_name, email, phone')
         .in('id', userIds);
 
-      if (profilesError) throw profilesError;
+      console.log('Profiles query result:', { data: profilesData, error: profilesError });
+
+      if (profilesError) {
+        console.error('Profiles fetch error:', profilesError);
+        throw profilesError;
+      }
 
       // Create a map of user_id to profile
       const profilesMap = new Map();
@@ -95,12 +109,13 @@ const Players = () => {
         profiles: profilesMap.get(player.user_id) || null
       }));
 
+      console.log('Final players with profiles:', playersWithProfiles);
       setPlayers(playersWithProfiles);
     } catch (error) {
       console.error('Error fetching players:', error);
       toast({
         title: "Error",
-        description: "Failed to load players.",
+        description: `Failed to load players: ${error.message}`,
         variant: "destructive",
       });
     } finally {
