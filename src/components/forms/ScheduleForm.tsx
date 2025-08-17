@@ -85,15 +85,22 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
 
   const fetchTeams = async () => {
     try {
+      console.log('Fetching teams...');
       const { data, error } = await supabase
         .from('teams')
         .select('id, name')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching teams:', error);
+        throw error;
+      }
+      
+      console.log('Teams fetched successfully:', data);
       setTeams(data || []);
     } catch (error) {
       console.error('Error fetching teams:', error);
+      setTeams([]); // Set empty array on error
     } finally {
       setLoadingTeams(false);
     }
