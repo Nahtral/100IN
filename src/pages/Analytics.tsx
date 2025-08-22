@@ -4,34 +4,66 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import Layout from '@/components/layout/Layout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Analytics = () => {
   const { currentUser } = useCurrentUser();
-  
-  // Sample data for analytics
-  const performanceData = [
-    { month: 'Jan', wins: 8, losses: 2 },
-    { month: 'Feb', wins: 6, losses: 4 },
-    { month: 'Mar', wins: 9, losses: 1 },
-    { month: 'Apr', wins: 7, losses: 3 },
-    { month: 'May', wins: 8, losses: 2 },
-    { month: 'Jun', wins: 10, losses: 0 },
-  ];
+  const { 
+    playerDistribution, 
+    performanceData, 
+    attendanceData, 
+    keyMetrics, 
+    recentActivity, 
+    loading, 
+    error 
+  } = useAnalyticsData();
 
-  const attendanceData = [
-    { week: 'Week 1', attendance: 95 },
-    { week: 'Week 2', attendance: 88 },
-    { week: 'Week 3', attendance: 92 },
-    { week: 'Week 4', attendance: 97 },
-    { week: 'Week 5', attendance: 89 },
-    { week: 'Week 6', attendance: 94 },
-  ];
+  if (loading) {
+    return (
+      <RoleProtectedRoute allowedRoles={['super_admin']}>
+        <Layout currentUser={currentUser}>
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+              <p className="text-muted-foreground">Loading analytics data...</p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-48 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </Layout>
+      </RoleProtectedRoute>
+    );
+  }
 
-  const playerDistribution = [
-    { name: 'Active Players', value: 85, color: '#3b82f6' },
-    { name: 'Injured', value: 8, color: '#ef4444' },
-    { name: 'Inactive', value: 7, color: '#6b7280' },
-  ];
+  if (error) {
+    return (
+      <RoleProtectedRoute allowedRoles={['super_admin']}>
+        <Layout currentUser={currentUser}>
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        </Layout>
+      </RoleProtectedRoute>
+    );
+  }
 
   return (
     <RoleProtectedRoute allowedRoles={['super_admin']}>
@@ -137,19 +169,19 @@ const Analytics = () => {
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">89%</div>
+                  <div className="text-2xl font-bold text-green-600">{keyMetrics.winRate}%</div>
                   <div className="text-sm text-muted-foreground">Win Rate</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">92%</div>
+                  <div className="text-2xl font-bold text-blue-600">{keyMetrics.avgAttendance}%</div>
                   <div className="text-sm text-muted-foreground">Avg Attendance</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">76.5</div>
+                  <div className="text-2xl font-bold text-purple-600">{keyMetrics.avgPointsPerGame}</div>
                   <div className="text-sm text-muted-foreground">Avg Points/Game</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">2.1</div>
+                  <div className="text-2xl font-bold text-orange-600">{keyMetrics.injuryRate}%</div>
                   <div className="text-sm text-muted-foreground">Injury Rate</div>
                 </div>
               </div>
@@ -162,22 +194,15 @@ const Analytics = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm">Team won against Eagles 78-65</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm">Practice attendance: 94%</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <span className="text-sm">Player Smith injury update</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span className="text-sm">New performance metrics added</span>
-                </div>
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <div 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: activity.color }}
+                    ></div>
+                    <span className="text-sm">{activity.message}</span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

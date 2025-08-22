@@ -233,15 +233,15 @@ export function AppSidebar() {
               {navItems.filter(shouldShowItem).map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild>
-                     <NavLink
-                       to={item.href}
-                       className={({ isActive }) => cn(
-                         "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
-                         "flex items-center gap-3 px-3 py-3 min-h-[48px]",
-                         isActive 
-                           ? "bg-primary text-primary-foreground font-medium" 
-                           : "hover:bg-accent hover:text-accent-foreground"
-                       )}
+                      <NavLink
+                        to={item.href}
+                        className={({ isActive }) => cn(
+                          "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
+                          "flex items-center gap-3 px-3 py-3 min-h-[48px]",
+                          isActive 
+                            ? "bg-primary text-primary-foreground font-medium" 
+                            : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                        )}
                        onClick={() => handleNavClick(item.title)}
                      >
                        <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -267,15 +267,15 @@ export function AppSidebar() {
                 {internalToolsItems.filter(shouldShowItem).map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild>
-                       <NavLink
-                         to={item.href}
-                         className={({ isActive }) => cn(
-                           "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
-                           "flex items-center gap-3 px-3 py-3 min-h-[48px]",
-                           isActive 
-                             ? "bg-primary text-primary-foreground font-medium" 
-                             : "hover:bg-accent hover:text-accent-foreground"
-                         )}
+                        <NavLink
+                          to={item.href}
+                          className={({ isActive }) => cn(
+                            "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
+                            "flex items-center gap-3 px-3 py-3 min-h-[48px]",
+                            isActive 
+                              ? "bg-primary text-primary-foreground font-medium" 
+                              : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                          )}
                          onClick={() => handleNavClick(item.title)}
                        >
                          <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -302,15 +302,15 @@ export function AppSidebar() {
                 {superAdminItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild>
-                       <NavLink
-                         to={item.href}
-                         className={({ isActive }) => cn(
-                           "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
-                           "flex items-center gap-3 px-3 py-3 min-h-[48px]",
-                           isActive 
-                             ? "bg-primary text-primary-foreground font-medium" 
-                             : "hover:bg-accent hover:text-accent-foreground"
-                         )}
+                        <NavLink
+                          to={item.href}
+                          className={({ isActive }) => cn(
+                            "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
+                            "flex items-center gap-3 px-3 py-3 min-h-[48px]",
+                            isActive 
+                              ? "bg-primary text-primary-foreground font-medium" 
+                              : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                          )}
                          onClick={() => handleNavClick(item.title)}
                        >
                          <item.icon className="h-5 w-5 flex-shrink-0" />
