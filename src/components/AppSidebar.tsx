@@ -239,8 +239,8 @@ export function AppSidebar() {
                           "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
                           "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                           isActive 
-                            ? "bg-primary text-primary-foreground font-medium" 
-                            : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         )}
                        onClick={() => handleNavClick(item.title)}
                      >
@@ -273,8 +273,8 @@ export function AppSidebar() {
                             "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
                             "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                             isActive 
-                              ? "bg-primary text-primary-foreground font-medium" 
-                              : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                          onClick={() => handleNavClick(item.title)}
                        >
@@ -308,8 +308,8 @@ export function AppSidebar() {
                             "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
                             "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                             isActive 
-                              ? "bg-primary text-primary-foreground font-medium" 
-                              : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                          onClick={() => handleNavClick(item.title)}
                        >
