@@ -235,13 +235,13 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                       <NavLink
                         to={item.href}
-                        className={({ isActive }) => cn(
-                          "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
-                          "flex items-center gap-3 px-3 py-3 min-h-[48px]",
-                          isActive 
-                            ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
+                          className={({ isActive }) => cn(
+                            "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
+                            "flex items-center gap-3 px-3 py-3 min-h-[48px]",
+                            isActive 
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
+                              : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )}
                        onClick={() => handleNavClick(item.title)}
                      >
                        <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -274,7 +274,7 @@ export function AppSidebar() {
                             "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                             isActive 
                               ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                          onClick={() => handleNavClick(item.title)}
                        >
@@ -309,7 +309,7 @@ export function AppSidebar() {
                             "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                             isActive 
                               ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                          onClick={() => handleNavClick(item.title)}
                        >
