@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PlayerForm from '@/components/forms/PlayerForm';
+import PlayerDetailsModal from '@/components/player-details/PlayerDetailsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +49,8 @@ const Players = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { isSuperAdmin } = useUserRole();
@@ -210,6 +213,11 @@ const Players = () => {
     setIsFormOpen(true);
   };
 
+  const openPlayerDetails = (player: Player) => {
+    setSelectedPlayer(player);
+    setIsDetailsOpen(true);
+  };
+
   return (
     <Layout currentUser={currentUser}>
       <div className="mobile-space-y">
@@ -270,7 +278,11 @@ const Players = () => {
             ) : (
                 <div className="mobile-list">
                   {players.map((player) => (
-                    <div key={player.id} className="mobile-list-item">
+                    <div 
+                      key={player.id} 
+                      className="mobile-list-item cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => openPlayerDetails(player)}
+                    >
                       {/* Mobile-first player card layout */}
                       <div className="mobile-list-header">
                         <div className="flex items-center gap-3">
@@ -299,7 +311,10 @@ const Players = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => openEditForm(player)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditForm(player);
+                              }}
                               className="touch-target"
                             >
                               <Edit className="h-4 w-4" />
@@ -307,7 +322,10 @@ const Players = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDelete(player.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(player.id);
+                              }}
                               className="touch-target"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -364,6 +382,19 @@ const Players = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Player Details Modal */}
+        <PlayerDetailsModal
+          player={selectedPlayer}
+          open={isDetailsOpen}
+          onOpenChange={setIsDetailsOpen}
+          onEdit={(player) => {
+            setEditingPlayer(player);
+            setIsFormOpen(true);
+            setIsDetailsOpen(false);
+          }}
+          onDelete={handleDelete}
+        />
       </div>
     </Layout>
   );

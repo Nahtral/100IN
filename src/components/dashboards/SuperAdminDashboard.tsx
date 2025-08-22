@@ -139,7 +139,7 @@ const SuperAdminDashboard = () => {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-blue-200">
+          <Card className="border-blue-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/user-management')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
               <Users className="h-4 w-4 text-blue-600" />
@@ -152,7 +152,7 @@ const SuperAdminDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-green-200">
+          <Card className="border-orange-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/user-management')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
               <AlertCircle className="h-4 w-4 text-orange-600" />
@@ -165,7 +165,7 @@ const SuperAdminDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-green-200">
+          <Card className="border-green-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/schedule')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Teams</CardTitle>
               <Trophy className="h-4 w-4 text-green-600" />
@@ -178,7 +178,7 @@ const SuperAdminDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-blue-200">
+          <Card className="border-blue-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/players')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Players</CardTitle>
               <Users className="h-4 w-4 text-blue-600" />
