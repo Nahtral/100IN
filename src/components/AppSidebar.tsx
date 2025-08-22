@@ -240,7 +240,7 @@ export function AppSidebar() {
                             "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                             isActive 
                               ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-                              : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              : "text-black hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                        onClick={() => handleNavClick(item.title)}
                      >
@@ -274,7 +274,7 @@ export function AppSidebar() {
                             "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                             isActive 
                               ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-                              : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              : "text-black hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                          onClick={() => handleNavClick(item.title)}
                        >
@@ -309,7 +309,7 @@ export function AppSidebar() {
                             "flex items-center gap-3 px-3 py-3 min-h-[48px]",
                             isActive 
                               ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
-                              : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              : "text-black hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                          onClick={() => handleNavClick(item.title)}
                        >
