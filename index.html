@@ -2,7 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- Mobile-first optimizations -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="email=no">
+    
+    <!-- Safe Area Support for iOS notches -->
+    <meta name="viewport-fit" content="cover">
+    <style>
+      /* Prevent zoom on iOS when focusing inputs */
+      input[type="text"], input[type="email"], input[type="tel"], textarea, select {
+        font-size: 16px !important;
+      }
+      
+      /* Safe area CSS variables for notches */
+      :root {
+        --safe-area-inset-top: env(safe-area-inset-top, 0px);
+        --safe-area-inset-right: env(safe-area-inset-right, 0px);
+        --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-area-inset-left: env(safe-area-inset-left, 0px);
+      }
+    </style>
     <link rel="icon" href="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" type="image/png">
     
     <!-- Mobile App Icons -->

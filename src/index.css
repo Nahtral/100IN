@@ -217,35 +217,56 @@ All colors MUST be HSL.
     @apply block text-left border-none sm:table-cell sm:text-center sm:border;
   }
   
-  /* Mobile-optimized spacing */
+  /* Mobile-optimized spacing with safe areas */
   .mobile-container {
     @apply px-4 py-4 sm:px-6 sm:py-6 lg:px-8;
+    padding-top: max(1rem, var(--safe-area-inset-top));
+    padding-bottom: max(1rem, var(--safe-area-inset-bottom));
+    padding-left: max(1rem, var(--safe-area-inset-left));
+    padding-right: max(1rem, var(--safe-area-inset-right));
   }
   
   .mobile-section {
     @apply space-y-4 sm:space-y-6;
   }
   
-  /* Mobile typography */
+  /* Mobile typography - larger base sizes for better readability */
   .mobile-title {
-    @apply text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight;
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight;
+    line-height: 1.2;
   }
   
   .mobile-subtitle {
-    @apply text-lg sm:text-xl lg:text-2xl font-semibold;
+    @apply text-xl sm:text-2xl lg:text-3xl font-semibold leading-snug;
+    line-height: 1.3;
   }
   
   .mobile-text {
-    @apply text-sm sm:text-base;
+    @apply text-base sm:text-lg leading-relaxed;
+    line-height: 1.6;
   }
   
-  /* Mobile button sizes */
+  .mobile-text-sm {
+    @apply text-sm sm:text-base leading-relaxed;
+  }
+  
+  /* Enhanced mobile button sizes - minimum 44px touch targets */
   .mobile-btn {
-    @apply px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base;
+    @apply px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg font-medium rounded-lg;
+    min-height: 44px;
+    min-width: 44px;
   }
   
   .mobile-btn-sm {
-    @apply px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm;
+    @apply px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base font-medium rounded-md;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .mobile-btn-xs {
+    @apply px-3 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded;
+    min-height: 40px;
+    min-width: 40px;
   }
   
   /* Hide/show utilities for mobile */
@@ -292,5 +313,89 @@ All colors MUST be HSL.
   
   .bg-panther-blue {
     background-color: hsl(var(--panther-blue));
+  }
+  
+  /* Mobile-first responsive cards */
+  .mobile-card {
+    @apply rounded-xl border border-border bg-card shadow-soft p-4 sm:p-6;
+  }
+  
+  .mobile-card-header {
+    @apply space-y-2 mb-4 sm:mb-6;
+  }
+  
+  .mobile-card-content {
+    @apply space-y-4;
+  }
+  
+  /* Touch-friendly interactive elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+  
+  .touch-target-lg {
+    @apply min-h-[48px] min-w-[48px] flex items-center justify-center;
+  }
+  
+  /* Mobile navigation spacing */
+  .mobile-nav-item {
+    @apply flex items-center gap-3 p-3 sm:p-4 rounded-lg transition-colors;
+    min-height: 48px;
+  }
+  
+  /* Responsive spacing utilities */
+  .mobile-space-y {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8;
+  }
+  
+  .mobile-gap {
+    @apply gap-4 sm:gap-6 lg:gap-8;
+  }
+  
+  /* Mobile-optimized forms */
+  .mobile-form-group {
+    @apply space-y-2 sm:space-y-3;
+  }
+  
+  .mobile-input {
+    @apply w-full px-4 py-3 text-base rounded-lg border border-input bg-background;
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .mobile-textarea {
+    @apply w-full px-4 py-3 text-base rounded-lg border border-input bg-background resize-none;
+    min-height: 100px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Mobile table alternatives */
+  .mobile-list {
+    @apply space-y-3 sm:space-y-4;
+  }
+  
+  .mobile-list-item {
+    @apply p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors;
+  }
+  
+  .mobile-list-header {
+    @apply flex items-center justify-between mb-2;
+  }
+  
+  .mobile-list-content {
+    @apply space-y-2 text-sm text-muted-foreground;
+  }
+  
+  /* Responsive grid patterns */
+  .mobile-metrics-grid {
+    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+  }
+  
+  .mobile-card-grid {
+    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  .mobile-content-grid {
+    @apply grid gap-6 grid-cols-1 lg:grid-cols-3;
   }
 }

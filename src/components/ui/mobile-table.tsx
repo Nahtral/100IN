@@ -19,11 +19,11 @@ interface MobileTableCellProps {
 
 export const MobileTable = ({ children, className }: MobileTableProps) => {
   return (
-    <div className={cn("mobile-table", className)}>
-      <div className="hidden sm:table-header-group">
+    <div className={cn("mobile-table overflow-auto", className)}>
+      <div className="hidden lg:table-header-group">
         {/* Table headers go here for desktop */}
       </div>
-      <div className="block sm:table-row-group">
+      <div className="block lg:table-row-group mobile-list">
         {children}
       </div>
     </div>
@@ -32,7 +32,7 @@ export const MobileTable = ({ children, className }: MobileTableProps) => {
 
 export const MobileTableRow = ({ children, className }: MobileTableRowProps) => {
   return (
-    <div className={cn("mobile-table-row", className)}>
+    <div className={cn("mobile-list-item lg:table-row", className)}>
       {children}
     </div>
   );
@@ -40,13 +40,15 @@ export const MobileTableRow = ({ children, className }: MobileTableRowProps) => 
 
 export const MobileTableCell = ({ children, label, className }: MobileTableCellProps) => {
   return (
-    <div className={cn("mobile-table-cell", className)}>
+    <div className={cn("lg:table-cell", className)}>
       {label && (
-        <span className="font-medium text-muted-foreground text-sm block sm:hidden mb-1">
+        <span className="font-medium text-muted-foreground mobile-text-sm block lg:hidden mb-2">
           {label}:
         </span>
       )}
-      {children}
+      <div className="mobile-text">
+        {children}
+      </div>
     </div>
   );
 };

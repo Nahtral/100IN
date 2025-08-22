@@ -63,8 +63,8 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="mobile-space-y">
+            <div className="mobile-form-group grid grid-cols-1 sm:grid-cols-2 mobile-gap">
               <FormField
                 control={form.control}
                 name="fullName"

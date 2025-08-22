@@ -212,23 +212,23 @@ const Players = () => {
 
   return (
     <Layout currentUser={currentUser}>
-      <div className="mobile-section">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="mobile-title text-gray-900">Players</h1>
-            <p className="text-gray-600 mobile-text">Manage your team roster</p>
+      <div className="mobile-space-y">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mobile-gap">
+          <div className="text-center sm:text-left">
+            <h1 className="mobile-title text-foreground">Players</h1>
+            <p className="mobile-text text-muted-foreground">Manage your team roster</p>
           </div>
           {isSuperAdmin && (
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openAddForm} className="mobile-btn bg-orange-500 hover:bg-orange-600">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button onClick={openAddForm} size="lg" className="w-full sm:w-auto">
+                  <Plus className="h-5 w-5 mr-2" />
                   Add Player
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="mobile-container max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle className="mobile-subtitle">
                   {editingPlayer ? 'Edit Player' : 'Add New Player'}
                 </DialogTitle>
               </DialogHeader>
@@ -267,128 +267,99 @@ const Players = () => {
               <div className="text-center py-8">
                 <p className="text-gray-600">No players found. Add your first player to get started.</p>
               </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="mobile-table">
-                    <div className="desktop-only">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Jersey #</TableHead>
-                          <TableHead>Position</TableHead>
-                          <TableHead>ShotIQ Stats</TableHead>
-                          <TableHead>Height/Weight</TableHead>
-                          <TableHead>Emergency Contact</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                    </div>
-                    <div>
-                      {players.map((player) => (
-                        <div key={player.id} className="mobile-table-row">
-                          <div className="mobile-table-cell">
-                            <span className="font-medium text-muted-foreground text-sm mobile-only">Name:</span>
-                            <div>
-                              <p className="font-medium">{player.profiles?.full_name || 'N/A'}</p>
-                              {/* Only show email to super admins and for the user's own data */}
-                              {(isSuperAdmin || player.user_id === user?.id) && player.profiles?.email && (
-                                <p className="text-sm text-gray-600">{player.profiles.email}</p>
+            ) : (
+                <div className="mobile-list">
+                  {players.map((player) => (
+                    <div key={player.id} className="mobile-list-item">
+                      {/* Mobile-first player card layout */}
+                      <div className="mobile-list-header">
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                            <h3 className="mobile-text font-semibold text-foreground">
+                              {player.profiles?.full_name || 'N/A'}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              {player.jersey_number && (
+                                <Badge variant="outline" className="text-xs">
+                                  #{player.jersey_number}
+                                </Badge>
+                              )}
+                              {player.position && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {player.position}
+                                </Badge>
                               )}
                             </div>
-                          </div>
-                          
-                          <div className="mobile-table-cell">
-                            <span className="font-medium text-muted-foreground text-sm mobile-only">Jersey #:</span>
-                            {player.jersey_number ? (
-                              <Badge variant="outline">#{player.jersey_number}</Badge>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </div>
-                          
-                          <div className="mobile-table-cell">
-                            <span className="font-medium text-muted-foreground text-sm mobile-only">Position:</span>
-                            {player.position ? (
-                              <Badge variant="secondary">{player.position}</Badge>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </div>
-                          
-                          <div className="mobile-table-cell">
-                            <span className="font-medium text-muted-foreground text-sm mobile-only">ShotIQ Stats:</span>
-                            <div className="text-sm space-y-1">
-                              {player.total_shots && player.total_shots > 0 ? (
-                                <>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-xs">
-                                      {player.shooting_percentage?.toFixed(1)}%
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                      {player.total_makes}/{player.total_shots}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Arc: {player.avg_arc_degrees?.toFixed(1)}° | 
-                                    Depth: {player.avg_depth_inches?.toFixed(1)}"
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {player.total_sessions} sessions
-                                  </div>
-                                </>
-                              ) : (
-                                <span className="text-xs text-gray-400">No ShotIQ data</span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="mobile-table-cell">
-                            <span className="font-medium text-muted-foreground text-sm mobile-only">Height/Weight:</span>
-                            <div className="text-sm">
-                              <p>{player.height || '-'}</p>
-                              <p className="text-gray-600">{player.weight || '-'}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="mobile-table-cell">
-                            <span className="font-medium text-muted-foreground text-sm mobile-only">Emergency Contact:</span>
-                            {(isSuperAdmin || player.user_id === user?.id) ? (
-                              <div className="text-sm">
-                                <p>{player.emergency_contact_name || '-'}</p>
-                                <p className="text-gray-600">{player.emergency_contact_phone || '-'}</p>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </div>
-                          
-                          <div className="mobile-table-cell">
-                            <span className="font-medium text-muted-foreground text-sm mobile-only">Actions:</span>
-                            {isSuperAdmin ? (
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => openEditForm(player)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDelete(player.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
                           </div>
                         </div>
-                      ))}
+                        
+                        {/* Action buttons for mobile */}
+                        {isSuperAdmin && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditForm(player)}
+                              className="touch-target"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(player.id)}
+                              className="touch-target"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mobile-list-content">
+                        {/* Email (only for authorized users) */}
+                        {(isSuperAdmin || player.user_id === user?.id) && player.profiles?.email && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <span className="mobile-text-sm">{player.profiles.email}</span>
+                          </div>
+                        )}
+                        
+                        {/* Physical stats */}
+                        {(player.height || player.weight) && (
+                          <div className="flex items-center gap-4 mobile-text-sm">
+                            {player.height && <span>Height: {player.height}</span>}
+                            {player.weight && <span>Weight: {player.weight}</span>}
+                          </div>
+                        )}
+                        
+                        {/* ShotIQ Stats */}
+                        {player.total_shots && player.total_shots > 0 ? (
+                          <div className="flex flex-wrap items-center gap-2 mobile-text-sm">
+                            <Badge variant="outline" className="text-xs">
+                              {player.shooting_percentage?.toFixed(1)}% shooting
+                            </Badge>
+                            <span className="text-muted-foreground">
+                              {player.total_makes}/{player.total_shots} shots
+                            </span>
+                            <span className="text-muted-foreground">
+                              {player.total_sessions} sessions
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="mobile-text-sm text-muted-foreground">No ShotIQ data yet</span>
+                        )}
+                        
+                        {/* Emergency contact (only for authorized users) */}
+                        {(isSuperAdmin || player.user_id === user?.id) && (player.emergency_contact_name || player.emergency_contact_phone) && (
+                          <div className="mobile-text-sm text-muted-foreground">
+                            <span>Emergency: </span>
+                            {player.emergency_contact_name && <span>{player.emergency_contact_name}</span>}
+                            {player.emergency_contact_phone && <span> • {player.emergency_contact_phone}</span>}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
             )}
           </CardContent>
