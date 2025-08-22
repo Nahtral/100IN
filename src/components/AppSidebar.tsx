@@ -191,9 +191,15 @@ export function AppSidebar() {
   
   return (
     <Sidebar 
+      side="left"
+      variant="sidebar"
+      collapsible="icon"
       className={cn(
-        "border-r border-border bg-background transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        "border-r border-border bg-background transition-all duration-300 z-50",
+        // Mobile-first: full width drawer on mobile, sidebar on desktop
+        "data-[state=open]:translate-x-0 data-[state=closed]:-translate-x-full",
+        "md:data-[state=closed]:translate-x-0",
+        collapsed ? "md:w-16" : "md:w-64"
       )}
       style={{ 
         paddingTop: 'var(--safe-area-inset-top)',
@@ -203,16 +209,16 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Mobile-optimized Logo/Brand Section */}
         <div className={cn(
-          "flex items-center gap-3 p-4 sm:p-6 border-b border-border",
-          collapsed ? "justify-center" : "justify-start"
+          "flex items-center gap-3 p-4 border-b border-border safe-area-inset-top",
+          collapsed ? "md:justify-center" : "justify-start"
         )}>
-          <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-white p-1">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 flex-shrink-0">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
-          {!collapsed && (
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-black" style={{ textShadow: '1px 1px 0px #B38F54, -1px -1px 0px #B38F54, 1px -1px 0px #B38F54, -1px 1px 0px #B38F54' }}>Panthers</h1>
-              <p className="text-sm text-muted-foreground">Court Vision</p>
+          {(!collapsed || isMobile) && (
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-black leading-tight" style={{ textShadow: '1px 1px 0px #B38F54, -1px -1px 0px #B38F54, 1px -1px 0px #B38F54, -1px 1px 0px #B38F54' }}>Panthers</h1>
+              <p className="text-sm text-muted-foreground truncate">Court Vision</p>
             </div>
           )}
         </div>
@@ -227,19 +233,22 @@ export function AppSidebar() {
               {navItems.filter(shouldShowItem).map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.href}
-                      className={({ isActive }) => cn(
-                        "mobile-nav-item touch-target transition-colors duration-200",
-                        isActive 
-                          ? "bg-primary text-primary-foreground font-medium" 
-                          : "hover:bg-accent hover:text-accent-foreground"
-                      )}
-                      onClick={() => handleNavClick(item.title)}
-                    >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span className="truncate mobile-text-sm font-medium">{item.title}</span>}
-                    </NavLink>
+                     <NavLink
+                       to={item.href}
+                       className={({ isActive }) => cn(
+                         "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
+                         "flex items-center gap-3 px-3 py-3 min-h-[48px]",
+                         isActive 
+                           ? "bg-primary text-primary-foreground font-medium" 
+                           : "hover:bg-accent hover:text-accent-foreground"
+                       )}
+                       onClick={() => handleNavClick(item.title)}
+                     >
+                       <item.icon className="h-5 w-5 flex-shrink-0" />
+                       {(!collapsed || isMobile) && (
+                         <span className="truncate font-medium text-base">{item.title}</span>
+                       )}
+                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -258,14 +267,22 @@ export function AppSidebar() {
                 {internalToolsItems.filter(shouldShowItem).map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.href}
-                        className={({ isActive }) => getNavClassName(isActive)}
-                        onClick={() => handleNavClick(item.title)}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
+                       <NavLink
+                         to={item.href}
+                         className={({ isActive }) => cn(
+                           "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
+                           "flex items-center gap-3 px-3 py-3 min-h-[48px]",
+                           isActive 
+                             ? "bg-primary text-primary-foreground font-medium" 
+                             : "hover:bg-accent hover:text-accent-foreground"
+                         )}
+                         onClick={() => handleNavClick(item.title)}
+                       >
+                         <item.icon className="h-5 w-5 flex-shrink-0" />
+                         {(!collapsed || isMobile) && (
+                           <span className="truncate font-medium text-base">{item.title}</span>
+                         )}
+                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -285,14 +302,22 @@ export function AppSidebar() {
                 {superAdminItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.href}
-                        className={({ isActive }) => getNavClassName(isActive)}
-                        onClick={() => handleNavClick(item.title)}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
+                       <NavLink
+                         to={item.href}
+                         className={({ isActive }) => cn(
+                           "mobile-nav-item touch-target transition-colors duration-200 rounded-lg",
+                           "flex items-center gap-3 px-3 py-3 min-h-[48px]",
+                           isActive 
+                             ? "bg-primary text-primary-foreground font-medium" 
+                             : "hover:bg-accent hover:text-accent-foreground"
+                         )}
+                         onClick={() => handleNavClick(item.title)}
+                       >
+                         <item.icon className="h-5 w-5 flex-shrink-0" />
+                         {(!collapsed || isMobile) && (
+                           <span className="truncate font-medium text-base">{item.title}</span>
+                         )}
+                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -302,10 +327,10 @@ export function AppSidebar() {
         )}
 
         {/* Role Switcher for Super Admin */}
-        {isSuperAdmin && !collapsed && (
+        {isSuperAdmin && (!collapsed || isMobile) && (
           <SidebarGroup>
             <SidebarGroupContent>
-              <div className="px-2">
+              <div className="px-3 py-2">
                 <RoleSwitcher />
               </div>
             </SidebarGroupContent>

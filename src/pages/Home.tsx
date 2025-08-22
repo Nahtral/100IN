@@ -68,45 +68,45 @@ const Home = () => {
 
   return (
     <Layout currentUser={currentUser}>
-      <div className="space-y-8 p-6">
-        {/* Welcome Header */}
-        <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto p-2">
+      <div className="mobile-space-y">
+        {/* Mobile-optimized Welcome Header */}
+        <div className="text-center mobile-section">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl flex items-center justify-center mx-auto p-2 mb-4">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <h1 className="text-4xl font-bold text-black mb-2" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
+          <div className="space-y-2">
+            <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
               Welcome to Court Vision
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="mobile-text text-muted-foreground max-w-2xl mx-auto">
               Your Central Hub for Panthers Basketball
             </p>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-              <div className="text-2xl font-bold">{quickStats?.totalPlayers || 0}</div>
-              <p className="text-sm text-muted-foreground">Active Players</p>
+        {/* Mobile-first Quick Stats */}
+        <div className="mobile-metrics-grid">
+          <Card className="mobile-card text-center">
+            <CardContent className="mobile-card-content pt-4">
+              <Users className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+              <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalPlayers || 0}</div>
+              <p className="mobile-text-sm text-muted-foreground">Active Players</p>
             </CardContent>
           </Card>
           
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <Trophy className="h-8 w-8 text-primary mx-auto mb-2" />
-              <div className="text-2xl font-bold">{quickStats?.totalTeams || 0}</div>
-              <p className="text-sm text-muted-foreground">Teams</p>
+          <Card className="mobile-card text-center">
+            <CardContent className="mobile-card-content pt-4">
+              <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+              <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalTeams || 0}</div>
+              <p className="mobile-text-sm text-muted-foreground">Teams</p>
             </CardContent>
           </Card>
           
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <Calendar className="h-8 w-8 text-primary mx-auto mb-2" />
-              <div className="text-2xl font-bold">{quickStats?.upcomingEvents || 0}</div>
-              <p className="text-sm text-muted-foreground">Upcoming Events</p>
+          <Card className="mobile-card text-center">
+            <CardContent className="mobile-card-content pt-4">
+              <Calendar className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+              <div className="text-2xl sm:text-3xl font-bold">{quickStats?.upcomingEvents || 0}</div>
+              <p className="mobile-text-sm text-muted-foreground">Upcoming Events</p>
             </CardContent>
           </Card>
         </div>
@@ -181,9 +181,9 @@ const Home = () => {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mobile-card-grid">
               {isSuperAdmin && (
-                <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                <Button asChild variant="outline" className="mobile-btn h-auto flex-col space-y-2">
                   <Link to="/players">
                     <Users className="h-6 w-6" />
                     <span>Manage Players</span>
@@ -191,7 +191,7 @@ const Home = () => {
                 </Button>
               )}
               
-              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+              <Button asChild variant="outline" className="mobile-btn h-auto flex-col space-y-2">
                 <Link to="/schedule">
                   <Calendar className="h-6 w-6" />
                   <span>View Schedule</span>
@@ -199,7 +199,7 @@ const Home = () => {
               </Button>
               
               {isSuperAdmin && (
-                <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+                <Button asChild variant="outline" className="mobile-btn h-auto flex-col space-y-2">
                   <Link to="/analytics">
                     <Target className="h-6 w-6" />
                     <span>View Analytics</span>
@@ -207,7 +207,7 @@ const Home = () => {
                 </Button>
               )}
               
-              <Button asChild variant="outline" className="h-auto p-4 flex-col space-y-2">
+              <Button asChild variant="outline" className="mobile-btn h-auto flex-col space-y-2">
                 <Link to="/dashboard">
                   <TrendingUp className="h-6 w-6" />
                   <span>Dashboard</span>
