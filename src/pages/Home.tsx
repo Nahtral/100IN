@@ -84,30 +84,55 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Mobile-first Quick Stats */}
+        {/* Mobile-first Quick Stats - Clickable for Super Admins */}
         <div className="mobile-metrics-grid">
-          <Card className="mobile-card text-center">
-            <CardContent className="mobile-card-content pt-4">
-              <Users className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
-              <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalPlayers || 0}</div>
-              <p className="mobile-text-sm text-muted-foreground">Active Players</p>
-            </CardContent>
+          <Card className={`mobile-card text-center ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}>
+            {isSuperAdmin ? (
+              <Link to="/players" className="block">
+                <CardContent className="mobile-card-content pt-4">
+                  <Users className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+                  <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalPlayers || 0}</div>
+                  <p className="mobile-text-sm text-muted-foreground">Active Players</p>
+                  <p className="text-xs text-primary mt-1">Click to manage</p>
+                </CardContent>
+              </Link>
+            ) : (
+              <CardContent className="mobile-card-content pt-4">
+                <Users className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+                <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalPlayers || 0}</div>
+                <p className="mobile-text-sm text-muted-foreground">Active Players</p>
+              </CardContent>
+            )}
           </Card>
           
-          <Card className="mobile-card text-center">
-            <CardContent className="mobile-card-content pt-4">
-              <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
-              <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalTeams || 0}</div>
-              <p className="mobile-text-sm text-muted-foreground">Teams</p>
-            </CardContent>
+          <Card className={`mobile-card text-center ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}>
+            {isSuperAdmin ? (
+              <Link to="/players" className="block">
+                <CardContent className="mobile-card-content pt-4">
+                  <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+                  <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalTeams || 0}</div>
+                  <p className="mobile-text-sm text-muted-foreground">Teams</p>
+                  <p className="text-xs text-primary mt-1">Click to manage</p>
+                </CardContent>
+              </Link>
+            ) : (
+              <CardContent className="mobile-card-content pt-4">
+                <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+                <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalTeams || 0}</div>
+                <p className="mobile-text-sm text-muted-foreground">Teams</p>
+              </CardContent>
+            )}
           </Card>
           
-          <Card className="mobile-card text-center">
-            <CardContent className="mobile-card-content pt-4">
-              <Calendar className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
-              <div className="text-2xl sm:text-3xl font-bold">{quickStats?.upcomingEvents || 0}</div>
-              <p className="mobile-text-sm text-muted-foreground">Upcoming Events</p>
-            </CardContent>
+          <Card className="mobile-card text-center cursor-pointer hover:shadow-lg transition-shadow">
+            <Link to="/schedule" className="block">
+              <CardContent className="mobile-card-content pt-4">
+                <Calendar className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
+                <div className="text-2xl sm:text-3xl font-bold">{quickStats?.upcomingEvents || 0}</div>
+                <p className="mobile-text-sm text-muted-foreground">Upcoming Events</p>
+                <p className="text-xs text-primary mt-1">Click to view</p>
+              </CardContent>
+            </Link>
           </Card>
         </div>
 
