@@ -311,7 +311,7 @@ const Schedule = () => {
           {(isSuperAdmin || userRole === 'staff') && (
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600 transition-all duration-200 hover:scale-105 w-full sm:w-auto">
+                <Button onClick={openAddForm} className="bg-black hover:bg-gray-800 text-white transition-all duration-200 hover:scale-105 w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Event
                 </Button>
