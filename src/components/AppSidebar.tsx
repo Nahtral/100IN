@@ -151,13 +151,6 @@ export function AppSidebar() {
   );
 
   const shouldShowItem = (item: any) => {
-    console.log('Checking item:', item.title, {
-      showForAll: item.showForAll,
-      showCondition: item.showCondition ? item.showCondition() : 'N/A',
-      actualIsSuperAdmin,
-      initialized,
-      loading
-    });
     if (item.showForAll) return true;
     if (item.showCondition) return item.showCondition();
     return false;
