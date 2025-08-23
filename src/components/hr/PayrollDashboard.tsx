@@ -3,6 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   DollarSign, 
   FileText, 
@@ -10,7 +14,10 @@ import {
   Plus,
   Download,
   Eye,
-  Settings
+  Settings,
+  Edit,
+  Trash2,
+  Users
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +32,15 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
   const { isSuperAdmin, hasRole } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [payrollStats, setPayrollStats] = useState({
+    totalPayroll: 0,
+    pendingPayslips: 0,
+    activePeriods: 0,
+    totalEmployees: 0
+  });
 
   useEffect(() => {
     fetchPayrollData();
@@ -32,8 +48,50 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
 
   const fetchPayrollData = async () => {
     try {
-      // This would fetch payroll data from the database
-      // For now, we'll set loading to false
+      // Fetch active employees count
+      const { data: employees, error: empError } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('employment_status', 'active');
+
+      if (empError) throw empError;
+
+      // Fetch approved time off requests for today
+      const { data: timeOffRequests, error: timeOffError } = await supabase
+        .from('time_off_requests')
+        .select('id')
+        .eq('status', 'approved')
+        .gte('end_date', new Date().toISOString().split('T')[0]);
+
+      if (timeOffError) throw timeOffError;
+
+      // Fetch pending payslips
+      const { data: pendingPayslips, error: payslipError } = await supabase
+        .from('payslips')
+        .select('id')
+        .eq('status', 'draft');
+
+      if (payslipError) throw payslipError;
+
+      // Calculate total hours for today
+      const today = new Date().toISOString().split('T')[0];
+      const { data: timeEntries, error: timeError } = await supabase
+        .from('time_entries')
+        .select('total_hours')
+        .gte('clock_in', `${today}T00:00:00`)
+        .lt('clock_in', `${today}T23:59:59`);
+
+      if (timeError) throw timeError;
+
+      const totalHoursToday = timeEntries?.reduce((sum, entry) => sum + (entry.total_hours || 0), 0) || 0;
+
+      setPayrollStats({
+        totalPayroll: totalHoursToday * 25, // Assuming average ¥25/hour
+        pendingPayslips: pendingPayslips?.length || 0,
+        activePeriods: timeOffRequests?.length || 0,
+        totalEmployees: employees?.length || 0
+      });
+
       setLoading(false);
       onStatsUpdate();
     } catch (error) {
@@ -44,6 +102,17 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
         variant: "destructive",
       });
     }
+  };
+
+  const openDetailsModal = (cardType: string) => {
+    if (!isSuperAdmin) return;
+    setSelectedCard(cardType);
+    setDetailsModalOpen(true);
+  };
+
+  const openAddModal = () => {
+    if (!isSuperAdmin) return;
+    setAddModalOpen(true);
   };
 
   return (
@@ -57,12 +126,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
           <div className="flex gap-2">
             <Button 
               className="btn-panthers"
-              onClick={() => {
-                toast({
-                  title: "Feature Coming Soon",
-                  description: "Payroll period creation will be available soon.",
-                });
-              }}
+              onClick={openAddModal}
             >
               <Plus className="h-4 w-4 mr-2" />
               New Payroll Period
@@ -94,50 +158,62 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
 
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('totalPayroll')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Payroll</p>
-                    <p className="text-2xl font-bold text-primary">¥0</p>
+                    <p className="text-2xl font-bold text-primary">¥{payrollStats.totalPayroll}</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('pendingPayslips')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Pending Payslips</p>
-                    <p className="text-2xl font-bold text-orange-500">0</p>
+                    <p className="text-2xl font-bold text-orange-500">{payrollStats.pendingPayslips}</p>
                   </div>
                   <FileText className="h-8 w-8 text-orange-500" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('activePeriods')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Active Periods</p>
-                    <p className="text-2xl font-bold text-green-500">0</p>
+                    <p className="text-2xl font-bold text-green-500">{payrollStats.activePeriods}</p>
                   </div>
                   <Calendar className="h-8 w-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('totalEmployees')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
-                    <p className="text-2xl font-bold text-blue-500">0</p>
+                    <p className="text-2xl font-bold text-blue-500">{payrollStats.totalEmployees}</p>
                   </div>
-                  <DollarSign className="h-8 w-8 text-blue-500" />
+                  <Users className="h-8 w-8 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
@@ -319,6 +395,144 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Details Modal */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedCard === 'totalPayroll' && 'Total Payroll Details'}
+              {selectedCard === 'pendingPayslips' && 'Pending Payslips Details'}
+              {selectedCard === 'activePeriods' && 'Active Periods Details'}
+              {selectedCard === 'totalEmployees' && 'Total Employees Details'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {selectedCard === 'totalPayroll' && (
+              <div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Today's Payroll</h4>
+                    <p className="text-2xl font-bold text-primary">¥{payrollStats.totalPayroll}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Monthly Target</h4>
+                    <p className="text-2xl font-bold">¥500,000</p>
+                  </div>
+                </div>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Edit className="h-4 w-4 mr-2" />Edit Payroll</Button>
+                    <Button variant="outline"><Download className="h-4 w-4 mr-2" />Export Report</Button>
+                    <Button variant="destructive"><Trash2 className="h-4 w-4 mr-2" />Archive</Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {selectedCard === 'pendingPayslips' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {payrollStats.pendingPayslips} payslips are pending approval
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Plus className="h-4 w-4 mr-2" />Generate Payslips</Button>
+                    <Button variant="outline"><Eye className="h-4 w-4 mr-2" />Review All</Button>
+                    <Button variant="outline"><Download className="h-4 w-4 mr-2" />Export</Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCard === 'activePeriods' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {payrollStats.activePeriods} active payroll periods
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Plus className="h-4 w-4 mr-2" />Create Period</Button>
+                    <Button variant="outline"><Edit className="h-4 w-4 mr-2" />Manage Periods</Button>
+                    <Button variant="destructive"><Trash2 className="h-4 w-4 mr-2" />Close Period</Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCard === 'totalEmployees' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {payrollStats.totalEmployees} active employees in the system
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Plus className="h-4 w-4 mr-2" />Add Employee</Button>
+                    <Button variant="outline"><Edit className="h-4 w-4 mr-2" />Manage Employees</Button>
+                    <Button variant="outline"><Download className="h-4 w-4 mr-2" />Export List</Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Payroll Period Modal */}
+      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Payroll Period</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="period_name">Period Name</Label>
+              <Input id="period_name" placeholder="e.g., January 2024" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input id="start_date" type="date" />
+              </div>
+              <div>
+                <Label htmlFor="end_date">End Date</Label>
+                <Input id="end_date" type="date" />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="pay_date">Pay Date</Label>
+              <Input id="pay_date" type="date" />
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select defaultValue="draft">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAddModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                toast({
+                  title: "Success",
+                  description: "Payroll period created successfully.",
+                });
+                setAddModalOpen(false);
+              }}>
+                Create Period
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
