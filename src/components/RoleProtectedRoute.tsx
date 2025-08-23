@@ -19,7 +19,7 @@ const RoleProtectedRoute = ({
 }: RoleProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { userRoles, isSuperAdmin, loading: roleLoading, initialized } = useUserRole();
-  const { isTestMode, effectiveIsSuperAdmin, testHasRole } = useRoleSwitcher();
+  const { isTestMode, effectiveIsSuperAdmin, testHasRole, testRole } = useRoleSwitcher();
 
   // Wait for both auth and roles to be fully initialized
   if (authLoading || roleLoading || !initialized) {
@@ -57,6 +57,15 @@ const RoleProtectedRoute = ({
     : allowedRoles.some(role => actualHasRole(role));
 
   if (!hasPermission) {
+    console.log('RoleProtectedRoute: Access denied', {
+      allowedRoles,
+      actualIsSuperAdmin,
+      userRoles: isTestMode ? [`test: ${testRole}`] : userRoles,
+      requireAll,
+      hasPermission,
+      currentPath: window.location.pathname
+    });
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-0">
@@ -71,6 +80,9 @@ const RoleProtectedRoute = ({
             </p>
             <p className="text-sm text-gray-500">
               Required roles: {allowedRoles.join(requireAll ? ' AND ' : ' OR ')}
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              Path: {window.location.pathname}
             </p>
             <button 
               onClick={() => window.history.back()} 
