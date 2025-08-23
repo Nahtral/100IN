@@ -22,8 +22,10 @@ import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { EvaluationDashboard } from './EvaluationDashboard';
 import { PlayerReports } from './PlayerReports';
 import { HealthLoadManagement } from './HealthLoadManagement';
+import { GameLogUpload } from './GameLogUpload';
 import { useTranslation, Language } from '@/lib/i18n';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 interface EvaluationResultsProps {
   evaluations: any[];
@@ -55,9 +57,11 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
         .from('game_logs')
         .select(`
           *,
-          players!inner(
-            user_id,
-            profiles!inner(full_name)
+          players(
+            id,
+            first_name,
+            last_name,
+            user_id
           )
         `)
         .order('game_date', { ascending: false })
@@ -72,6 +76,11 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
     } catch (error) {
       console.error('Error fetching game logs:', error);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchGameLogs();
+    fetchDrillPlans();
   };
 
   const fetchDrillPlans = async () => {
@@ -186,6 +195,8 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
 
         {/* Game Log Tab */}
         <TabsContent value="gameLog" className="space-y-6">
+          <GameLogUpload onStatsExtracted={handleRefresh} />
+          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -217,31 +228,30 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
                       <TableHead>{t('rebounds')}</TableHead>
                       <TableHead>{t('assists')}</TableHead>
                       <TableHead>{t('rating')}</TableHead>
+                      <TableHead>Method</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {gameLogData.map((game) => (
                       <TableRow key={game.id}>
-                        <TableCell>{new Date(game.game_date).toLocaleDateString()}</TableCell>
-                        <TableCell>{game.players?.profiles?.full_name || 'Unknown Player'}</TableCell>
+                        <TableCell>{format(new Date(game.game_date), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>
+                          {game.players?.first_name} {game.players?.last_name}
+                        </TableCell>
                         <TableCell>{game.opponent}</TableCell>
                         <TableCell>
-                          <Badge variant={game.result === 'win' ? 'default' : 'secondary'}>
-                            {game.result === 'win' ? 'W' : 'L'}
+                          <Badge variant={game.result.startsWith('W') ? 'default' : 'secondary'}>
+                            {game.result}
                           </Badge>
                         </TableCell>
                         <TableCell>{game.points}</TableCell>
                         <TableCell>{game.rebounds}</TableCell>
                         <TableCell>{game.assists}</TableCell>
+                        <TableCell>{game.game_rating}</TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-1">
-                            <span>{game.game_rating}</span>
-                            {game.game_rating >= 8.0 ? (
-                              <TrendingUp className="h-3 w-3 text-green-500" />
-                            ) : (
-                              <TrendingDown className="h-3 w-3 text-red-500" />
-                            )}
-                          </div>
+                          <Badge variant={game.upload_method === 'screenshot' ? 'outline' : 'secondary'}>
+                            {game.upload_method === 'screenshot' ? 'AI' : 'Manual'}
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))}
