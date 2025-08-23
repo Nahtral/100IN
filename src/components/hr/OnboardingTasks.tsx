@@ -3,6 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Table, 
   TableBody, 
@@ -18,7 +22,11 @@ import {
   AlertTriangle,
   Plus,
   User,
-  Calendar
+  Calendar,
+  Edit,
+  Trash2,
+  Eye,
+  Archive
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -51,10 +59,17 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
   const [tasks, setTasks] = useState<OnboardingTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   useEffect(() => {
     fetchOnboardingTasks();
-  }, []);
+    if (isSuperAdmin) {
+      fetchEmployees();
+    }
+  }, [isSuperAdmin]);
 
   const fetchOnboardingTasks = async () => {
     try {
@@ -112,6 +127,31 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
     }
   };
 
+  const fetchEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, first_name, last_name, employee_id')
+        .eq('employment_status', 'active');
+
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  const openDetailsModal = (cardType: string) => {
+    if (!isSuperAdmin) return;
+    setSelectedCard(cardType);
+    setDetailsModalOpen(true);
+  };
+
+  const openAddModal = () => {
+    if (!isSuperAdmin) return;
+    setAddModalOpen(true);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       pending: 'bg-yellow-100 text-yellow-800',
@@ -155,7 +195,7 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
           <p className="text-muted-foreground">Track employee onboarding progress and tasks</p>
         </div>
         {(isSuperAdmin || hasRole('staff')) && (
-          <Button className="btn-panthers">
+          <Button className="btn-panthers" onClick={openAddModal}>
             <Plus className="h-4 w-4 mr-2" />
             Add Task Template
           </Button>
@@ -163,7 +203,10 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <Card className="card-enhanced">
+        <Card 
+          className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+          onClick={() => openDetailsModal('totalTasks')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -175,7 +218,10 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
           </CardContent>
         </Card>
 
-        <Card className="card-enhanced">
+        <Card 
+          className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+          onClick={() => openDetailsModal('pending')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -187,7 +233,10 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
           </CardContent>
         </Card>
 
-        <Card className="card-enhanced">
+        <Card 
+          className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+          onClick={() => openDetailsModal('inProgress')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -199,7 +248,10 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
           </CardContent>
         </Card>
 
-        <Card className="card-enhanced">
+        <Card 
+          className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+          onClick={() => openDetailsModal('completed')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -211,7 +263,10 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
           </CardContent>
         </Card>
 
-        <Card className="card-enhanced">
+        <Card 
+          className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+          onClick={() => openDetailsModal('overdue')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -328,20 +383,48 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
                         <span className="text-sm text-muted-foreground">In progress</span>
                       )}
                     </TableCell>
-                    {(isSuperAdmin || hasRole('staff')) && (
-                      <TableCell>
-                        {task.status !== 'completed' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => completeTask(task.id)}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    )}
+                     {(isSuperAdmin || hasRole('staff')) && (
+                       <TableCell>
+                         <div className="flex items-center gap-1">
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={() => openDetailsModal('taskDetails')}
+                             className="text-blue-600 hover:text-blue-700"
+                           >
+                             <Eye className="h-4 w-4" />
+                           </Button>
+                           {isSuperAdmin && (
+                             <>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="text-yellow-600 hover:text-yellow-700"
+                               >
+                                 <Edit className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="text-red-600 hover:text-red-700"
+                               >
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </>
+                           )}
+                           {task.status !== 'completed' && (
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => completeTask(task.id)}
+                               className="text-green-600 hover:text-green-700"
+                             >
+                               <CheckCircle className="h-4 w-4" />
+                             </Button>
+                           )}
+                         </div>
+                       </TableCell>
+                     )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -349,6 +432,171 @@ const OnboardingTasks: React.FC<OnboardingTasksProps> = ({ onStatsUpdate }) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Details Modal */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedCard === 'totalTasks' && 'Total Tasks Details'}
+              {selectedCard === 'pending' && 'Pending Tasks Details'}
+              {selectedCard === 'inProgress' && 'In Progress Tasks Details'}
+              {selectedCard === 'completed' && 'Completed Tasks Details'}
+              {selectedCard === 'overdue' && 'Overdue Tasks Details'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {selectedCard === 'totalTasks' && (
+              <div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Total Tasks</h4>
+                    <p className="text-2xl font-bold text-primary">{stats.total}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Completion Rate</h4>
+                    <p className="text-2xl font-bold">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%</p>
+                  </div>
+                </div>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Plus className="h-4 w-4 mr-2" />Add Task</Button>
+                    <Button variant="outline"><Edit className="h-4 w-4 mr-2" />Manage Templates</Button>
+                    <Button variant="outline"><Eye className="h-4 w-4 mr-2" />View All</Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {selectedCard === 'pending' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {stats.pending} tasks are waiting to be started
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Edit className="h-4 w-4 mr-2" />Assign Tasks</Button>
+                    <Button variant="outline"><Calendar className="h-4 w-4 mr-2" />Schedule</Button>
+                    <Button variant="outline"><AlertTriangle className="h-4 w-4 mr-2" />Send Reminders</Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCard === 'inProgress' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {stats.inProgress} tasks are currently being worked on
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Eye className="h-4 w-4 mr-2" />Monitor Progress</Button>
+                    <Button variant="outline"><Edit className="h-4 w-4 mr-2" />Update Status</Button>
+                    <Button variant="outline"><CheckCircle className="h-4 w-4 mr-2" />Mark Complete</Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCard === 'completed' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {stats.completed} tasks have been successfully completed
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Eye className="h-4 w-4 mr-2" />Review Completed</Button>
+                    <Button variant="outline"><Archive className="h-4 w-4 mr-2" />Archive Tasks</Button>
+                    <Button variant="outline"><UserPlus className="h-4 w-4 mr-2" />Generate Report</Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCard === 'overdue' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {stats.overdue} tasks are past their due date and need immediate attention
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button className="bg-red-600 hover:bg-red-700"><AlertTriangle className="h-4 w-4 mr-2" />Urgent Action</Button>
+                    <Button variant="outline"><Calendar className="h-4 w-4 mr-2" />Reschedule</Button>
+                    <Button variant="outline"><User className="h-4 w-4 mr-2" />Reassign</Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Task Template Modal */}
+      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Task Template</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="employee">Employee</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.first_name} {employee.last_name} ({employee.employee_id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="task_name">Task Name</Label>
+              <Input id="task_name" placeholder="e.g., Complete orientation training" />
+            </div>
+            <div>
+              <Label htmlFor="task_description">Description</Label>
+              <Textarea id="task_description" placeholder="Detailed task description..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="due_date">Due Date</Label>
+                <Input id="due_date" type="date" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAddModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                toast({
+                  title: "Success",
+                  description: "Task template created successfully.",
+                });
+                setAddModalOpen(false);
+              }}>
+                Create Task
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

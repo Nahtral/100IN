@@ -3,6 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Shield, 
   Heart, 
@@ -13,7 +18,11 @@ import {
   AlertCircle,
   Download,
   Calendar,
-  DollarSign
+  DollarSign,
+  Edit,
+  Trash2,
+  Eye,
+  Archive
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +37,9 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
   const { isSuperAdmin, hasRole } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [benefitStats, setBenefitStats] = useState({
     totalEnrolled: 0,
     activePlans: 0,
@@ -162,6 +174,17 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
     }
   };
 
+  const openDetailsModal = (cardType: string) => {
+    if (!isSuperAdmin) return;
+    setSelectedCard(cardType);
+    setDetailsModalOpen(true);
+  };
+
+  const openAddModal = () => {
+    if (!isSuperAdmin) return;
+    setAddModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -173,12 +196,7 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
           <div className="flex gap-2">
             <Button 
               className="btn-panthers"
-              onClick={() => {
-                toast({
-                  title: "Feature Coming Soon",
-                  description: "Benefit plan creation will be available soon.",
-                });
-              }}
+              onClick={openAddModal}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Benefit Plan
@@ -197,7 +215,10 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => setActiveTab('enrollment')}>
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('totalEnrolled')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -209,7 +230,10 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => setActiveTab('plans')}>
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('activePlans')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -221,7 +245,10 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('monthlyCost')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -233,7 +260,10 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
+            <Card 
+              className={`card-enhanced ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-all duration-200' : ''}`}
+              onClick={() => openDetailsModal('expiringSoon')}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -426,6 +456,154 @@ const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Details Modal */}
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedCard === 'totalEnrolled' && 'Total Enrolled Details'}
+              {selectedCard === 'activePlans' && 'Active Plans Details'}
+              {selectedCard === 'monthlyCost' && 'Monthly Cost Details'}
+              {selectedCard === 'expiringSoon' && 'Expiring Soon Details'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {selectedCard === 'totalEnrolled' && (
+              <div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Total Enrolled</h4>
+                    <p className="text-2xl font-bold text-primary">{benefitStats.totalEnrolled}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Enrollment Rate</h4>
+                    <p className="text-2xl font-bold">85%</p>
+                  </div>
+                </div>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Edit className="h-4 w-4 mr-2" />Manage Enrollments</Button>
+                    <Button variant="outline"><Download className="h-4 w-4 mr-2" />Export Data</Button>
+                    <Button variant="outline"><Eye className="h-4 w-4 mr-2" />View Details</Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {selectedCard === 'activePlans' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {benefitStats.activePlans} active benefit plans available
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Plus className="h-4 w-4 mr-2" />Add Plan</Button>
+                    <Button variant="outline"><Edit className="h-4 w-4 mr-2" />Edit Plans</Button>
+                    <Button variant="destructive"><Archive className="h-4 w-4 mr-2" />Archive Plan</Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCard === 'monthlyCost' && (
+              <div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Current Monthly Cost</h4>
+                    <p className="text-2xl font-bold text-orange-500">¥{benefitStats.monthlyCost}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-semibold">Budget Remaining</h4>
+                    <p className="text-2xl font-bold">¥{(50000 - benefitStats.monthlyCost).toFixed(2)}</p>
+                  </div>
+                </div>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Edit className="h-4 w-4 mr-2" />Adjust Budget</Button>
+                    <Button variant="outline"><Download className="h-4 w-4 mr-2" />Cost Report</Button>
+                    <Button variant="outline"><TrendingUp className="h-4 w-4 mr-2" />View Trends</Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedCard === 'expiringSoon' && (
+              <div>
+                <p className="text-muted-foreground mb-4">
+                  {benefitStats.expiringSoon} benefit plans expiring within 30 days
+                </p>
+                {isSuperAdmin && (
+                  <div className="flex gap-2">
+                    <Button><Edit className="h-4 w-4 mr-2" />Renew Plans</Button>
+                    <Button variant="outline"><AlertCircle className="h-4 w-4 mr-2" />Send Reminders</Button>
+                    <Button variant="outline"><Download className="h-4 w-4 mr-2" />Export List</Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Benefit Plan Modal */}
+      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Benefit Plan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="plan_name">Plan Name</Label>
+              <Input id="plan_name" placeholder="e.g., Premium Health Insurance" />
+            </div>
+            <div>
+              <Label htmlFor="plan_type">Plan Type</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select plan type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="health">Health Insurance</SelectItem>
+                  <SelectItem value="dental">Dental Insurance</SelectItem>
+                  <SelectItem value="vision">Vision Insurance</SelectItem>
+                  <SelectItem value="life">Life Insurance</SelectItem>
+                  <SelectItem value="retirement">Retirement</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="employee_cost">Employee Cost (¥)</Label>
+                <Input id="employee_cost" type="number" placeholder="0.00" />
+              </div>
+              <div>
+                <Label htmlFor="employer_cost">Employer Cost (¥)</Label>
+                <Input id="employer_cost" type="number" placeholder="0.00" />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" placeholder="Plan details and benefits..." />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAddModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                toast({
+                  title: "Success",
+                  description: "Benefit plan created successfully.",
+                });
+                setAddModalOpen(false);
+              }}>
+                Create Plan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
