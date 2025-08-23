@@ -2,9 +2,12 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Search, User, LogOut } from 'lucide-react';
+import { Bell, Search, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
+import ProfilePicture from '@/components/ui/ProfilePicture';
 
 interface HeaderProps {
   currentUser?: {
@@ -16,6 +19,8 @@ interface HeaderProps {
 
 const Header = ({ currentUser }: HeaderProps) => {
   const { signOut } = useAuth();
+  const { profile, updateProfile } = useUserProfile();
+  const { userRole } = useUserRole();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -33,6 +38,13 @@ const Header = ({ currentUser }: HeaderProps) => {
       });
     }
   };
+
+  const handleAvatarUpdate = (newAvatarUrl: string) => {
+    updateProfile({ avatar_url: newAvatarUrl });
+  };
+
+  const displayName = profile?.full_name || currentUser?.name || 'User';
+  const displayRole = userRole || currentUser?.role || 'Loading...';
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 ml-64">
@@ -58,13 +70,15 @@ const Header = ({ currentUser }: HeaderProps) => {
             </Button>
             
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">{currentUser?.avatar || 'U'}</span>
-              </div>
+              <ProfilePicture
+                avatarUrl={profile?.avatar_url}
+                userName={displayName}
+                onAvatarUpdate={handleAvatarUpdate}
+              />
               <div>
-                <p className="text-sm font-medium">{currentUser?.name || 'User'}</p>
+                <p className="text-sm font-medium">{displayName}</p>
                 <Badge variant="secondary" className="text-xs">
-                  {currentUser?.role || 'Loading...'}
+                  {displayRole}
                 </Badge>
               </div>
             </div>
