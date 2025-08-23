@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   BarChart3, 
@@ -10,7 +13,9 @@ import {
   Target, 
   Activity, 
   Settings,
-  Globe
+  Globe,
+  TrendingUp,
+  TrendingDown
 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
@@ -18,6 +23,7 @@ import { EvaluationDashboard } from './EvaluationDashboard';
 import { PlayerReports } from './PlayerReports';
 import { HealthLoadManagement } from './HealthLoadManagement';
 import { useTranslation, Language } from '@/lib/i18n';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EvaluationResultsProps {
   evaluations: any[];
@@ -29,58 +35,72 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
   const { isTestMode, effectiveIsSuperAdmin, testHasRole, testCanAccessMedical } = useRoleSwitcher();
   const [language, setLanguage] = useState<Language>('en');
   const { t } = useTranslation(language);
+  const [gameLogData, setGameLogData] = useState<any[]>([]);
+  const [drillPlanData, setDrillPlanData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Use effective roles when in test mode
   const currentIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
   const currentHasRole = (role: string) => isTestMode ? testHasRole(role) : hasRole(role);
   const currentCanAccessMedical = isTestMode ? testCanAccessMedical() : canAccessMedical();
 
-  // Mock game log and drill plan data
-  const gameLogData = [
-    {
-      id: 1,
-      date: '2024-01-15',
-      opponent: 'Thunder Bolts',
-      result: 'W 89-76',
-      performance: {
-        shooting: 78,
-        passing: 82,
-        dribbling: 75,
-        movement: 88
-      }
-    },
-    {
-      id: 2,
-      date: '2024-01-10',
-      opponent: 'Lightning Strikes',
-      result: 'L 72-85',
-      performance: {
-        shooting: 65,
-        passing: 78,
-        dribbling: 72,
-        movement: 80
-      }
-    }
-  ];
+  useEffect(() => {
+    fetchGameLogs();
+    fetchDrillPlans();
+  }, []);
 
-  const drillPlanData = [
-    {
-      category: 'Shooting',
-      drills: [
-        { name: 'Form Shooting', duration: '15 min', focus: 'Mechanics' },
-        { name: 'Spot Shooting', duration: '20 min', focus: 'Accuracy' },
-        { name: 'Game Shots', duration: '15 min', focus: 'Game Simulation' }
-      ]
-    },
-    {
-      category: 'Ball Handling',
-      drills: [
-        { name: 'Stationary Dribbling', duration: '10 min', focus: 'Control' },
-        { name: 'Cone Weaving', duration: '15 min', focus: 'Agility' },
-        { name: 'Two-Ball Drills', duration: '10 min', focus: 'Coordination' }
-      ]
+  const fetchGameLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('game_logs')
+        .select(`
+          *,
+          players!inner(
+            user_id,
+            profiles!inner(full_name)
+          )
+        `)
+        .order('game_date', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching game logs:', error);
+        return;
+      }
+
+      setGameLogData(data || []);
+    } catch (error) {
+      console.error('Error fetching game logs:', error);
     }
-  ];
+  };
+
+  const fetchDrillPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('drill_plans')
+        .select(`
+          *,
+          players!inner(
+            user_id,
+            profiles!inner(full_name)
+          )
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching drill plans:', error);
+        return;
+      }
+
+      setDrillPlanData(data || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching drill plans:', error);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -155,168 +175,203 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
         </TabsList>
 
         {/* Dashboard Tab */}
-        <TabsContent value="dashboard">
-          <EvaluationDashboard 
-            evaluations={evaluations} 
-            language={language}
-          />
+        <TabsContent value="dashboard" className="space-y-6">
+          <EvaluationDashboard evaluations={evaluations} language={language} />
         </TabsContent>
 
         {/* Player Reports Tab */}
-        <TabsContent value="reports">
-          <PlayerReports 
-            evaluations={evaluations} 
-            players={players}
-            language={language}
-          />
+        <TabsContent value="reports" className="space-y-6">
+          <PlayerReports evaluations={evaluations} players={players} language={language} />
         </TabsContent>
 
         {/* Game Log Tab */}
-        <TabsContent value="gameLog">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{t('gameLog')}</h3>
-              <Button className="btn-panthers">Add Game</Button>
-            </div>
-            
-            <div className="space-y-4">
-              {gameLogData.map((game) => (
-                <div key={game.id} className="mobile-card">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="font-semibold">{game.opponent}</h4>
-                      <p className="text-sm text-muted-foreground">{game.date}</p>
-                    </div>
-                    <Badge variant={game.result.startsWith('W') ? 'default' : 'destructive'}>
-                      {game.result}
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-lg font-semibold">{game.performance.shooting}%</div>
-                      <div className="text-xs text-muted-foreground">{t('shootingAccuracy')}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold">{game.performance.passing}%</div>
-                      <div className="text-xs text-muted-foreground">{t('passingPrecision')}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold">{game.performance.dribbling}%</div>
-                      <div className="text-xs text-muted-foreground">{t('dribblingControl')}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold">{game.performance.movement}%</div>
-                      <div className="text-xs text-muted-foreground">{t('movement')}</div>
-                    </div>
-                  </div>
+        <TabsContent value="gameLog" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5" />
+                <span>{t('gameLog')}</span>
+              </CardTitle>
+              <CardDescription>
+                {t('trackGamePerformance')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ))}
-            </div>
-          </div>
+              ) : gameLogData.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No game logs available. Game performance data will appear here once games are recorded.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('date')}</TableHead>
+                      <TableHead>Player</TableHead>
+                      <TableHead>{t('opponent')}</TableHead>
+                      <TableHead>{t('result')}</TableHead>
+                      <TableHead>{t('points')}</TableHead>
+                      <TableHead>{t('rebounds')}</TableHead>
+                      <TableHead>{t('assists')}</TableHead>
+                      <TableHead>{t('rating')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {gameLogData.map((game) => (
+                      <TableRow key={game.id}>
+                        <TableCell>{new Date(game.game_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{game.players?.profiles?.full_name || 'Unknown Player'}</TableCell>
+                        <TableCell>{game.opponent}</TableCell>
+                        <TableCell>
+                          <Badge variant={game.result === 'win' ? 'default' : 'secondary'}>
+                            {game.result === 'win' ? 'W' : 'L'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{game.points}</TableCell>
+                        <TableCell>{game.rebounds}</TableCell>
+                        <TableCell>{game.assists}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1">
+                            <span>{game.game_rating}</span>
+                            {game.game_rating >= 8.0 ? (
+                              <TrendingUp className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <TrendingDown className="h-3 w-3 text-red-500" />
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Drill Plan Tab */}
-        <TabsContent value="drillPlan">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{t('personalizedTraining')}</h3>
-              <Button className="btn-panthers">{t('generate')} New Plan</Button>
-            </div>
-            
-            <div className="card-grid">
-              {drillPlanData.map((category, index) => (
-                <div key={index} className="mobile-card">
-                  <div className="mobile-card-header">
-                    <h4 className="font-semibold">{category.category}</h4>
-                  </div>
-                  <div className="space-y-3">
-                    {category.drills.map((drill, drillIndex) => (
-                      <div key={drillIndex} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-sm">{drill.name}</p>
-                          <p className="text-xs text-muted-foreground">{drill.focus}</p>
-                        </div>
-                        <Badge variant="outline">{drill.duration}</Badge>
-                      </div>
-                    ))}
-                  </div>
+        <TabsContent value="drillPlan" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Target className="h-5 w-5" />
+                <span>{t('drillPlan')}</span>
+              </CardTitle>
+              <CardDescription>
+                {t('personalizedTrainingPlans')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ))}
-            </div>
-          </div>
+              ) : drillPlanData.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No drill plans available. AI-recommended and custom training plans will appear here.
+                </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {drillPlanData.map((plan) => (
+                    <Card key={plan.id}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{plan.plan_name}</CardTitle>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline">{plan.category}</Badge>
+                          <Badge variant={plan.ai_recommended ? 'default' : 'secondary'}>
+                            {plan.ai_recommended ? 'AI' : 'Manual'}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="space-y-2">
+                          <div className="text-sm">
+                            <strong>Player:</strong> {plan.players?.profiles?.full_name || 'Unknown'}
+                          </div>
+                          <div className="text-sm">
+                            <strong>Duration:</strong> {plan.duration_minutes} minutes
+                          </div>
+                          <div className="text-sm">
+                            <strong>Level:</strong> {plan.difficulty_level}
+                          </div>
+                          <div className="text-sm">
+                            <strong>Focus Areas:</strong> {plan.focus_areas?.join(', ') || 'General'}
+                          </div>
+                        </div>
+                        <Progress value={plan.completion_percentage || 0} className="mt-2" />
+                        <div className="text-xs text-muted-foreground">
+                          {plan.completion_percentage || 0}% Complete
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Health & Load Tab */}
+        {/* Health & Load Management Tab */}
         {currentCanAccessMedical && (
-          <TabsContent value="health">
-            <HealthLoadManagement 
-              evaluations={evaluations} 
-              players={players}
-              language={language}
-            />
+          <TabsContent value="health" className="space-y-6">
+            <HealthLoadManagement evaluations={evaluations} players={players} language={language} />
           </TabsContent>
         )}
 
         {/* Admin Tab */}
         {currentIsSuperAdmin && (
-          <TabsContent value="admin">
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold">{t('systemManagement')}</h3>
-              
-              <div className="card-grid">
-                <div className="mobile-card">
-                  <div className="mobile-card-header">
-                    <h4 className="font-semibold">System Settings</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full justify-start">
-                      Configure AI Models
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      Analysis Parameters
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      Export Settings
-                    </Button>
-                  </div>
+          <TabsContent value="admin" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Settings className="h-5 w-5" />
+                  <span>{t('adminSettings')}</span>
+                </CardTitle>
+                <CardDescription>
+                  {t('systemConfiguration')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{t('dataManagement')}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Button variant="outline" className="w-full justify-start">
+                        {t('exportEvaluations')}
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start">
+                        {t('importPlayers')}
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start">
+                        {t('backupData')}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{t('systemSettings')}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Button variant="outline" className="w-full justify-start">
+                        {t('configureAI')}
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start">
+                        {t('managePermissions')}
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start">
+                        {t('viewLogs')}
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
-
-                <div className="mobile-card">
-                  <div className="mobile-card-header">
-                    <h4 className="font-semibold">User Management</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full justify-start">
-                      Manage Permissions
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      Role Assignment
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      Access Logs
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mobile-card">
-                  <div className="mobile-card-header">
-                    <h4 className="font-semibold">Data Management</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full justify-start">
-                      Backup System
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      Data Export
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      Analytics Reports
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         )}
       </Tabs>

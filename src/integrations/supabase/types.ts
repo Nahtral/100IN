@@ -354,6 +354,69 @@ export type Database = {
         }
         Relationships: []
       }
+      drill_plans: {
+        Row: {
+          ai_recommended: boolean | null
+          assigned_by: string
+          based_on_evaluation_id: string | null
+          category: string
+          completion_percentage: number | null
+          created_at: string
+          difficulty_level: string
+          duration_minutes: number
+          exercises: Json | null
+          focus_areas: string[] | null
+          id: string
+          notes: string | null
+          plan_name: string
+          player_id: string
+          progress_tracking: Json | null
+          status: string
+          success_criteria: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_recommended?: boolean | null
+          assigned_by: string
+          based_on_evaluation_id?: string | null
+          category: string
+          completion_percentage?: number | null
+          created_at?: string
+          difficulty_level: string
+          duration_minutes?: number
+          exercises?: Json | null
+          focus_areas?: string[] | null
+          id?: string
+          notes?: string | null
+          plan_name: string
+          player_id: string
+          progress_tracking?: Json | null
+          status?: string
+          success_criteria?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_recommended?: boolean | null
+          assigned_by?: string
+          based_on_evaluation_id?: string | null
+          category?: string
+          completion_percentage?: number | null
+          created_at?: string
+          difficulty_level?: string
+          duration_minutes?: number
+          exercises?: Json | null
+          focus_areas?: string[] | null
+          id?: string
+          notes?: string | null
+          plan_name?: string
+          player_id?: string
+          progress_tracking?: Json | null
+          status?: string
+          success_criteria?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_benefit_enrollments: {
         Row: {
           benefit_plan_id: string
@@ -767,6 +830,87 @@ export type Database = {
           video_filename?: string
           video_size_mb?: number
           video_url?: string
+        }
+        Relationships: []
+      }
+      game_logs: {
+        Row: {
+          assists: number | null
+          blocks: number | null
+          created_at: string
+          created_by: string
+          field_goals_attempted: number | null
+          field_goals_made: number | null
+          free_throws_attempted: number | null
+          free_throws_made: number | null
+          game_date: string
+          game_rating: number | null
+          id: string
+          minutes_played: number | null
+          opponent: string
+          performance_notes: string | null
+          player_id: string
+          plus_minus: number | null
+          points: number | null
+          rebounds: number | null
+          result: string
+          steals: number | null
+          three_points_attempted: number | null
+          three_points_made: number | null
+          turnovers: number | null
+          updated_at: string
+        }
+        Insert: {
+          assists?: number | null
+          blocks?: number | null
+          created_at?: string
+          created_by: string
+          field_goals_attempted?: number | null
+          field_goals_made?: number | null
+          free_throws_attempted?: number | null
+          free_throws_made?: number | null
+          game_date: string
+          game_rating?: number | null
+          id?: string
+          minutes_played?: number | null
+          opponent: string
+          performance_notes?: string | null
+          player_id: string
+          plus_minus?: number | null
+          points?: number | null
+          rebounds?: number | null
+          result: string
+          steals?: number | null
+          three_points_attempted?: number | null
+          three_points_made?: number | null
+          turnovers?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assists?: number | null
+          blocks?: number | null
+          created_at?: string
+          created_by?: string
+          field_goals_attempted?: number | null
+          field_goals_made?: number | null
+          free_throws_attempted?: number | null
+          free_throws_made?: number | null
+          game_date?: string
+          game_rating?: number | null
+          id?: string
+          minutes_played?: number | null
+          opponent?: string
+          performance_notes?: string | null
+          player_id?: string
+          plus_minus?: number | null
+          points?: number | null
+          rebounds?: number | null
+          result?: string
+          steals?: number | null
+          three_points_attempted?: number | null
+          three_points_made?: number | null
+          turnovers?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2893,6 +3037,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_sessions: {
+        Row: {
+          coach_feedback: string | null
+          created_at: string
+          drill_plan_id: string | null
+          duration_minutes: number | null
+          exercises_completed: Json | null
+          fatigue_level: number | null
+          focus_level: number | null
+          id: string
+          improvement_notes: string | null
+          performance_metrics: Json | null
+          player_id: string
+          recorded_by: string
+          session_date: string
+          updated_at: string
+        }
+        Insert: {
+          coach_feedback?: string | null
+          created_at?: string
+          drill_plan_id?: string | null
+          duration_minutes?: number | null
+          exercises_completed?: Json | null
+          fatigue_level?: number | null
+          focus_level?: number | null
+          id?: string
+          improvement_notes?: string | null
+          performance_metrics?: Json | null
+          player_id: string
+          recorded_by: string
+          session_date?: string
+          updated_at?: string
+        }
+        Update: {
+          coach_feedback?: string | null
+          created_at?: string
+          drill_plan_id?: string | null
+          duration_minutes?: number | null
+          exercises_completed?: Json | null
+          fatigue_level?: number | null
+          focus_level?: number | null
+          id?: string
+          improvement_notes?: string | null
+          performance_metrics?: Json | null
+          player_id?: string
+          recorded_by?: string
+          session_date?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_approval_requests: {
         Row: {

@@ -69,7 +69,31 @@ export const translations = {
     score: "Score",
     status: "Status",
     actions: "Actions",
-    details: "Details"
+    details: "Details",
+    
+    // Game Log Extended
+    trackGamePerformance: "Track game performance and statistics",
+    opponent: "Opponent",
+    result: "Result",
+    points: "Points",
+    rebounds: "Rebounds",
+    assists: "Assists",
+    rating: "Rating",
+    
+    // Drill Plans Extended
+    personalizedTrainingPlans: "Personalized training plans and exercises",
+    
+    // Admin Extended
+    adminSettings: "Admin Settings",
+    systemConfiguration: "System configuration and management",
+    dataManagement: "Data Management",
+    exportEvaluations: "Export Evaluations",
+    importPlayers: "Import Players",
+    backupData: "Backup Data",
+    systemSettings: "System Settings",
+    configureAI: "Configure AI",
+    managePermissions: "Manage Permissions",
+    viewLogs: "View Logs"
   },
   zh: {
     // Dashboard - 仪表板
@@ -140,7 +164,31 @@ export const translations = {
     score: "分数",
     status: "状态",
     actions: "操作",
-    details: "详情"
+    details: "详情",
+    
+    // Game Log Extended - 比赛记录扩展
+    trackGamePerformance: "跟踪比赛表现和统计数据",
+    opponent: "对手",
+    result: "结果",
+    points: "得分",
+    rebounds: "篮板",
+    assists: "助攻",
+    rating: "评分",
+    
+    // Drill Plans Extended - 训练计划扩展
+    personalizedTrainingPlans: "个性化训练计划和练习",
+    
+    // Admin Extended - 管理扩展
+    adminSettings: "管理设置",
+    systemConfiguration: "系统配置和管理",
+    dataManagement: "数据管理",
+    exportEvaluations: "导出评估",
+    importPlayers: "导入球员",
+    backupData: "备份数据",
+    systemSettings: "系统设置",
+    configureAI: "配置AI",
+    managePermissions: "管理权限",
+    viewLogs: "查看日志"
   }
 };
 
