@@ -204,7 +204,7 @@ const InjuryReporting: React.FC<InjuryReportingProps> = ({
         {(userRole === 'player' || ['coach', 'staff', 'medical'].includes(userRole) || isSuperAdmin) && (
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
+              <Button className="bg-black hover:bg-gray-800 text-white">
                 <Plus className="h-4 w-4 mr-2" />
                 Report New Injury
               </Button>

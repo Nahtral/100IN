@@ -713,7 +713,7 @@ const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) =>
 
         <Dialog open={showScheduleCall} onOpenChange={setShowScheduleCall}>
           <DialogTrigger asChild>
-            <Button className="mobile-btn bg-gradient-to-r from-orange-500 to-orange-600 h-auto py-4">
+            <Button className="mobile-btn bg-black hover:bg-gray-800 h-auto py-4">
               <div className="flex flex-col items-center gap-2">
                 <Phone className="h-5 w-5" />
                 <span>Schedule Call</span>

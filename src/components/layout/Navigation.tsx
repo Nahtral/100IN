@@ -119,12 +119,12 @@ const Navigation = () => {
     <nav className="w-64 bg-white shadow-lg h-screen fixed left-0 top-0 z-50">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
             <Trophy className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-              Court Vision
+            <h1 className="text-xl font-bold text-black">
+              100IN
             </h1>
             <p className="text-xs text-gray-600">Panthers Basketball</p>
           </div>

@@ -218,7 +218,7 @@ export function AppSidebar() {
           {(!collapsed || isMobile) && (
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-black leading-tight" style={{ textShadow: '1px 1px 0px #B38F54, -1px -1px 0px #B38F54, 1px -1px 0px #B38F54, -1px 1px 0px #B38F54' }}>Panthers</h1>
-              <p className="text-sm text-muted-foreground truncate">Court Vision</p>
+              <p className="text-sm text-muted-foreground truncate">100IN</p>
             </div>
           )}
         </div>

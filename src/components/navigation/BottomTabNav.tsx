@@ -54,7 +54,7 @@ export const BottomTabNav: React.FC<BottomTabNavProps> = ({ onMoreClick }) => {
 
   if (!initialized) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-border safe-area-inset-bottom md:bg-black lg:bg-black">
         <div className="flex justify-around items-center h-16">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex flex-col items-center justify-center w-16 h-12">
@@ -68,7 +68,7 @@ export const BottomTabNav: React.FC<BottomTabNavProps> = ({ onMoreClick }) => {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border z-50 safe-area-inset-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-black backdrop-blur border-t border-border z-50 safe-area-inset-bottom md:bg-black lg:bg-black">
       <div className="flex justify-around items-center h-16 px-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;

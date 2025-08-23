@@ -76,7 +76,7 @@ const Home = () => {
           </div>
           <div className="space-y-2">
             <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
-              Welcome to Court Vision
+              Welcome to 100IN
             </h1>
             <p className="mobile-text text-muted-foreground max-w-2xl mx-auto">
               Your Central Hub for Panthers Basketball
@@ -138,9 +138,9 @@ const Home = () => {
 
         {/* Next Event Highlight */}
         {nextEvent && (
-          <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
+          <Card className="bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-800">
+              <CardTitle className="flex items-center gap-2 text-gray-800">
                 <Calendar className="h-5 w-5" />
                 Next Event
               </CardTitle>
@@ -249,7 +249,7 @@ const Home = () => {
               Ready to get started?
             </h3>
             <p className="text-blue-700 mb-4">
-              Explore all the features Court Vision has to offer for managing your basketball team
+              Explore all the features 100IN has to offer for managing your basketball team
             </p>
             <Button asChild size="lg">
               <Link to="/dashboard">

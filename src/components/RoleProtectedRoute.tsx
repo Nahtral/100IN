@@ -24,13 +24,13 @@ const RoleProtectedRoute = ({
   // Wait for both auth and roles to be fully initialized
   if (authLoading || roleLoading || !initialized) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <Card className="w-96 shadow-xl border-0">
           <CardContent className="p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl mb-4 animate-pulse">
-              <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-8 h-8" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-xl mb-4 animate-pulse p-2">
+              <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Court Vision</h2>
+            <h2 className="text-xl font-semibold mb-2">100IN</h2>
             <p className="text-gray-600">Checking permissions...</p>
           </CardContent>
         </Card>
@@ -67,7 +67,7 @@ const RoleProtectedRoute = ({
     });
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-0">
           <CardContent className="p-8 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-xl mb-4">
@@ -86,7 +86,7 @@ const RoleProtectedRoute = ({
             </p>
             <button 
               onClick={() => window.history.back()} 
-              className="mt-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-colors"
+              className="mt-4 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Go Back
             </button>

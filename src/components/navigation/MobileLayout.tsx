@@ -47,7 +47,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, currentUse
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 safe-area-inset">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-black backdrop-blur sticky top-0 z-40 safe-area-inset md:bg-black lg:bg-black">
         <div className="flex items-center gap-2">
           <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-2">
             <img 

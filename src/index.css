@@ -173,11 +173,11 @@ All colors MUST be HSL.
   
   /* Button variants with Panthers styling */
   .btn-panthers {
-    @apply bg-primary text-primary-foreground font-semibold rounded-lg shadow-soft hover:shadow-gold transition-all duration-300;
+    @apply bg-black text-white font-semibold rounded-lg shadow-soft hover:bg-gray-800 transition-all duration-300;
   }
   
   .btn-secondary-panthers {
-    @apply bg-secondary text-secondary-foreground font-semibold rounded-lg shadow-soft hover:shadow-gold transition-all duration-300;
+    @apply bg-transparent text-black border border-black font-semibold rounded-lg shadow-soft hover:bg-black hover:text-white transition-all duration-300;
   }
   
   .gradient-primary {

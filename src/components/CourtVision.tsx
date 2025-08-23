@@ -104,7 +104,7 @@ export function CourtVision() {
             <div className="text-panthers-red font-bold text-lg">🐾</div>
           </div>
           <div className="text-white">
-            <div className="font-semibold text-sm">Court Vision</div>
+            <div className="font-semibold text-sm">100IN</div>
             <div className="text-xs opacity-90">Panthers Basketball</div>
           </div>
         </div>
@@ -144,7 +144,7 @@ export function CourtVision() {
             {/* Welcome Section */}
             <div className="text-center space-y-2">
               <h1 className="text-3xl font-bold text-foreground">
-                Welcome to Court Vision
+                Welcome to 100IN
               </h1>
               <p className="text-muted-foreground text-lg">
                 Your Central Hub for Panthers Basketball

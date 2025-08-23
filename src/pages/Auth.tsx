@@ -116,15 +116,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-xl mb-4 p-2">
             <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-            Court Vision
+          <h1 className="text-3xl font-bold text-black">
+            100IN
           </h1>
           <p className="text-gray-600">Panthers Basketball Management</p>
         </div>
@@ -176,7 +176,7 @@ const Auth = () => {
 
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                    className="w-full bg-black hover:bg-gray-800 text-white"
                     disabled={loading}
                   >
                     {loading ? "Signing In..." : "Sign In"}
@@ -261,7 +261,7 @@ const Auth = () => {
 
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                    className="w-full bg-black hover:bg-gray-800 text-white"
                     disabled={loading}
                   >
                     {loading ? "Creating Account..." : "Sign Up"}

@@ -445,7 +445,7 @@ const PartnerDashboard = () => {
                 Request Performance Report
               </Button>
               <Button 
-                className="mobile-btn bg-gradient-to-r from-orange-500 to-orange-600"
+                className="mobile-btn bg-black hover:bg-gray-800"
                 onClick={() => setShowCommunication(true)}
               >
                 <DollarSign className="h-4 w-4 mr-2" />

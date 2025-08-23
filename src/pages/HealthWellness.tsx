@@ -74,8 +74,8 @@ const HealthWellness = () => {
       <Layout currentUser={currentUser}>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center animate-fade-in">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl mb-4 animate-pulse">
-              <Heart className="h-8 w-8 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-xl mb-4 animate-pulse p-2">
+              <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Health & Wellness</h2>
             <p className="text-gray-600">Loading your health dashboard...</p>

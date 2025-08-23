@@ -13,13 +13,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <Card className="w-96 shadow-xl border-0">
           <CardContent className="p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl mb-4 animate-pulse">
-              <Trophy className="h-8 w-8 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-xl mb-4 animate-pulse p-2">
+              <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Court Vision</h2>
+            <h2 className="text-xl font-semibold mb-2">100IN</h2>
             <p className="text-gray-600">Loading...</p>
           </CardContent>
         </Card>
