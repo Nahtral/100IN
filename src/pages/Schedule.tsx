@@ -1,13 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users, Eye, Archive, CalendarDays } from 'lucide-react';
+import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users, Eye, Archive, CalendarDays, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ScheduleForm from '@/components/forms/ScheduleForm';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import EnhancedScheduleForm from '@/components/forms/EnhancedScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,8 +17,11 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
+import { useScheduleCache } from '@/hooks/useScheduleCache';
 import { useToast } from '@/hooks/use-toast';
 import { format, isToday, isFuture, isPast } from 'date-fns';
+import { ErrorLogger } from '@/utils/errorLogger';
+import { InputSanitizer } from '@/utils/inputSanitizer';
 
 interface ScheduleEvent {
   id: string;
@@ -38,12 +43,12 @@ interface ScheduleEvent {
 }
 
 const Schedule = () => {
-  const [events, setEvents] = useState<ScheduleEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('upcoming');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
     eventId: string;
@@ -62,126 +67,142 @@ const Schedule = () => {
     isOpen: false,
     event: null
   });
+  
   const { user } = useAuth();
   const { userRole, isSuperAdmin } = useUserRole();
   const { currentUser } = useCurrentUser();
   const { trackPageView, trackUserAction } = useAnalytics();
-  const { metrics, measureApiCall } = usePerformanceMonitoring('Schedule');
+  const { measureApiCall } = usePerformanceMonitoring('Schedule');
   const { toast } = useToast();
+  
+  // Use enhanced caching hook
+  const { events, loading, error, fetchEvents, invalidateCache } = useScheduleCache();
 
   useEffect(() => {
     trackPageView('Schedule');
-    fetchEvents();
   }, [trackPageView]);
 
-  const fetchEvents = async () => {
-    try {
-      const result = await measureApiCall('fetch_schedules', async () => {
-        const { data, error } = await supabase
-          .from('schedules')
-          .select('*')
-          .order('start_time', { ascending: true });
-
-        if (error) throw error;
-        return data;
-      });
-      setEvents(result || []);
-    } catch (error) {
-      console.error('Error fetching events:', error);
+  // Show error alert if loading failed
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Error",
-        description: "Failed to load events.",
+        description: error,
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [error, toast]);
 
-  // Filter and sort events based on current date
-  const upcomingEvents = events
-    .filter(event => isFuture(new Date(event.start_time)) || isToday(new Date(event.start_time)))
-    .sort((a, b) => {
-      const aDate = new Date(a.start_time);
-      const bDate = new Date(b.start_time);
-      
-      // Prioritize today's events first
-      if (isToday(aDate) && !isToday(bDate)) return -1;
-      if (!isToday(aDate) && isToday(bDate)) return 1;
-      
-      return aDate.getTime() - bDate.getTime();
-    });
+  // Memoized filtered and sorted events for performance
+  const { upcomingEvents, pastEvents } = useMemo(() => {
+    const upcoming = events
+      .filter(event => {
+        try {
+          const eventDate = new Date(event.start_time);
+          return isFuture(eventDate) || isToday(eventDate);
+        } catch {
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        const aDate = new Date(a.start_time);
+        const bDate = new Date(b.start_time);
+        
+        // Prioritize today's events first
+        if (isToday(aDate) && !isToday(bDate)) return -1;
+        if (!isToday(aDate) && isToday(bDate)) return 1;
+        
+        return aDate.getTime() - bDate.getTime();
+      });
 
-  const pastEvents = events
-    .filter(event => isPast(new Date(event.start_time)) && !isToday(new Date(event.start_time)))
-    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+    const past = events
+      .filter(event => {
+        try {
+          const eventDate = new Date(event.start_time);
+          return isPast(eventDate) && !isToday(eventDate);
+        } catch {
+          return false;
+        }
+      })
+      .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
-  const getDisplayEvents = () => {
+    return { upcomingEvents: upcoming, pastEvents: past };
+  }, [events]);
+
+  const getDisplayEvents = useCallback(() => {
     return activeTab === 'upcoming' ? upcomingEvents : pastEvents;
-  };
+  }, [activeTab, upcomingEvents, pastEvents]);
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = useCallback(async (formData: any) => {
     trackUserAction('schedule_form_submit', editingEvent ? 'edit' : 'create');
     setIsSubmitting(true);
     
-    // Add timeout for long-running requests
+    // Enhanced timeout with user notification
     const timeoutId = setTimeout(() => {
       setIsSubmitting(false);
       toast({
-        title: "Timeout",
-        description: "Request took too long. Please try again.",
+        title: "Request Timeout",
+        description: "The request is taking longer than expected. Please try again.",
         variant: "destructive",
       });
-    }, 30000); // 30 second timeout
+    }, 45000); // Increased to 45 seconds
 
     try {
+      // Sanitize and validate input data
       const eventData = {
-        title: formData.title,
+        title: InputSanitizer.sanitizeText(formData.title),
         event_type: formData.eventType,
-        start_time: `${formData.startDate}T${formData.startTime}:00`,
-        end_time: `${formData.endDate}T${formData.endTime}:00`,
-        location: formData.location,
-        opponent: formData.opponent || null,
-        description: formData.description || null,
-        team_ids: formData.teamIds || [],
-        is_recurring: formData.isRecurring || false,
-        recurrence_end_date: formData.isRecurring && formData.recurrenceEndDate ? formData.recurrenceEndDate : null,
+        start_time: `${InputSanitizer.sanitizeDate(formData.startDate)}T${InputSanitizer.sanitizeTime(formData.startTime)}:00`,
+        end_time: `${InputSanitizer.sanitizeDate(formData.endDate)}T${InputSanitizer.sanitizeTime(formData.endTime)}:00`,
+        location: InputSanitizer.sanitizeText(formData.location),
+        opponent: formData.opponent ? InputSanitizer.sanitizeText(formData.opponent) : null,
+        description: formData.description ? InputSanitizer.sanitizeText(formData.description) : null,
+        team_ids: formData.teamIds?.filter((id: string) => InputSanitizer.isValidUUID(id)) || [],
+        is_recurring: Boolean(formData.isRecurring),
+        recurrence_end_date: formData.isRecurring && formData.recurrenceEndDate ? 
+          InputSanitizer.sanitizeDate(formData.recurrenceEndDate) : null,
         recurrence_pattern: formData.isRecurring ? formData.recurrencePattern : null,
-        recurrence_days_of_week: formData.isRecurring && formData.recurrenceDaysOfWeek ? formData.recurrenceDaysOfWeek : null,
+        recurrence_days_of_week: formData.isRecurring && formData.recurrenceDaysOfWeek ? 
+          formData.recurrenceDaysOfWeek : null,
         created_by: user?.id,
       };
 
-      console.log('Submitting event data:', eventData);
+      // Additional validation
+      const startTime = new Date(eventData.start_time);
+      const endTime = new Date(eventData.end_time);
+      
+      if (endTime <= startTime) {
+        throw new Error('End time must be after start time');
+      }
 
+      let result;
       if (editingEvent) {
-        const { data, error } = await supabase
-          .from('schedules')
-          .update(eventData)
-          .eq('id', editingEvent.id)
-          .select();
+        const { data, error } = await measureApiCall('update_event', async () => {
+          return await supabase
+            .from('schedules')
+            .update(eventData)
+            .eq('id', editingEvent.id)
+            .select();
+        });
 
-        if (error) {
-          console.error('Update error:', error);
-          throw error;
-        }
+        if (error) throw error;
+        result = data;
 
-        console.log('Update successful:', data);
         toast({
           title: "Success",
           description: "Event updated successfully.",
         });
       } else {
-        const { data, error } = await supabase
-          .from('schedules')
-          .insert([eventData])
-          .select();
+        const { data, error } = await measureApiCall('create_event', async () => {
+          return await supabase
+            .from('schedules')
+            .insert([eventData])
+            .select();
+        });
 
-        if (error) {
-          console.error('Insert error:', error);
-          throw error;
-        }
+        if (error) throw error;
+        result = data;
 
-        console.log('Insert successful:', data);
         toast({
           title: "Success",
           description: "Event created successfully.",
@@ -191,13 +212,26 @@ const Schedule = () => {
       clearTimeout(timeoutId);
       setIsFormOpen(false);
       setEditingEvent(null);
-      fetchEvents();
+      
+      // Invalidate cache and refetch
+      invalidateCache();
+      await fetchEvents();
+
     } catch (error: any) {
       clearTimeout(timeoutId);
-      console.error('Error saving event:', error);
+      
+      await ErrorLogger.logError(error, {
+        component: 'Schedule',
+        action: editingEvent ? 'update_event' : 'create_event',
+        userId: user?.id,
+        userRole,
+        metadata: { eventData: formData, editingEventId: editingEvent?.id }
+      });
       
       let errorMessage = "Failed to save event.";
-      if (error?.message) {
+      if (error?.message?.includes('violates')) {
+        errorMessage = "You don't have permission to perform this action.";
+      } else if (error?.message) {
         errorMessage = error.message;
       } else if (error?.code) {
         errorMessage = `Database error (${error.code}): ${error.details || error.hint || 'Unknown error'}`;
@@ -211,50 +245,71 @@ const Schedule = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [editingEvent, user?.id, userRole, trackUserAction, measureApiCall, toast, invalidateCache, fetchEvents]);
 
-  const handleDelete = async (eventId: string) => {
+  const initiateDelete = useCallback((eventId: string) => {
     trackUserAction('schedule_delete_attempt', 'event');
-    if (!confirm('Are you sure you want to delete this event?')) return;
+    setEventToDelete(eventId);
+    setDeleteConfirmOpen(true);
+  }, [trackUserAction]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!eventToDelete) return;
 
     try {
       trackUserAction('schedule_delete_confirmed', 'event');
-      const { error } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('id', eventId);
+      
+      await measureApiCall('delete_event', async () => {
+        const { error } = await supabase
+          .from('schedules')
+          .delete()
+          .eq('id', eventToDelete);
 
-      if (error) throw error;
+        if (error) throw error;
+      });
 
       toast({
         title: "Success",
         description: "Event deleted successfully.",
       });
       
-      fetchEvents();
+      // Invalidate cache and refetch
+      invalidateCache();
+      await fetchEvents();
+      
     } catch (error) {
-      console.error('Error deleting event:', error);
+      await ErrorLogger.logError(error, {
+        component: 'Schedule',
+        action: 'delete_event',
+        userId: user?.id,
+        userRole,
+        metadata: { eventId: eventToDelete }
+      });
+
       toast({
         title: "Error",
         description: "Failed to delete event.",
         variant: "destructive",
       });
+    } finally {
+      setDeleteConfirmOpen(false);
+      setEventToDelete(null);
     }
-  };
+  }, [eventToDelete, user?.id, userRole, trackUserAction, measureApiCall, toast, invalidateCache, fetchEvents]);
 
-  const openEditForm = (event: ScheduleEvent) => {
+  const openEditForm = useCallback((event: ScheduleEvent) => {
     trackUserAction('schedule_edit_open', 'event');
     setEditingEvent(event);
     setIsFormOpen(true);
-  };
+  }, [trackUserAction]);
 
-  const openAddForm = () => {
+  const openAddForm = useCallback(() => {
     trackUserAction('schedule_add_open', 'form');
     setEditingEvent(null);
     setIsFormOpen(true);
-  };
+  }, [trackUserAction]);
 
-  const openAttendanceModal = (event: ScheduleEvent) => {
+  const openAttendanceModal = useCallback((event: ScheduleEvent) => {
     trackUserAction('attendance_modal_open', 'event');
     setAttendanceModal({
       isOpen: true,
@@ -262,43 +317,52 @@ const Schedule = () => {
       eventTitle: event.title,
       teamIds: event.team_ids || []
     });
-  };
+  }, [trackUserAction]);
 
-  const closeAttendanceModal = () => {
+  const closeAttendanceModal = useCallback(() => {
     setAttendanceModal({
       isOpen: false,
       eventId: '',
       eventTitle: '',
       teamIds: []
     });
-  };
+  }, []);
 
-  const openEventDetails = (event: ScheduleEvent) => {
+  const openEventDetails = useCallback((event: ScheduleEvent) => {
     trackUserAction('event_details_open', 'event');
     setEventDetailModal({
       isOpen: true,
       event: event
     });
-  };
+  }, [trackUserAction]);
 
-  const closeEventDetails = () => {
+  const closeEventDetails = useCallback(() => {
     setEventDetailModal({
       isOpen: false,
       event: null
     });
-  };
+  }, []);
 
-  const canManageAttendance = isSuperAdmin || userRole === 'staff' || userRole === 'coach';
+  const handleRefresh = useCallback(async () => {
+    trackUserAction('schedule_refresh', 'manual');
+    invalidateCache();
+    await fetchEvents();
+  }, [trackUserAction, invalidateCache, fetchEvents]);
 
-  const getEventTypeColor = (type: string) => {
+  const canManageAttendance = useMemo(() => 
+    isSuperAdmin || userRole === 'staff' || userRole === 'coach', 
+    [isSuperAdmin, userRole]
+  );
+
+  const getEventTypeColor = useCallback((type: string) => {
     switch (type.toLowerCase()) {
-      case 'game': return 'bg-red-100 text-red-800';
-      case 'practice': return 'bg-blue-100 text-blue-800';
-      case 'training': return 'bg-green-100 text-green-800';
-      case 'meeting': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'game': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'practice': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'training': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'meeting': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
     }
-  };
+  }, []);
 
   return (
     <Layout currentUser={currentUser}>
@@ -308,44 +372,77 @@ const Schedule = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Schedule</h1>
             <p className="text-gray-600">Manage games and training sessions</p>
           </div>
-          {(isSuperAdmin || userRole === 'staff') && (
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openAddForm} className="bg-black hover:bg-gray-800 text-white transition-all duration-200 hover:scale-105 w-full sm:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Event
-                </Button>
-              </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingEvent ? 'Edit Event' : 'Add New Event'}
-                </DialogTitle>
-              </DialogHeader>
-              <ScheduleForm
-                onSubmit={handleSubmit}
-                initialData={editingEvent ? {
-                  title: editingEvent.title,
-                  eventType: editingEvent.event_type,
-                  startDate: editingEvent.start_time.split('T')[0],
-                  startTime: editingEvent.start_time.split('T')[1]?.substring(0, 5),
-                  endDate: editingEvent.end_time.split('T')[0],
-                  endTime: editingEvent.end_time.split('T')[1]?.substring(0, 5),
-                  location: editingEvent.location,
-                  opponent: editingEvent.opponent,
-                  description: editingEvent.description,
-                  teamIds: editingEvent.team_ids || [],
-                  isRecurring: editingEvent.is_recurring || false,
-                  recurrenceEndDate: editingEvent.recurrence_end_date || '',
-                  recurrencePattern: editingEvent.recurrence_pattern as 'weekly' | 'monthly' | undefined,
-                  recurrenceDaysOfWeek: editingEvent.recurrence_days_of_week || [],
-                } : undefined}
-                isLoading={isSubmitting}
-              />
-            </DialogContent>
-          </Dialog>
-          )}
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="transition-all duration-200 hover:scale-105"
+              aria-label="Refresh events"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            {(isSuperAdmin || userRole === 'staff') && (
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    onClick={openAddForm} 
+                    className="bg-black hover:bg-gray-800 text-white transition-all duration-200 hover:scale-105 w-full sm:w-auto"
+                    aria-label="Add new event"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Event
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingEvent ? 'Edit Event' : 'Add New Event'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {editingEvent ? 'Modify the event details below.' : 'Fill in the details to create a new event.'}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <EnhancedScheduleForm
+                    onSubmit={handleSubmit}
+                    initialData={editingEvent ? {
+                      title: editingEvent.title,
+                      eventType: editingEvent.event_type as 'game' | 'practice' | 'meeting' | 'scrimmage' | 'tournament',
+                      startDate: editingEvent.start_time.split('T')[0],
+                      startTime: editingEvent.start_time.split('T')[1]?.substring(0, 5),
+                      endDate: editingEvent.end_time.split('T')[0],
+                      endTime: editingEvent.end_time.split('T')[1]?.substring(0, 5),
+                      location: editingEvent.location,
+                      opponent: editingEvent.opponent,
+                      description: editingEvent.description,
+                      teamIds: editingEvent.team_ids || [],
+                      isRecurring: editingEvent.is_recurring || false,
+                      recurrenceEndDate: editingEvent.recurrence_end_date || '',
+                      recurrencePattern: editingEvent.recurrence_pattern as 'weekly' | 'monthly' | undefined,
+                      recurrenceDaysOfWeek: editingEvent.recurrence_days_of_week || [],
+                    } : undefined}
+                    isLoading={isSubmitting}
+                    onCancel={() => setIsFormOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {error}
+              <Button variant="link" onClick={handleRefresh} className="ml-2 h-auto p-0">
+                Try again
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -443,6 +540,7 @@ const Schedule = () => {
                           }}
                           title="View Details"
                           className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
+                          aria-label={`View details for ${event.title}`}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -456,9 +554,10 @@ const Schedule = () => {
                               }}
                               title="Track Attendance"
                               className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
+                              aria-label={`Track attendance for ${event.title}`}
                             >
-                            <Users className="h-4 w-4" />
-                          </Button>
+                              <Users className="h-4 w-4" />
+                            </Button>
                         )}
                         {(isSuperAdmin || userRole === 'staff') && (
                           <>
@@ -470,20 +569,22 @@ const Schedule = () => {
                                   openEditForm(event);
                                 }}
                                 className="transition-all duration-200 hover:scale-110 hover:bg-gray-50"
+                                aria-label={`Edit ${event.title}`}
                               >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                                <Edit className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDelete(event.id);
+                                  initiateDelete(event.id);
                                 }}
                                 className="transition-all duration-200 hover:scale-110 hover:bg-red-50"
+                                aria-label={`Delete ${event.title}`}
                               >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
                           </>
                           )}
                         </div>
@@ -505,14 +606,38 @@ const Schedule = () => {
           teamIds={attendanceModal.teamIds}
         />
 
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Event</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this event? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleConfirmDelete}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Event Details Modal */}
         <Dialog open={eventDetailModal.isOpen} onOpenChange={closeEventDetails}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl" role="dialog" aria-labelledby="event-details-title">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+              <DialogTitle id="event-details-title" className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 Event Details
               </DialogTitle>
+              <DialogDescription>
+                View detailed information about this event
+              </DialogDescription>
             </DialogHeader>
             {eventDetailModal.event && (
               <div className="space-y-4">
@@ -592,9 +717,10 @@ const Schedule = () => {
                       <Button 
                         onClick={() => {
                           closeEventDetails();
-                          openAttendanceModal(eventDetailModal.event);
+                          openAttendanceModal(eventDetailModal.event!);
                         }}
                         className="flex items-center gap-2"
+                        aria-label="Track attendance for this event"
                       >
                         <Users className="h-4 w-4" />
                         Track Attendance
@@ -604,9 +730,10 @@ const Schedule = () => {
                           variant="outline"
                           onClick={() => {
                             closeEventDetails();
-                            openEditForm(eventDetailModal.event);
+                            openEditForm(eventDetailModal.event!);
                           }}
                           className="flex items-center gap-2"
+                          aria-label="Edit this event"
                         >
                           <Edit className="h-4 w-4" />
                           Edit Event
