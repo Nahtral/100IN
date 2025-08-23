@@ -101,8 +101,8 @@ const HRManagement = () => {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, color }: any) => (
-    <Card className="card-enhanced">
+  const StatCard = ({ title, value, icon: Icon, color, onClick }: any) => (
+    <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200" onClick={onClick}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -114,6 +114,12 @@ const HRManagement = () => {
       </CardContent>
     </Card>
   );
+
+  const handleCardClick = (section: string) => {
+    if (isSuperAdmin || hasRole('staff')) {
+      setActiveTab(section);
+    }
+  };
 
   if (!hasRole('super_admin') && !hasRole('staff') && !hasRole('coach')) {
     return (
@@ -177,24 +183,28 @@ const HRManagement = () => {
                 value={stats.totalEmployees}
                 icon={Users}
                 color="text-primary"
+                onClick={() => handleCardClick('employees')}
               />
               <StatCard
                 title="Active Time Off"
                 value={stats.activeTimeOff}
                 icon={Calendar}
                 color="text-secondary"
+                onClick={() => handleCardClick('timeoff')}
               />
               <StatCard
                 title="Pending Payslips"
                 value={stats.pendingPayslips}
                 icon={FileText}
                 color="text-orange-500"
+                onClick={() => handleCardClick('payroll')}
               />
               <StatCard
                 title="Today's Hours"
                 value={stats.todaysHours}
                 icon={Clock}
                 color="text-green-500"
+                onClick={() => handleCardClick('timetracking')}
               />
             </div>
           )}

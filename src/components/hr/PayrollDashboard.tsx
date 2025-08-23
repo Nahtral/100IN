@@ -94,7 +94,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
 
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="card-enhanced">
+            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -106,7 +106,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced">
+            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -118,7 +118,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced">
+            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -130,7 +130,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
               </CardContent>
             </Card>
 
-            <Card className="card-enhanced">
+            <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
