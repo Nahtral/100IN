@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.error-tracking]
 verify_jwt = false
+
+[functions.analyze-game-stats]
+verify_jwt = true
