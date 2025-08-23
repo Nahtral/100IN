@@ -105,58 +105,25 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      // First create or find the user profile
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', data.email)
-        .single();
-
-      let userId = existingProfile?.id;
-
-      if (!existingProfile) {
-        // Generate a UUID for the new profile
-        const profileId = crypto.randomUUID();
-        
-        // Create new profile
-        const { data: newProfile, error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: profileId,
-            email: data.email,
-            full_name: data.fullName,
-            phone: data.phone,
-          })
-          .select('id')
-          .single();
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          toast({
-            title: "Error",
-            description: "Failed to create player profile",
-            variant: "destructive",
-          });
-          return;
-        }
-        userId = newProfile.id;
-      }
-
-      // Create player record
+      // For manual entry by super admin, create player record directly without profile
       const { error: playerError } = await supabase
         .from('players')
         .insert({
-          user_id: userId,
+          // Don't set user_id for manual entries
           team_id: team.id,
-          jersey_number: parseInt(data.jerseyNumber),
-          position: data.position,
-          height: data.height,
-          weight: data.weight,
-          date_of_birth: data.dateOfBirth,
-          emergency_contact_name: data.emergencyContactName,
-          emergency_contact_phone: data.emergencyContactPhone,
-          medical_notes: data.medicalNotes,
+          jersey_number: data.jerseyNumber ? parseInt(data.jerseyNumber) : null,
+          position: data.position || null,
+          height: data.height || null,
+          weight: data.weight || null,
+          date_of_birth: data.dateOfBirth || null,
+          emergency_contact_name: data.emergencyContactName || null,
+          emergency_contact_phone: data.emergencyContactPhone || null,
+          medical_notes: data.medicalNotes || null,
           is_active: true,
+          // Store manual entry data directly on player record
+          full_name: data.fullName,
+          email: data.email || null,
+          phone: data.phone || null,
         });
 
       if (playerError) {
