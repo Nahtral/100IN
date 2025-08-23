@@ -56,7 +56,6 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, currentUse
               className="w-full h-full object-contain" 
             />
           </div>
-          <span className="font-bold text-lg">Panthers Court Vision</span>
         </div>
         <Header currentUser={currentUser} />
       </header>

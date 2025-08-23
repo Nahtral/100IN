@@ -64,7 +64,6 @@ const Layout = ({ children, currentUser }: LayoutProps) => {
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
                   <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
                 </div>
-                <span className="font-bold text-lg">Panthers Court Vision</span>
               </div>
             </div>
             <Header currentUser={currentUser} />
