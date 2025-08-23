@@ -48,6 +48,9 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showTotalSchedulesModal, setShowTotalSchedulesModal] = useState(false);
+  const [showPendingRequestsModal, setShowPendingRequestsModal] = useState(false);
+  const [showTodayShiftsModal, setShowTodayShiftsModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
 
@@ -286,6 +289,32 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     }
   };
 
+  const handleArchiveSchedule = async (scheduleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('employee_schedules')
+        .update({ status: 'cancelled' })
+        .eq('id', scheduleId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Schedule archived successfully.",
+      });
+      
+      fetchData();
+      onStatsUpdate?.();
+    } catch (error) {
+      console.error('Error archiving schedule:', error);
+      toast({
+        title: "Error",
+        description: "Failed to archive schedule.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteSchedule = async (scheduleId: string) => {
     try {
       const { error } = await supabase
@@ -307,6 +336,32 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       toast({
         title: "Error",
         description: "Failed to delete schedule.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedule_change_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Request deleted successfully.",
+      });
+      
+      fetchData();
+      onStatsUpdate?.();
+    } catch (error) {
+      console.error('Error deleting request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete request.",
         variant: "destructive",
       });
     }
@@ -370,6 +425,22 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const pendingRequests = requests.filter(r => r.status === 'pending').length;
   const todaySchedules = schedules.filter(s => s.shift_date === format(new Date(), 'yyyy-MM-dd')).length;
 
+  const handleCardClick = (cardType: string) => {
+    if (isSuperAdmin) {
+      switch (cardType) {
+        case 'total':
+          setShowTotalSchedulesModal(true);
+          break;
+        case 'pending':
+          setShowPendingRequestsModal(true);
+          break;
+        case 'today':
+          setShowTodayShiftsModal(true);
+          break;
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -413,21 +484,21 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
           value={totalSchedules}
           icon={Calendar}
           color="text-primary"
-          onClick={() => {}}
+          onClick={() => handleCardClick('total')}
         />
         <StatCard
           title="Pending Requests"
           value={pendingRequests}
           icon={Clock}
           color="text-orange-500"
-          onClick={() => {}}
+          onClick={() => handleCardClick('pending')}
         />
         <StatCard
           title="Today's Shifts"
           value={todaySchedules}
           icon={Users}
           color="text-green-500"
-          onClick={() => {}}
+          onClick={() => handleCardClick('today')}
         />
       </div>
 
@@ -707,6 +778,244 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
             <Button onClick={handleScheduleSubmit} className="btn-panthers">
               {selectedSchedule ? 'Update' : 'Create'} Schedule
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Total Schedules Detail Modal */}
+      <Dialog open={showTotalSchedulesModal} onOpenChange={setShowTotalSchedulesModal}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              All Schedules Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-muted-foreground">
+                {totalSchedules} total schedules in the system
+              </p>
+              {isSuperAdmin && (
+                <Button onClick={() => openScheduleModal()} className="btn-panthers">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Schedule
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {schedules.map((schedule) => (
+                <div key={schedule.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="font-medium">
+                        {schedule.employees?.first_name} {schedule.employees?.last_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {schedule.employees?.position} • {format(new Date(schedule.shift_date), 'MMM dd, yyyy')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm">{schedule.start_time} - {schedule.end_time}</p>
+                      {schedule.location && (
+                        <p className="text-sm text-muted-foreground">📍 {schedule.location}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getStatusBadgeVariant(schedule.status)}>
+                      {schedule.status}
+                    </Badge>
+                    {isSuperAdmin && (
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openScheduleModal(schedule)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleArchiveSchedule(schedule.id)}
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteSchedule(schedule.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {schedules.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No schedules found</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending Requests Detail Modal */}
+      <Dialog open={showPendingRequestsModal} onOpenChange={setShowPendingRequestsModal}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Pending Requests Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              {pendingRequests} pending requests requiring approval
+            </p>
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {requests.filter(r => r.status === 'pending').map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="font-medium">
+                        {request.employees?.first_name} {request.employees?.last_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {request.request_type.replace('_', ' ')} • {request.employees?.position}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{request.reason}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Created: {format(new Date(request.created_at), 'MMM dd, yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getStatusBadgeVariant(request.status)}>
+                      {request.status}
+                    </Badge>
+                    {isSuperAdmin && (
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleRequestApproval(request.id, 'approved')}
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleRequestApproval(request.id, 'denied')}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteRequest(request.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {requests.filter(r => r.status === 'pending').length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No pending requests found</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Today's Shifts Detail Modal */}
+      <Dialog open={showTodayShiftsModal} onOpenChange={setShowTodayShiftsModal}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Today's Shifts Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-muted-foreground">
+                {todaySchedules} shifts scheduled for today ({format(new Date(), 'MMM dd, yyyy')})
+              </p>
+              {isSuperAdmin && (
+                <Button onClick={() => openScheduleModal()} className="btn-panthers">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Today's Shift
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {schedules.filter(s => s.shift_date === format(new Date(), 'yyyy-MM-dd')).map((schedule) => (
+                <div key={schedule.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="font-medium">
+                        {schedule.employees?.first_name} {schedule.employees?.last_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {schedule.employees?.position} • {schedule.employees?.department}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{schedule.start_time} - {schedule.end_time}</p>
+                      {schedule.location && (
+                        <p className="text-sm text-muted-foreground">📍 {schedule.location}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getStatusBadgeVariant(schedule.status)}>
+                      {schedule.status}
+                    </Badge>
+                    {isSuperAdmin && (
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openScheduleModal(schedule)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleArchiveSchedule(schedule.id)}
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteSchedule(schedule.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {schedules.filter(s => s.shift_date === format(new Date(), 'yyyy-MM-dd')).length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No shifts scheduled for today</p>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
