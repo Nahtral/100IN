@@ -17,7 +17,8 @@ import {
   Eye,
   Contact,
   BarChart3,
-  Edit
+  Edit,
+  Plus
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -55,6 +56,10 @@ const PartnerDashboard = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCommunication, setShowCommunication] = useState(false);
+  const [showTeamsModal, setShowTeamsModal] = useState(false);
+  const [showInvestmentModal, setShowInvestmentModal] = useState(false);
+  const [showBrandModal, setShowBrandModal] = useState(false);
+  const [showROIModal, setShowROIModal] = useState(false);
   const [realMetrics, setRealMetrics] = useState({
     gameAttendance: 0,
     socialMediaReach: 0,
@@ -224,7 +229,10 @@ const PartnerDashboard = () => {
           </div>
         {/* Partnership Overview */}
         <div className="metrics-grid">
-          <Card className="border-blue-200">
+          <Card 
+            className="border-blue-200 cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+            onClick={() => setShowTeamsModal(true)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Teams</CardTitle>
               <Users className="h-4 w-4 text-blue-600" />
@@ -234,10 +242,16 @@ const PartnerDashboard = () => {
               <p className="text-xs text-muted-foreground">
                 Under sponsorship
               </p>
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-4 w-4 text-gray-400" />
+              </div>
             </CardContent>
           </Card>
           
-          <Card className="border-green-200">
+          <Card 
+            className="border-green-200 cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+            onClick={() => setShowInvestmentModal(true)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
               <DollarSign className="h-4 w-4 text-green-600" />
@@ -249,10 +263,16 @@ const PartnerDashboard = () => {
               <p className="text-xs text-muted-foreground">
                 This season
               </p>
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-4 w-4 text-gray-400" />
+              </div>
             </CardContent>
           </Card>
           
-          <Card className="border-orange-200">
+          <Card 
+            className="border-orange-200 cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+            onClick={() => setShowBrandModal(true)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Brand Exposure</CardTitle>
               <TrendingUp className="h-4 w-4 text-orange-600" />
@@ -262,10 +282,16 @@ const PartnerDashboard = () => {
               <p className="text-xs text-muted-foreground">
                 Estimated impressions
               </p>
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-4 w-4 text-gray-400" />
+              </div>
             </CardContent>
           </Card>
           
-          <Card className="border-purple-200">
+          <Card 
+            className="border-purple-200 cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+            onClick={() => setShowROIModal(true)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">ROI</CardTitle>
               <Award className="h-4 w-4 text-purple-600" />
@@ -275,6 +301,9 @@ const PartnerDashboard = () => {
               <p className="text-xs text-muted-foreground">
                 Estimated return
               </p>
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-4 w-4 text-gray-400" />
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -539,6 +568,211 @@ const PartnerDashboard = () => {
               <DialogTitle>Communication Center</DialogTitle>
             </DialogHeader>
             <CommunicationCenter partnerId={partnerData?.partnerInfo?.id} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Teams Management Modal */}
+        <Dialog open={showTeamsModal} onOpenChange={setShowTeamsModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-500" />
+                Active Teams Management
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid gap-4">
+                {teamPerformance.map((team, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">{team.teamName}</h3>
+                        <p className="text-sm text-gray-600">Record: {team.record} | Ranking: {team.ranking}</p>
+                        <p className="text-sm text-gray-600">Sponsorship: ¥{team.sponsorshipAmount.toLocaleString()}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              {isSuperAdmin && (
+                <Button className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Team Sponsorship
+                </Button>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Investment Management Modal */}
+        <Dialog open={showInvestmentModal} onOpenChange={setShowInvestmentModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-500" />
+                Investment Portfolio Management
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-2">Financial Overview</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Total Investment:</span>
+                      <span className="font-semibold">¥{(partnerData?.totalInvestment || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Active Contracts:</span>
+                      <span>{partnerData?.sponsorships.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Average ROI:</span>
+                      <span className="text-green-600">3.2x</span>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-2">Investment Breakdown</h3>
+                  <div className="space-y-2">
+                    {teamPerformance.slice(0, 3).map((team, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="text-sm">{team.teamName}:</span>
+                        <span className="text-sm font-medium">¥{team.sponsorshipAmount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
+              {isSuperAdmin && (
+                <div className="flex gap-2">
+                  <Button>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Modify Investments
+                  </Button>
+                  <Button variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Investment
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Brand Exposure Modal */}
+        <Dialog open={showBrandModal} onOpenChange={setShowBrandModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-orange-500" />
+                Brand Exposure Analytics
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-2">Social Media Reach</h3>
+                  <div className="text-2xl font-bold text-blue-600">850K</div>
+                  <p className="text-sm text-gray-600">Monthly impressions</p>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-2">Game Attendance</h3>
+                  <div className="text-2xl font-bold text-green-600">15,420</div>
+                  <p className="text-sm text-gray-600">Average per game</p>
+                </Card>
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-2">Brand Recognition</h3>
+                  <div className="text-2xl font-bold text-purple-600">92%</div>
+                  <p className="text-sm text-gray-600">Recognition rate</p>
+                </Card>
+              </div>
+              {isSuperAdmin && (
+                <div className="flex gap-2">
+                  <Button>
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    View Detailed Analytics
+                  </Button>
+                  <Button variant="outline">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Update Metrics
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ROI Management Modal */}
+        <Dialog open={showROIModal} onOpenChange={setShowROIModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-purple-500" />
+                ROI Analysis & Management
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid gap-4">
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-2">ROI Breakdown by Category</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <div>
+                        <span className="font-medium">Brand Exposure</span>
+                        <p className="text-sm text-gray-600">¥25,000 invested</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-600 font-semibold">1.8x</span>
+                        <p className="text-sm text-gray-600">¥45,000 return</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <div>
+                        <span className="font-medium">Fan Engagement</span>
+                        <p className="text-sm text-gray-600">¥15,000 invested</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-600 font-semibold">2.1x</span>
+                        <p className="text-sm text-gray-600">¥32,000 return</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <div>
+                        <span className="font-medium">Social Media</span>
+                        <p className="text-sm text-gray-600">¥10,000 invested</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-600 font-semibold">2.8x</span>
+                        <p className="text-sm text-gray-600">¥28,000 return</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+              {isSuperAdmin && (
+                <div className="flex gap-2">
+                  <Button>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Update ROI Calculations
+                  </Button>
+                  <Button variant="outline">
+                    <Target className="h-4 w-4 mr-2" />
+                    Set ROI Targets
+                  </Button>
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>
