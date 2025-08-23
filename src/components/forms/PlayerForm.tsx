@@ -11,31 +11,33 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Save } from 'lucide-react';
 
-const playerFormSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  position: z.string().min(1, 'Position is required'),
-  height: z.string().min(1, 'Height is required'),
-  weight: z.string().min(1, 'Weight is required'),
-  jerseyNumber: z.string().min(1, 'Jersey number is required'),
-  emergencyContactName: z.string().min(2, 'Emergency contact name is required'),
-  emergencyContactPhone: z.string().min(10, 'Emergency contact phone is required'),
+// Relaxed schema for super admin manual entry
+const relaxedPlayerFormSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  email: z.string().refine((val) => val === '' || z.string().email().safeParse(val).success, 'Invalid email address'),
+  phone: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  position: z.string().optional(),
+  height: z.string().optional(),
+  weight: z.string().optional(),
+  jerseyNumber: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
   medicalNotes: z.string().optional(),
 });
 
-type PlayerFormData = z.infer<typeof playerFormSchema>;
+type PlayerFormData = z.infer<typeof relaxedPlayerFormSchema>;
 
 interface PlayerFormProps {
   onSubmit: (data: PlayerFormData) => void;
   initialData?: Partial<PlayerFormData>;
   isLoading?: boolean;
+  isRequiredFieldsOnly?: boolean;
 }
 
-const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoading = false }) => {
+const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoading = false, isRequiredFieldsOnly = true }) => {
   const form = useForm<PlayerFormData>({
-    resolver: zodResolver(playerFormSchema),
+    resolver: zodResolver(relaxedPlayerFormSchema),
     defaultValues: {
       fullName: initialData?.fullName || '',
       email: initialData?.email || '',
@@ -79,12 +81,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 )}
               />
               
-              <FormField
+                <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="Enter email" {...field} />
                     </FormControl>
@@ -93,12 +95,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 )}
               />
               
-              <FormField
+                <FormField
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>Phone Number {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter phone number" {...field} />
                     </FormControl>
@@ -107,12 +109,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 )}
               />
               
-              <FormField
+                <FormField
                 control={form.control}
                 name="dateOfBirth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
+                    <FormLabel>Date of Birth {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -121,12 +123,12 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 )}
               />
               
-              <FormField
+                <FormField
                 control={form.control}
                 name="position"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Position</FormLabel>
+                    <FormLabel>Position {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>

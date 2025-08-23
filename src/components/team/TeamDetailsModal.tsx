@@ -465,6 +465,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
             <PlayerForm
               onSubmit={handleAddPlayer}
               isLoading={isSubmitting}
+              isRequiredFieldsOnly={false}
             />
           </div>
         ) : (
