@@ -153,7 +153,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 name="height"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Height</FormLabel>
+                    <FormLabel>Height {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., 6'2&quot;" {...field} />
                     </FormControl>
@@ -167,7 +167,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 name="weight"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Weight</FormLabel>
+                    <FormLabel>Weight {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., 180 lbs" {...field} />
                     </FormControl>
@@ -181,7 +181,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 name="jerseyNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Jersey Number</FormLabel>
+                    <FormLabel>Jersey Number {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter jersey number" {...field} />
                     </FormControl>
@@ -195,7 +195,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 name="emergencyContactName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Emergency Contact Name</FormLabel>
+                    <FormLabel>Emergency Contact Name {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter emergency contact name" {...field} />
                     </FormControl>
@@ -209,7 +209,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
                 name="emergencyContactPhone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Emergency Contact Phone</FormLabel>
+                    <FormLabel>Emergency Contact Phone {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter emergency contact phone" {...field} />
                     </FormControl>
