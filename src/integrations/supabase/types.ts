@@ -47,6 +47,102 @@ export type Database = {
         }
         Relationships: []
       }
+      benefit_plans: {
+        Row: {
+          coverage_details: Json | null
+          created_at: string
+          created_by: string
+          description: string | null
+          effective_date: string
+          eligibility_requirements: Json | null
+          employee_contribution_percentage: number | null
+          employer_contribution_percentage: number | null
+          end_date: string | null
+          id: string
+          is_active: boolean
+          monthly_cost: number | null
+          name: string
+          plan_type: string
+          provider_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          coverage_details?: Json | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          effective_date: string
+          eligibility_requirements?: Json | null
+          employee_contribution_percentage?: number | null
+          employer_contribution_percentage?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_cost?: number | null
+          name: string
+          plan_type: string
+          provider_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coverage_details?: Json | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          effective_date?: string
+          eligibility_requirements?: Json | null
+          employee_contribution_percentage?: number | null
+          employer_contribution_percentage?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_cost?: number | null
+          name?: string
+          plan_type?: string
+          provider_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      benefit_reports: {
+        Row: {
+          file_url: string | null
+          generated_at: string
+          generated_by: string
+          id: string
+          parameters: Json | null
+          report_data: Json
+          report_name: string
+          report_period_end: string | null
+          report_period_start: string | null
+          report_type: string
+        }
+        Insert: {
+          file_url?: string | null
+          generated_at?: string
+          generated_by: string
+          id?: string
+          parameters?: Json | null
+          report_data: Json
+          report_name: string
+          report_period_end?: string | null
+          report_period_start?: string | null
+          report_type: string
+        }
+        Update: {
+          file_url?: string | null
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          parameters?: Json | null
+          report_data?: Json
+          report_name?: string
+          report_period_end?: string | null
+          report_period_start?: string | null
+          report_type?: string
+        }
+        Relationships: []
+      }
       chat_participants: {
         Row: {
           chat_id: string
@@ -257,6 +353,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      employee_benefit_enrollments: {
+        Row: {
+          benefit_plan_id: string
+          created_at: string
+          created_by: string
+          dependent_coverage: Json | null
+          effective_date: string
+          employee_contribution: number | null
+          employee_id: string
+          employer_contribution: number | null
+          enrollment_date: string
+          enrollment_method: string | null
+          id: string
+          status: string
+          termination_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          benefit_plan_id: string
+          created_at?: string
+          created_by: string
+          dependent_coverage?: Json | null
+          effective_date: string
+          employee_contribution?: number | null
+          employee_id: string
+          employer_contribution?: number | null
+          enrollment_date: string
+          enrollment_method?: string | null
+          id?: string
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          benefit_plan_id?: string
+          created_at?: string
+          created_by?: string
+          dependent_coverage?: Json | null
+          effective_date?: string
+          employee_contribution?: number | null
+          employee_id?: string
+          employer_contribution?: number | null
+          enrollment_date?: string
+          enrollment_method?: string | null
+          id?: string
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_benefit_enrollments_benefit_plan_id_fkey"
+            columns: ["benefit_plan_id"]
+            isOneToOne: false
+            referencedRelation: "benefit_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_benefit_enrollments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_benefits: {
         Row: {
@@ -2680,6 +2842,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_benefit_cost_analysis: {
+        Args: { report_end_date?: string; report_start_date?: string }
+        Returns: {
+          average_cost_per_employee: number
+          enrollment_count: number
+          plan_type: string
+          total_employee_cost: number
+          total_employer_cost: number
+        }[]
+      }
+      get_benefit_enrollment_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_enrollments: number
+          plan_name: string
+          plan_type: string
+          total_cost: number
+          total_enrolled: number
+        }[]
+      }
       get_safe_profile_info: {
         Args: { profile_id: string }
         Returns: {
