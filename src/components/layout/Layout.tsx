@@ -61,7 +61,7 @@ const Layout = ({ children, currentUser }: LayoutProps) => {
             <div className="flex items-center gap-2">
               <SidebarTrigger className="touch-target-lg hover:bg-accent rounded-md transition-colors" />
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
+                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-2">
                   <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
                 </div>
               </div>

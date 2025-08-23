@@ -49,7 +49,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, currentUse
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 safe-area-inset">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1">
+          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-2">
             <img 
               src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" 
               alt="Panthers Logo" 
