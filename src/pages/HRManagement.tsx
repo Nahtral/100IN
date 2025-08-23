@@ -26,6 +26,9 @@ import TimeOffManagement from '@/components/hr/TimeOffManagement';
 import PayrollDashboard from '@/components/hr/PayrollDashboard';
 import BenefitsManagement from '@/components/hr/BenefitsManagement';
 import OnboardingTasks from '@/components/hr/OnboardingTasks';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import EmployeeForm from '@/components/hr/EmployeeForm';
+import { Download, Edit, X } from 'lucide-react';
 
 const HRManagement = () => {
   const { toast } = useToast();
@@ -39,6 +42,9 @@ const HRManagement = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [showAddEmployeeForm, setShowAddEmployeeForm] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   useEffect(() => {
     fetchStats();
@@ -49,10 +55,11 @@ const HRManagement = () => {
       // Fetch total employees
       const { data: employees, error: empError } = await supabase
         .from('employees')
-        .select('id')
+        .select('*')
         .eq('employment_status', 'active');
 
       if (empError) throw empError;
+      setEmployees(employees || []);
 
       // Fetch active time off requests
       const { data: timeOff, error: timeError } = await supabase
@@ -117,8 +124,41 @@ const HRManagement = () => {
 
   const handleCardClick = (section: string) => {
     if (isSuperAdmin || hasRole('staff')) {
-      setActiveTab(section);
+      if (section === 'employees-detail') {
+        setShowEmployeeModal(true);
+      } else {
+        setActiveTab(section);
+      }
     }
+  };
+
+  const exportEmployeeList = () => {
+    const csvContent = [
+      ['Employee ID', 'Name', 'Email', 'Position', 'Department', 'Hire Date', 'Status'],
+      ...employees.map(emp => [
+        emp.employee_id,
+        `${emp.first_name} ${emp.last_name}`,
+        emp.email,
+        emp.position,
+        emp.department || 'N/A',
+        new Date(emp.hire_date).toLocaleDateString(),
+        emp.employment_status
+      ])
+    ];
+    
+    const csvString = csvContent.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Success",
+      description: "Employee list exported successfully.",
+    });
   };
 
   if (!hasRole('super_admin') && !hasRole('staff') && !hasRole('coach')) {
@@ -183,7 +223,7 @@ const HRManagement = () => {
                 value={stats.totalEmployees}
                 icon={Users}
                 color="text-primary"
-                onClick={() => handleCardClick('employees')}
+                onClick={() => handleCardClick('employees-detail')}
               />
               <StatCard
                 title="Active Time Off"
@@ -292,6 +332,100 @@ const HRManagement = () => {
           <OnboardingTasks onStatsUpdate={fetchStats} />
         </TabsContent>
       </Tabs>
+
+      {/* Employee Details Modal */}
+      <Dialog open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Total Employees Details</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEmployeeModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="space-y-6">
+            <p className="text-muted-foreground">
+              {stats.totalEmployees} active employees in the system
+            </p>
+            
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={() => {
+                  setShowAddEmployeeForm(true);
+                  setShowEmployeeModal(false);
+                }}
+                className="btn-panthers"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Employee
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setActiveTab('employees');
+                  setShowEmployeeModal(false);
+                }}
+                className="btn-secondary-panthers"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Manage Employees
+              </Button>
+              <Button
+                variant="outline"
+                onClick={exportEmployeeList}
+                className="btn-secondary-panthers"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export List
+              </Button>
+            </div>
+            
+            {/* Quick employee overview */}
+            <div className="border-t pt-4">
+              <h4 className="font-semibold mb-3">Recent Employees</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {employees.slice(0, 5).map((employee) => (
+                  <div key={employee.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div>
+                      <p className="font-medium">{employee.first_name} {employee.last_name}</p>
+                      <p className="text-sm text-muted-foreground">{employee.position} • {employee.department}</p>
+                    </div>
+                    <Badge variant="secondary">{employee.employment_status}</Badge>
+                  </div>
+                ))}
+                {employees.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">No employees found</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Employee Form Modal */}
+      <Dialog open={showAddEmployeeForm} onOpenChange={setShowAddEmployeeForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Employee</DialogTitle>
+          </DialogHeader>
+          <EmployeeForm 
+            onSuccess={() => {
+              setShowAddEmployeeForm(false);
+              fetchStats();
+              toast({
+                title: "Success",
+                description: "Employee added successfully.",
+              });
+            }}
+            onCancel={() => setShowAddEmployeeForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
       </div>
     </Layout>
   );
