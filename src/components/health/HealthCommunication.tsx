@@ -16,6 +16,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import HealthAlertModal from './HealthAlertModal';
+import TeamUpdatesModal from './TeamUpdatesModal';
+import ParentCommunicationModal from './ParentCommunicationModal';
 
 interface HealthCommunicationProps {
   userRole: string;
@@ -37,6 +40,11 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
   const [subject, setSubject] = useState('');
   const [priority, setPriority] = useState('normal');
   const [loading, setLoading] = useState(true);
+  
+  // Modal states
+  const [healthAlertModalOpen, setHealthAlertModalOpen] = useState(false);
+  const [teamUpdatesModalOpen, setTeamUpdatesModalOpen] = useState(false);
+  const [parentCommModalOpen, setParentCommModalOpen] = useState(false);
 
   // Mock data for demonstration
   const mockMessages = [
@@ -331,7 +339,10 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-orange-200 hover:border-orange-300 transition-colors cursor-pointer">
+        <Card 
+          className="border-orange-200 hover:border-orange-300 transition-all duration-200 cursor-pointer hover:shadow-lg"
+          onClick={() => setHealthAlertModalOpen(true)}
+        >
           <CardContent className="p-4 text-center">
             <Bell className="h-8 w-8 text-orange-500 mx-auto mb-2" />
             <h3 className="font-medium text-gray-900 mb-1">Send Health Alert</h3>
@@ -339,7 +350,10 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="border-blue-200 hover:border-blue-300 transition-colors cursor-pointer">
+        <Card 
+          className="border-blue-200 hover:border-blue-300 transition-all duration-200 cursor-pointer hover:shadow-lg"
+          onClick={() => setTeamUpdatesModalOpen(true)}
+        >
           <CardContent className="p-4 text-center">
             <Users className="h-8 w-8 text-blue-500 mx-auto mb-2" />
             <h3 className="font-medium text-gray-900 mb-1">Team Updates</h3>
@@ -347,7 +361,10 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="border-green-200 hover:border-green-300 transition-colors cursor-pointer">
+        <Card 
+          className="border-green-200 hover:border-green-300 transition-all duration-200 cursor-pointer hover:shadow-lg"
+          onClick={() => setParentCommModalOpen(true)}
+        >
           <CardContent className="p-4 text-center">
             <MessageSquare className="h-8 w-8 text-green-500 mx-auto mb-2" />
             <h3 className="font-medium text-gray-900 mb-1">Parent Communication</h3>
@@ -355,6 +372,25 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
           </CardContent>
         </Card>
       </div>
+
+      {/* Modals */}
+      <HealthAlertModal
+        isOpen={healthAlertModalOpen}
+        onClose={() => setHealthAlertModalOpen(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <TeamUpdatesModal
+        isOpen={teamUpdatesModalOpen}
+        onClose={() => setTeamUpdatesModalOpen(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <ParentCommunicationModal
+        isOpen={parentCommModalOpen}
+        onClose={() => setParentCommModalOpen(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
     </div>
   );
 };
