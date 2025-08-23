@@ -3310,6 +3310,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      user_created_chat: {
+        Args: { chat_id: string; user_id: string }
+        Returns: boolean
+      }
       user_has_permission: {
         Args: { _permission_name: string; _user_id: string }
         Returns: boolean
