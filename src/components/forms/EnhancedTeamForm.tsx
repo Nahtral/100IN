@@ -136,7 +136,7 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
         name: InputSanitizer.sanitizeText(data.name),
         ageGroup: InputSanitizer.sanitizeText(data.ageGroup),
         season: InputSanitizer.sanitizeText(data.season),
-        coachId: data.coachId && InputSanitizer.isValidUUID(data.coachId) ? data.coachId : undefined,
+        coachId: data.coachId && data.coachId !== 'none' && InputSanitizer.isValidUUID(data.coachId) ? data.coachId : undefined,
       };
 
       await onSubmit(sanitizedData);
@@ -251,20 +251,20 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
                           <SelectValue placeholder="Select coach (optional)" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="">No coach assigned</SelectItem>
-                        {loadingCoaches ? (
-                          <SelectItem value="" disabled>Loading coaches...</SelectItem>
-                        ) : coaches.length === 0 ? (
-                          <SelectItem value="" disabled>No coaches available</SelectItem>
-                        ) : (
-                          coaches.map((coach) => (
-                            <SelectItem key={coach.id} value={coach.id}>
-                              {coach.full_name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
+                       <SelectContent>
+                         <SelectItem value="none">No coach assigned</SelectItem>
+                         {loadingCoaches ? (
+                           <SelectItem value="loading" disabled>Loading coaches...</SelectItem>
+                         ) : coaches.length === 0 ? (
+                           <SelectItem value="no-coaches" disabled>No coaches available</SelectItem>
+                         ) : (
+                           coaches.map((coach) => (
+                             <SelectItem key={coach.id} value={coach.id}>
+                               {coach.full_name}
+                             </SelectItem>
+                           ))
+                         )}
+                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
