@@ -18,8 +18,8 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Panthers Red #FF2A2A - Primary buttons, analytics and graphs */
-    --primary: 0 85% 58%;
+    /* Black #000000 - Primary buttons */
+    --primary: 0 0% 0%;
     --primary-foreground: 0 0% 100%;
 
     /* Black #000000 - Secondary buttons and primary text */
@@ -33,13 +33,13 @@ All colors MUST be HSL.
     --accent: 40 36% 52%;
     --accent-foreground: 0 0% 0%;
 
-    /* Panthers Red for destructive actions */
-    --destructive: 0 85% 58%;
+    /* Black for destructive actions */
+    --destructive: 0 0% 0%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 85% 58%;
+    --ring: 0 0% 0%;
 
     /* Design tokens - Rounded corners */
     --radius: 12px;
@@ -56,7 +56,7 @@ All colors MUST be HSL.
     --shadow-gold-glow: 0 0 30px hsl(var(--panther-gold) / 0.3);
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--panthers-red)), hsl(var(--panther-blue)));
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 0%), hsl(var(--panther-blue)));
     --gradient-analytics: linear-gradient(135deg, hsl(var(--deep-teal)), hsl(var(--panther-blue)));
     --gradient-gold: linear-gradient(135deg, hsl(var(--panther-gold)), hsl(var(--panther-gold) / 0.7));
 
@@ -88,8 +88,8 @@ All colors MUST be HSL.
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 100%;
 
-    /* Panthers Red remains primary in dark mode */
-    --primary: 0 100% 58%;
+    /* Black remains primary in dark mode */
+    --primary: 0 0% 0%;
     --primary-foreground: 0 0% 100%;
 
     /* Dark secondary with white text */
@@ -103,13 +103,13 @@ All colors MUST be HSL.
     --accent: 40 36% 52%;
     --accent-foreground: 0 0% 0%;
 
-    /* Panthers Red for destructive in dark mode */
-    --destructive: 0 100% 58%;
+    /* Black for destructive in dark mode */
+    --destructive: 0 0% 0%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 0 100% 58%;
+    --ring: 0 0% 0%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -173,7 +173,7 @@ All colors MUST be HSL.
   
   /* Button variants with Panthers styling */
   .btn-panthers {
-    @apply bg-panthers-red text-white font-semibold rounded-lg shadow-soft hover:shadow-gold transition-all duration-300;
+    @apply bg-primary text-primary-foreground font-semibold rounded-lg shadow-soft hover:shadow-gold transition-all duration-300;
   }
   
   .btn-secondary-panthers {
