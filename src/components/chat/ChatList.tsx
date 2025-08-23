@@ -116,6 +116,9 @@ export const ChatList: React.FC<ChatListProps> = ({
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-foreground truncate">
                     {getChatDisplayName(chat)}
+                    {chat.is_archived && (
+                      <span className="text-xs text-muted-foreground ml-1">(Archived)</span>
+                    )}
                   </h4>
                   {lastMessage && (
                     <span className="text-xs text-muted-foreground">

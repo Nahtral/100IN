@@ -7,6 +7,10 @@ interface MessageListProps {
   currentUserId?: string;
   onAddReaction: (messageId: string, emoji: string) => void;
   onRemoveReaction: (messageId: string, emoji: string) => void;
+  onEditMessage: (messageId: string, newContent: string) => void;
+  onDeleteMessage: (messageId: string) => void;
+  onArchiveMessage: (messageId: string) => void;
+  onRecallMessage: (messageId: string) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -14,6 +18,10 @@ export const MessageList: React.FC<MessageListProps> = ({
   currentUserId,
   onAddReaction,
   onRemoveReaction,
+  onEditMessage,
+  onDeleteMessage,
+  onArchiveMessage,
+  onRecallMessage,
 }) => {
   return (
     <ScrollArea className="h-full p-4">
@@ -29,6 +37,10 @@ export const MessageList: React.FC<MessageListProps> = ({
             }
             onAddReaction={onAddReaction}
             onRemoveReaction={onRemoveReaction}
+            onEditMessage={onEditMessage}
+            onDeleteMessage={onDeleteMessage}
+            onArchiveMessage={onArchiveMessage}
+            onRecallMessage={onRecallMessage}
             currentUserId={currentUserId}
           />
         ))}

@@ -70,6 +70,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
         )
       `)
       .eq('chat_id', chatId)
+      .or(`is_archived.is.false,sender_id.eq.${user?.id}`) // Show non-archived messages or user's own archived messages
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -192,6 +193,120 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
     }
   };
 
+  const editMessage = async (messageId: string, newContent: string) => {
+    if (!user) return;
+
+    const { data: originalMessage } = await supabase
+      .from('messages')
+      .select('content, edit_history')
+      .eq('id', messageId)
+      .single();
+
+    if (!originalMessage) return;
+
+    const editHistory = Array.isArray(originalMessage.edit_history) 
+      ? originalMessage.edit_history 
+      : [];
+    
+    const updatedHistory = [...editHistory, {
+      content: originalMessage.content,
+      edited_at: new Date().toISOString(),
+    }];
+
+    const { error } = await supabase
+      .from('messages')
+      .update({
+        content: newContent,
+        is_edited: true,
+        edit_history: updatedHistory,
+      })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error editing message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to edit message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete message",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Message deleted successfully",
+      });
+    }
+  };
+
+  const archiveMessage = async (messageId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .update({
+        is_archived: true,
+      })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error archiving message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to archive message",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Message archived",
+      });
+    }
+  };
+
+  const recallMessage = async (messageId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .update({
+        is_recalled: true,
+        recalled_at: new Date().toISOString(),
+        recalled_by: user.id,
+      })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error recalling message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recall message",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Message recalled",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -205,7 +320,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader chat={chat} />
+      <ChatHeader chat={chat} onChatUpdated={fetchChat} />
       
       <div className="flex-1 overflow-hidden">
         <MessageList
@@ -213,6 +328,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
           currentUserId={user?.id}
           onAddReaction={addReaction}
           onRemoveReaction={removeReaction}
+          onEditMessage={editMessage}
+          onDeleteMessage={deleteMessage}
+          onArchiveMessage={archiveMessage}
+          onRecallMessage={recallMessage}
         />
         <div ref={messagesEndRef} />
       </div>

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { MoreVertical, Smile, Download, ExternalLink, MapPin } from 'lucide-react';
+import { MoreVertical, Smile, Download, ExternalLink, MapPin, Edit, Trash2, Archive, RotateCcw, Check, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface MessageProps {
   message: any;
@@ -22,6 +34,10 @@ interface MessageProps {
   showAvatar: boolean;
   onAddReaction: (messageId: string, emoji: string) => void;
   onRemoveReaction: (messageId: string, emoji: string) => void;
+  onEditMessage: (messageId: string, newContent: string) => void;
+  onDeleteMessage: (messageId: string) => void;
+  onArchiveMessage: (messageId: string) => void;
+  onRecallMessage: (messageId: string) => void;
   currentUserId?: string;
 }
 
@@ -33,9 +49,16 @@ export const Message: React.FC<MessageProps> = ({
   showAvatar,
   onAddReaction,
   onRemoveReaction,
+  onEditMessage,
+  onDeleteMessage,
+  onArchiveMessage,
+  onRecallMessage,
   currentUserId,
 }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content || '');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleEmojiClick = (emoji: string) => {
     const existingReaction = message.message_reactions?.find(
@@ -48,6 +71,23 @@ export const Message: React.FC<MessageProps> = ({
       onAddReaction(message.id, emoji);
     }
     setShowEmojiPicker(false);
+  };
+
+  const handleEditSave = () => {
+    if (editContent.trim() !== message.content) {
+      onEditMessage(message.id, editContent.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleEditCancel = () => {
+    setEditContent(message.content || '');
+    setIsEditing(false);
+  };
+
+  const handleDelete = () => {
+    onDeleteMessage(message.id);
+    setShowDeleteDialog(false);
   };
 
   const renderMediaContent = () => {
@@ -139,6 +179,21 @@ export const Message: React.FC<MessageProps> = ({
     return acc;
   }, {}) || {};
 
+  // Don't render if message is recalled or archived (unless it's the owner)
+  if (message.is_recalled && !isOwn) {
+    return (
+      <div className="flex gap-3 opacity-50">
+        <div className="ml-11 text-sm text-muted-foreground italic">
+          Message was recalled
+        </div>
+      </div>
+    );
+  }
+
+  if (message.is_archived && !isOwn) {
+    return null;
+  }
+
   return (
     <div className={cn(
       "flex gap-3 group",
@@ -181,15 +236,54 @@ export const Message: React.FC<MessageProps> = ({
               ? "bg-primary text-primary-foreground" 
               : "bg-muted text-foreground"
           )}>
-            {message.message_type === 'text' ? (
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-            ) : (
-              <div>
-                {renderMediaContent()}
-                {message.content && (
-                  <p className="text-sm mt-2">{message.content}</p>
-                )}
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="flex-1"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleEditSave();
+                    } else if (e.key === 'Escape') {
+                      handleEditCancel();
+                    }
+                  }}
+                />
+                <Button size="sm" variant="ghost" onClick={handleEditSave}>
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleEditCancel}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
+            ) : (
+              <>
+                {message.message_type === 'text' ? (
+                  <div>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    {message.is_edited && (
+                      <span className="text-xs text-muted-foreground italic ml-2">edited</span>
+                    )}
+                    {message.is_recalled && isOwn && (
+                      <span className="text-xs text-muted-foreground italic ml-2">recalled</span>
+                    )}
+                    {message.is_archived && isOwn && (
+                      <span className="text-xs text-muted-foreground italic ml-2">archived</span>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    {renderMediaContent()}
+                    {message.content && (
+                      <p className="text-sm mt-2">{message.content}</p>
+                    )}
+                    {message.is_edited && (
+                      <span className="text-xs text-muted-foreground italic">edited</span>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
           
@@ -226,10 +320,27 @@ export const Message: React.FC<MessageProps> = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem>Reply</DropdownMenuItem>
-                  {isOwn && (
+                  {isOwn && !message.is_recalled && (
                     <>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onRecallMessage(message.id)}>
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Recall
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onArchiveMessage(message.id)}>
+                        <Archive className="h-4 w-4 mr-2" />
+                        Archive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-destructive"
+                        onClick={() => setShowDeleteDialog(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
                     </>
                   )}
                 </DropdownMenuContent>
@@ -254,6 +365,23 @@ export const Message: React.FC<MessageProps> = ({
           </div>
         )}
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

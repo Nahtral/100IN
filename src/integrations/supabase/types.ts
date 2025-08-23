@@ -177,33 +177,49 @@ export type Database = {
       }
       chats: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           chat_type: string
           created_at: string
           created_by: string
           id: string
+          is_archived: boolean | null
           name: string | null
           team_id: string | null
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           chat_type: string
           created_at?: string
           created_by: string
           id?: string
+          is_archived?: boolean | null
           name?: string | null
           team_id?: string | null
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           chat_type?: string
           created_at?: string
           created_by?: string
           id?: string
+          is_archived?: boolean | null
           name?: string | null
           team_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chats_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chats_team_id_fkey"
             columns: ["team_id"]
@@ -1409,11 +1425,17 @@ export type Database = {
           chat_id: string
           content: string | null
           created_at: string
+          edit_history: Json | null
           id: string
+          is_archived: boolean | null
+          is_edited: boolean | null
+          is_recalled: boolean | null
           media_size: number | null
           media_type: string | null
           media_url: string | null
           message_type: string
+          recalled_at: string | null
+          recalled_by: string | null
           sender_id: string
           updated_at: string
         }
@@ -1421,11 +1443,17 @@ export type Database = {
           chat_id: string
           content?: string | null
           created_at?: string
+          edit_history?: Json | null
           id?: string
+          is_archived?: boolean | null
+          is_edited?: boolean | null
+          is_recalled?: boolean | null
           media_size?: number | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string
+          recalled_at?: string | null
+          recalled_by?: string | null
           sender_id: string
           updated_at?: string
         }
@@ -1433,11 +1461,17 @@ export type Database = {
           chat_id?: string
           content?: string | null
           created_at?: string
+          edit_history?: Json | null
           id?: string
+          is_archived?: boolean | null
+          is_edited?: boolean | null
+          is_recalled?: boolean | null
           media_size?: number | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string
+          recalled_at?: string | null
+          recalled_by?: string | null
           sender_id?: string
           updated_at?: string
         }
@@ -1447,6 +1481,13 @@ export type Database = {
             columns: ["chat_id"]
             isOneToOne: false
             referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_recalled_by_fkey"
+            columns: ["recalled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

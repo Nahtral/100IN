@@ -8,12 +8,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ChatActions } from './ChatActions';
 
 interface ChatHeaderProps {
   chat: any;
+  onChatUpdated?: () => void;
 }
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ chat }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ chat, onChatUpdated }) => {
   if (!chat) return null;
 
   const getChatDisplayName = () => {
@@ -44,6 +46,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ chat }) => {
           <div>
             <h3 className="font-semibold text-foreground">
               {getChatDisplayName()}
+              {chat.is_archived && (
+                <span className="text-xs text-muted-foreground ml-2">(Archived)</span>
+              )}
             </h3>
             <p className="text-sm text-muted-foreground">
               {chat.chat_type === 'group' 
@@ -62,26 +67,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ chat }) => {
             <Video className="h-4 w-4" />
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>View Info</DropdownMenuItem>
-              <DropdownMenuItem>Mute Notifications</DropdownMenuItem>
-              {chat.chat_type === 'group' && (
-                <>
-                  <DropdownMenuItem>Manage Members</DropdownMenuItem>
-                  <DropdownMenuItem>Leave Group</DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuItem className="text-destructive">
-                Delete Chat
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ChatActions chat={chat} onChatUpdated={onChatUpdated || (() => {})} />
         </div>
       </div>
     </div>
