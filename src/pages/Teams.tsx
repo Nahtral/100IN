@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Plus, Edit, Trash2, Search, RefreshCw, Shield, UserCheck } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Search, RefreshCw, Shield, UserCheck, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import EnhancedTeamForm from '@/components/forms/EnhancedTeamForm';
+import TeamDetailsModal from '@/components/team/TeamDetailsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -38,6 +39,8 @@ const Teams = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteTeamId, setDeleteTeamId] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -226,6 +229,16 @@ const Teams = () => {
     });
   };
 
+  const openTeamDetails = (team: Team) => {
+    setSelectedTeam(team);
+    setIsDetailsModalOpen(true);
+  };
+
+  const closeTeamDetails = () => {
+    setSelectedTeam(null);
+    setIsDetailsModalOpen(false);
+  };
+
   if (!canViewTeams) {
     return (
       <Layout currentUser={currentUser}>
@@ -357,11 +370,12 @@ const Teams = () => {
               </div>
             ) : (
               <div className="mobile-list">
-                {filteredAndSortedTeams.map((team) => (
-                  <div 
-                    key={team.id} 
-                    className="mobile-list-item"
-                  >
+                 {filteredAndSortedTeams.map((team) => (
+                   <div 
+                     key={team.id} 
+                     className="mobile-list-item cursor-pointer hover:bg-muted/50 transition-colors"
+                     onClick={() => openTeamDetails(team)}
+                   >
                     <div className="mobile-list-header">
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col">
@@ -379,28 +393,46 @@ const Teams = () => {
                         </div>
                       </div>
                       
-                      {canManageTeams && (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditForm(team)}
-                            className="touch-target"
-                            aria-label={`Edit ${team.name}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="touch-target"
-                                aria-label={`Delete ${team.name}`}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
+                       <div className="flex items-center gap-1">
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             openTeamDetails(team);
+                           }}
+                           className="touch-target"
+                           aria-label={`View ${team.name} details`}
+                         >
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                         
+                         {canManageTeams && (
+                           <>
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 openEditForm(team);
+                               }}
+                               className="touch-target"
+                               aria-label={`Edit ${team.name}`}
+                             >
+                               <Edit className="h-4 w-4" />
+                             </Button>
+                             <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                 <Button
+                                   variant="ghost"
+                                   size="icon"
+                                   onClick={(e) => e.stopPropagation()}
+                                   className="touch-target"
+                                   aria-label={`Delete ${team.name}`}
+                                 >
+                                   <Trash2 className="h-4 w-4 text-destructive" />
+                                 </Button>
+                               </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Team</AlertDialogTitle>
@@ -422,10 +454,11 @@ const Teams = () => {
                                   Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      )}
+                             </AlertDialogContent>
+                             </AlertDialog>
+                           </>
+                         )}
+                       </div>
                     </div>
                     
                     <div className="mobile-list-content">
@@ -459,6 +492,19 @@ const Teams = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Team Details Modal */}
+      {selectedTeam && (
+        <TeamDetailsModal
+          team={selectedTeam}
+          isOpen={isDetailsModalOpen}
+          onClose={closeTeamDetails}
+          onTeamUpdate={() => {
+            invalidateCache();
+            closeTeamDetails();
+          }}
+        />
+      )}
     </Layout>
   );
 };
