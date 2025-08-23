@@ -2141,6 +2141,9 @@ export type Database = {
           is_active: boolean
           jersey_number: number | null
           last_session_date: string | null
+          manual_entry_email: string | null
+          manual_entry_name: string | null
+          manual_entry_phone: string | null
           medical_notes: string | null
           position: string | null
           shooting_percentage: number | null
@@ -2149,7 +2152,7 @@ export type Database = {
           total_sessions: number | null
           total_shots: number | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
           weight: string | null
         }
         Insert: {
@@ -2164,6 +2167,9 @@ export type Database = {
           is_active?: boolean
           jersey_number?: number | null
           last_session_date?: string | null
+          manual_entry_email?: string | null
+          manual_entry_name?: string | null
+          manual_entry_phone?: string | null
           medical_notes?: string | null
           position?: string | null
           shooting_percentage?: number | null
@@ -2172,7 +2178,7 @@ export type Database = {
           total_sessions?: number | null
           total_shots?: number | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
           weight?: string | null
         }
         Update: {
@@ -2187,6 +2193,9 @@ export type Database = {
           is_active?: boolean
           jersey_number?: number | null
           last_session_date?: string | null
+          manual_entry_email?: string | null
+          manual_entry_name?: string | null
+          manual_entry_phone?: string | null
           medical_notes?: string | null
           position?: string | null
           shooting_percentage?: number | null
@@ -2195,7 +2204,7 @@ export type Database = {
           total_sessions?: number | null
           total_shots?: number | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
           weight?: string | null
         }
         Relationships: [

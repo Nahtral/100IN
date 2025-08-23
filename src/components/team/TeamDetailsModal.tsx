@@ -56,16 +56,16 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     try {
       setIsLoading(true);
       
-      // First get players for this team
+      // Get players for this team including manual entry fields
       const { data: playersData, error: playersError } = await supabase
         .from('players')
-        .select('id, jersey_number, position, is_active, user_id')
+        .select('id, jersey_number, position, is_active, user_id, manual_entry_name, manual_entry_email, manual_entry_phone')
         .eq('team_id', team.id)
         .order('jersey_number', { ascending: true });
 
       if (playersError) throw playersError;
 
-      // Then get profile information for each player
+      // Then get profile information for each player (only for those with user_id)
       const playersWithProfiles = await Promise.all(
         (playersData || []).map(async (player) => {
           if (player.user_id) {
@@ -80,9 +80,13 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
               profiles: profile
             };
           }
+          // For manual entries, create a mock profile from manual entry data
           return {
             ...player,
-            profiles: null
+            profiles: {
+              full_name: player.manual_entry_name,
+              avatar_url: null
+            }
           };
         })
       );
@@ -109,7 +113,8 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
       const { error: playerError } = await supabase
         .from('players')
         .insert({
-          // Don't set user_id for manual entries
+          // user_id is now nullable for manual entries
+          user_id: null,
           team_id: team.id,
           jersey_number: data.jerseyNumber ? parseInt(data.jerseyNumber) : null,
           position: data.position || null,
@@ -120,10 +125,10 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
           emergency_contact_phone: data.emergencyContactPhone || null,
           medical_notes: data.medicalNotes || null,
           is_active: true,
-          // Store manual entry data directly on player record
-          full_name: data.fullName,
-          email: data.email || null,
-          phone: data.phone || null,
+          // Store manual entry data in the new fields
+          manual_entry_name: data.fullName,
+          manual_entry_email: data.email || null,
+          manual_entry_phone: data.phone || null,
         });
 
       if (playerError) {
