@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -17,10 +20,15 @@ import {
   Eye,
   BarChart3,
   PieChart as PieChartIcon,
-  Download
+  Download,
+  Edit,
+  Plus,
+  Trash2,
+  Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface AnalyticsData {
   teamPerformance: any[];
@@ -38,10 +46,17 @@ interface PartnerAnalyticsProps {
 
 const PartnerAnalytics = ({ partnerId, teamId }: PartnerAnalyticsProps) => {
   const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('30days');
   const [selectedMetric, setSelectedMetric] = useState('all');
+  
+  // Modal states
+  const [showROIModal, setShowROIModal] = useState(false);
+  const [showBrandModal, setShowBrandModal] = useState(false);
+  const [showEngagementModal, setShowEngagementModal] = useState(false);
+  const [showEfficiencyModal, setShowEfficiencyModal] = useState(false);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -247,10 +262,18 @@ const PartnerAnalytics = ({ partnerId, teamId }: PartnerAnalyticsProps) => {
 
       {/* Key Metrics Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-green-200">
+        <Card 
+          className="border-green-200 group cursor-pointer hover:shadow-lg transition-all transform hover:scale-105" 
+          onClick={() => setShowROIModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total ROI</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+              {isSuperAdmin && (
+                <Eye className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">2.3x</div>
@@ -261,10 +284,18 @@ const PartnerAnalytics = ({ partnerId, teamId }: PartnerAnalyticsProps) => {
           </CardContent>
         </Card>
         
-        <Card className="border-blue-200">
+        <Card 
+          className="border-blue-200 group cursor-pointer hover:shadow-lg transition-all transform hover:scale-105" 
+          onClick={() => setShowBrandModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Brand Exposure</CardTitle>
-            <Eye className="h-4 w-4 text-blue-600" />
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-blue-600" />
+              {isSuperAdmin && (
+                <Eye className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">3.2M</div>
@@ -275,10 +306,18 @@ const PartnerAnalytics = ({ partnerId, teamId }: PartnerAnalyticsProps) => {
           </CardContent>
         </Card>
         
-        <Card className="border-purple-200">
+        <Card 
+          className="border-purple-200 group cursor-pointer hover:shadow-lg transition-all transform hover:scale-105" 
+          onClick={() => setShowEngagementModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
-            <Users className="h-4 w-4 text-purple-600" />
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-purple-600" />
+              {isSuperAdmin && (
+                <Eye className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">8.7%</div>
@@ -289,10 +328,18 @@ const PartnerAnalytics = ({ partnerId, teamId }: PartnerAnalyticsProps) => {
           </CardContent>
         </Card>
         
-        <Card className="border-orange-200">
+        <Card 
+          className="border-orange-200 group cursor-pointer hover:shadow-lg transition-all transform hover:scale-105" 
+          onClick={() => setShowEfficiencyModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Investment Efficiency</CardTitle>
-            <Target className="h-4 w-4 text-orange-600" />
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-orange-600" />
+              {isSuperAdmin && (
+                <Eye className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">94%</div>
@@ -495,6 +542,349 @@ const PartnerAnalytics = ({ partnerId, teamId }: PartnerAnalyticsProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ROI Management Modal */}
+      <Dialog open={showROIModal} onOpenChange={setShowROIModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              ROI Analysis & Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Current ROI</h3>
+                <div className="text-3xl font-bold text-green-600">2.3x</div>
+                <p className="text-sm text-gray-600">+18.2% from last period</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Total Investment</h3>
+                <div className="text-3xl font-bold">¥140K</div>
+                <p className="text-sm text-gray-600">Across all categories</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Total Return</h3>
+                <div className="text-3xl font-bold text-green-600">¥322K</div>
+                <p className="text-sm text-gray-600">Generated revenue</p>
+              </Card>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="font-semibold">ROI Breakdown by Category</h3>
+              {analyticsData?.roiData.map((item, index) => (
+                <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">{item.category}</span>
+                    <p className="text-sm text-gray-600">¥{item.investment.toLocaleString()} invested</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-green-600 font-semibold text-lg">{item.roi}x</span>
+                    <p className="text-sm text-gray-600">¥{item.return.toLocaleString()} return</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {isSuperAdmin && (
+              <div className="flex gap-2 pt-4 border-t">
+                <Button>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configure ROI Targets
+                </Button>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add ROI Category
+                </Button>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export ROI Report
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Brand Exposure Modal */}
+      <Dialog open={showBrandModal} onOpenChange={setShowBrandModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-blue-500" />
+              Brand Exposure Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Total Impressions</h3>
+                <div className="text-3xl font-bold text-blue-600">3.2M</div>
+                <p className="text-sm text-gray-600">+32.1% increase</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Reach</h3>
+                <div className="text-3xl font-bold">1.8M</div>
+                <p className="text-sm text-gray-600">Unique viewers</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Frequency</h3>
+                <div className="text-3xl font-bold">1.8</div>
+                <p className="text-sm text-gray-600">Avg views per person</p>
+              </Card>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold">Exposure Channels</h3>
+              <div className="grid gap-4">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">Stadium Signage</span>
+                    <p className="text-sm text-gray-600">Physical displays and boards</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold">1.2M impressions</span>
+                    <p className="text-sm text-gray-600">37.5% of total</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">Social Media</span>
+                    <p className="text-sm text-gray-600">Posts, stories, mentions</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold">850K impressions</span>
+                    <p className="text-sm text-gray-600">26.6% of total</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">Digital Media</span>
+                    <p className="text-sm text-gray-600">Website, streaming, apps</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold">650K impressions</span>
+                    <p className="text-sm text-gray-600">20.3% of total</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {isSuperAdmin && (
+              <div className="flex gap-2 pt-4 border-t">
+                <Button>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configure Tracking
+                </Button>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Channel
+                </Button>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Report
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Engagement Rate Modal */}
+      <Dialog open={showEngagementModal} onOpenChange={setShowEngagementModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-500" />
+              Engagement Analytics & Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Overall Rate</h3>
+                <div className="text-3xl font-bold text-purple-600">8.7%</div>
+                <p className="text-sm text-gray-600">+2.3% increase</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Active Users</h3>
+                <div className="text-3xl font-bold">24.5K</div>
+                <p className="text-sm text-gray-600">Monthly active</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Avg. Session</h3>
+                <div className="text-3xl font-bold">4:32</div>
+                <p className="text-sm text-gray-600">Minutes per session</p>
+              </Card>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold">Engagement by Platform</h3>
+              {analyticsData?.socialMedia.map((platform, index) => (
+                <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">{platform.platform}</span>
+                    <p className="text-sm text-gray-600">{platform.followers.toLocaleString()} followers</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold">{platform.engagement}%</span>
+                    <p className="text-sm text-gray-600">{platform.mentions} mentions</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {isSuperAdmin && (
+              <div className="flex gap-2 pt-4 border-t">
+                <Button>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configure Campaigns
+                </Button>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Platform
+                </Button>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Engagement Data
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Investment Efficiency Modal */}
+      <Dialog open={showEfficiencyModal} onOpenChange={setShowEfficiencyModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-orange-500" />
+              Investment Efficiency Management
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Efficiency Score</h3>
+                <div className="text-3xl font-bold text-orange-600">94%</div>
+                <p className="text-sm text-gray-600">+5.8% optimization</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Cost per Impression</h3>
+                <div className="text-3xl font-bold">¥0.044</div>
+                <p className="text-sm text-gray-600">Industry avg: ¥0.052</p>
+              </Card>
+              <Card className="p-4">
+                <h3 className="font-semibold mb-2">Budget Utilization</h3>
+                <div className="text-3xl font-bold">87%</div>
+                <p className="text-sm text-gray-600">Of allocated budget</p>
+              </Card>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold">Efficiency by Category</h3>
+              <div className="grid gap-4">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">Digital Advertising</span>
+                    <p className="text-sm text-gray-600">Online campaigns and targeting</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-green-600">98%</span>
+                    <p className="text-sm text-gray-600">Highly efficient</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <Button size="sm" variant="outline">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">Event Sponsorship</span>
+                    <p className="text-sm text-gray-600">Game and event partnerships</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-orange-600">89%</span>
+                    <p className="text-sm text-gray-600">Good efficiency</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <Button size="sm" variant="outline">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">Traditional Media</span>
+                    <p className="text-sm text-gray-600">Print, radio, and TV</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-yellow-600">76%</span>
+                    <p className="text-sm text-gray-600">Needs optimization</p>
+                  </div>
+                  {isSuperAdmin && (
+                    <Button size="sm" variant="outline">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {isSuperAdmin && (
+              <div className="flex gap-2 pt-4 border-t">
+                <Button>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Optimize Budget
+                </Button>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Efficiency Report
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
