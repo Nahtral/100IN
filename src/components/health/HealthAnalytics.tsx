@@ -16,6 +16,10 @@ import {
   Download
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import PlayerDetailsModal from './PlayerDetailsModal';
+import InjuryDetailsModal from './InjuryDetailsModal';
+import FitnessDetailsModal from './FitnessDetailsModal';
+import CheckInDetailsModal from './CheckInDetailsModal';
 
 interface HealthAnalyticsProps {
   userRole: string;
@@ -29,6 +33,12 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
   const [analyticsData, setAnalyticsData] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('30d');
+  
+  // Modal states
+  const [playerModalOpen, setPlayerModalOpen] = useState(false);
+  const [injuryModalOpen, setInjuryModalOpen] = useState(false);
+  const [fitnessModalOpen, setFitnessModalOpen] = useState(false);
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -152,7 +162,10 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-blue-200">
+        <Card 
+          className="border-blue-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-blue-300"
+          onClick={() => setPlayerModalOpen(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Players</CardTitle>
             <Users className="h-4 w-4 text-blue-600" />
@@ -165,7 +178,10 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="border-red-200">
+        <Card 
+          className="border-red-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-red-300"
+          onClick={() => setInjuryModalOpen(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Injuries</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -179,7 +195,10 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="border-green-200">
+        <Card 
+          className="border-green-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-green-300"
+          onClick={() => setFitnessModalOpen(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Fitness Score</CardTitle>
             <Activity className="h-4 w-4 text-green-600" />
@@ -193,7 +212,10 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="border-orange-200">
+        <Card 
+          className="border-orange-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-orange-300"
+          onClick={() => setCheckInModalOpen(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Health Check-ins</CardTitle>
             <Heart className="h-4 w-4 text-orange-600" />
@@ -361,6 +383,31 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <PlayerDetailsModal
+        isOpen={playerModalOpen}
+        onClose={() => setPlayerModalOpen(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <InjuryDetailsModal
+        isOpen={injuryModalOpen}
+        onClose={() => setInjuryModalOpen(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <FitnessDetailsModal
+        isOpen={fitnessModalOpen}
+        onClose={() => setFitnessModalOpen(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <CheckInDetailsModal
+        isOpen={checkInModalOpen}
+        onClose={() => setCheckInModalOpen(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
     </div>
   );
 };
