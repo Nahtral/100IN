@@ -28,7 +28,7 @@ const scheduleFormSchema = z.object({
     .max(1000, 'Description must be less than 1000 characters')
     .optional(),
   eventType: z.enum(['game', 'practice', 'meeting', 'scrimmage', 'tournament'], {
-    errorMap: () => ({ message: 'Please select a valid event type' })
+    message: 'Please select a valid event type'
   }),
   startDate: z.string()
     .min(1, 'Start date is required')
