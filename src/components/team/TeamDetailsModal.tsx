@@ -17,10 +17,11 @@ interface Player {
   jersey_number?: number;
   position?: string;
   is_active: boolean;
+  user_id?: string;
   profiles?: {
-    full_name: string;
+    full_name?: string;
     avatar_url?: string;
-  };
+  } | null;
 }
 
 interface TeamDetailsModalProps {
@@ -52,24 +53,39 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const fetchTeamPlayers = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // First get players for this team
+      const { data: playersData, error: playersError } = await supabase
         .from('players')
-        .select(`
-          id,
-          jersey_number,
-          position,
-          is_active,
-          user_id,
-          profiles(
-            full_name,
-            avatar_url
-          )
-        `)
+        .select('id, jersey_number, position, is_active, user_id')
         .eq('team_id', team.id)
         .order('jersey_number', { ascending: true });
 
-      if (error) throw error;
-      setPlayers(data || []);
+      if (playersError) throw playersError;
+
+      // Then get profile information for each player
+      const playersWithProfiles = await Promise.all(
+        (playersData || []).map(async (player) => {
+          if (player.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url')
+              .eq('id', player.user_id)
+              .single();
+            
+            return {
+              ...player,
+              profiles: profile
+            };
+          }
+          return {
+            ...player,
+            profiles: null
+          };
+        })
+      );
+
+      setPlayers(playersWithProfiles);
     } catch (error) {
       console.error('Error fetching team players:', error);
       toast({
@@ -430,7 +446,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
-                            <p className="font-medium">{player.profiles?.full_name}</p>
+                            <p className="font-medium">{player.profiles?.full_name || 'Unknown Player'}</p>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               {player.jersey_number && (
                                 <span>#{player.jersey_number}</span>
