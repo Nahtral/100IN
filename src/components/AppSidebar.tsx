@@ -130,6 +130,11 @@ export function AppSidebar() {
       icon: Users,
     },
     {
+      title: 'Partnership Management',
+      href: '/partnership-management',
+      icon: Handshake,
+    },
+    {
       title: 'Evaluations',
       href: '/evaluations',
       icon: Brain,
