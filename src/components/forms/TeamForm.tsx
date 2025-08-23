@@ -18,12 +18,13 @@ const teamFormSchema = z.object({
 type TeamFormData = z.infer<typeof teamFormSchema>;
 
 interface TeamFormProps {
-  onSubmit: (data: TeamFormData) => void;
+  onSubmit: (data: TeamFormData) => Promise<void>;
   initialData?: Partial<TeamFormData>;
   isLoading?: boolean;
+  onCancel?: () => void;
 }
 
-const TeamForm: React.FC<TeamFormProps> = ({ onSubmit, initialData, isLoading = false }) => {
+const TeamForm: React.FC<TeamFormProps> = ({ onSubmit, initialData, isLoading = false, onCancel }) => {
   const form = useForm<TeamFormData>({
     resolver: zodResolver(teamFormSchema),
     defaultValues: {
@@ -88,7 +89,12 @@ const TeamForm: React.FC<TeamFormProps> = ({ onSubmit, initialData, isLoading = 
               />
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              {onCancel && (
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
+              )}
               <Button type="submit" disabled={isLoading}>
                 <Save className="h-4 w-4 mr-2" />
                 {isLoading ? 'Saving...' : 'Save Team'}

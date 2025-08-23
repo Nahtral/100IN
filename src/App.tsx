@@ -10,6 +10,7 @@ import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Players from "./pages/Players";
+import Teams from "./pages/Teams";
 import Schedule from "./pages/Schedule";
 import Analytics from "./pages/Analytics";
 import Medical from "./pages/Medical";
@@ -52,6 +53,11 @@ const App = () => (
               <ProtectedRoute>
                 <Players />
               </ProtectedRoute>
+            } />
+            <Route path="/teams" element={
+              <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
+                <Teams />
+              </RoleProtectedRoute>
             } />
             <Route path="/schedule" element={
               <ProtectedRoute>

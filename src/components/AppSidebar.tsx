@@ -66,6 +66,12 @@ export function AppSidebar() {
       showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
     },
     {
+      title: 'Teams',
+      href: '/teams',
+      icon: Trophy,
+      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach'),
+    },
+    {
       title: 'Schedule',
       href: '/schedule',
       icon: Calendar,
