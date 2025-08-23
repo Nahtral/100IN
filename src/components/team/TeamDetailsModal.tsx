@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import EnhancedTeamForm from '@/components/forms/EnhancedTeamForm';
+import PlayerForm from '@/components/forms/PlayerForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Player {
@@ -40,6 +41,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isAddPlayerMode, setIsAddPlayerMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { isSuperAdmin } = useUserRole();
@@ -95,6 +97,96 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAddPlayer = async (data: any) => {
+    if (!team) return;
+    
+    setIsSubmitting(true);
+    try {
+      // First create or find the user profile
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', data.email)
+        .single();
+
+      let userId = existingProfile?.id;
+
+      if (!existingProfile) {
+        // Generate a UUID for the new profile
+        const profileId = crypto.randomUUID();
+        
+        // Create new profile
+        const { data: newProfile, error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: profileId,
+            email: data.email,
+            full_name: data.fullName,
+            phone: data.phone,
+          })
+          .select('id')
+          .single();
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          toast({
+            title: "Error",
+            description: "Failed to create player profile",
+            variant: "destructive",
+          });
+          return;
+        }
+        userId = newProfile.id;
+      }
+
+      // Create player record
+      const { error: playerError } = await supabase
+        .from('players')
+        .insert({
+          user_id: userId,
+          team_id: team.id,
+          jersey_number: parseInt(data.jerseyNumber),
+          position: data.position,
+          height: data.height,
+          weight: data.weight,
+          date_of_birth: data.dateOfBirth,
+          emergency_contact_name: data.emergencyContactName,
+          emergency_contact_phone: data.emergencyContactPhone,
+          medical_notes: data.medicalNotes,
+          is_active: true,
+        });
+
+      if (playerError) {
+        console.error('Error creating player:', playerError);
+        toast({
+          title: "Error",
+          description: "Failed to add player to team",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Player added to team successfully",
+      });
+
+      // Refresh players list
+      await fetchTeamPlayers();
+      setIsAddPlayerMode(false);
+      
+    } catch (error) {
+      console.error('Error adding player:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add player",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -358,6 +450,23 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
               onCancel={() => setIsEditMode(false)}
             />
           </div>
+        ) : isAddPlayerMode ? (
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add New Player</h3>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsAddPlayerMode(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+            </div>
+            <PlayerForm
+              onSubmit={handleAddPlayer}
+              isLoading={isSubmitting}
+            />
+          </div>
         ) : (
           <Tabs defaultValue="overview" className="w-full mt-6">
             <TabsList className="grid w-full grid-cols-4">
@@ -417,7 +526,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Team Roster</h3>
                 {isSuperAdmin && (
-                  <Button size="sm">
+                  <Button size="sm" onClick={() => setIsAddPlayerMode(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Add Player
                   </Button>
