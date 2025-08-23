@@ -26,6 +26,7 @@ import TimeOffManagement from '@/components/hr/TimeOffManagement';
 import PayrollDashboard from '@/components/hr/PayrollDashboard';
 import BenefitsManagement from '@/components/hr/BenefitsManagement';
 import OnboardingTasks from '@/components/hr/OnboardingTasks';
+import EmployeeScheduling from '@/components/hr/EmployeeScheduling';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EmployeeForm from '@/components/hr/EmployeeForm';
 import { Download, Edit, X } from 'lucide-react';
@@ -195,7 +196,7 @@ const HRManagement = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
           <TabsTrigger value="timetracking">Time Tracking</TabsTrigger>
@@ -203,6 +204,7 @@ const HRManagement = () => {
           <TabsTrigger value="payroll">Payroll</TabsTrigger>
           <TabsTrigger value="benefits">Benefits</TabsTrigger>
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+          <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
@@ -330,6 +332,10 @@ const HRManagement = () => {
 
         <TabsContent value="onboarding">
           <OnboardingTasks onStatsUpdate={fetchStats} />
+        </TabsContent>
+
+        <TabsContent value="scheduling">
+          <EmployeeScheduling onStatsUpdate={fetchStats} />
         </TabsContent>
       </Tabs>
 

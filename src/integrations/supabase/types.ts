@@ -523,6 +523,59 @@ export type Database = {
           },
         ]
       }
+      employee_schedules: {
+        Row: {
+          break_duration_minutes: number | null
+          created_at: string
+          created_by: string
+          employee_id: string
+          end_time: string
+          id: string
+          location: string | null
+          notes: string | null
+          shift_date: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          break_duration_minutes?: number | null
+          created_at?: string
+          created_by: string
+          employee_id: string
+          end_time: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          shift_date: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          break_duration_minutes?: number | null
+          created_at?: string
+          created_by?: string
+          employee_id?: string
+          end_time?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          shift_date?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_schedules_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           address: Json | null
@@ -2068,6 +2121,69 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_change_requests: {
+        Row: {
+          created_at: string
+          id: string
+          new_schedule_data: Json
+          original_schedule_id: string | null
+          reason: string | null
+          request_type: string
+          requester_id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_employee_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_schedule_data: Json
+          original_schedule_id?: string | null
+          reason?: string | null
+          request_type: string
+          requester_id: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_employee_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_schedule_data?: Json
+          original_schedule_id?: string | null
+          reason?: string | null
+          request_type?: string
+          requester_id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_employee_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_change_requests_original_schedule_id_fkey"
+            columns: ["original_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "employee_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_requests_target_employee_id_fkey"
+            columns: ["target_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           created_at: string | null
@@ -2125,6 +2241,54 @@ export type Database = {
           team_ids?: string[] | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shift_templates: {
+        Row: {
+          break_duration_minutes: number | null
+          created_at: string
+          created_by: string
+          days_of_week: number[]
+          department: string | null
+          end_time: string
+          id: string
+          is_active: boolean | null
+          location: string | null
+          position: string | null
+          start_time: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          break_duration_minutes?: number | null
+          created_at?: string
+          created_by: string
+          days_of_week: number[]
+          department?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          position?: string | null
+          start_time: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          break_duration_minutes?: number | null
+          created_at?: string
+          created_by?: string
+          days_of_week?: number[]
+          department?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          position?: string | null
+          start_time?: string
+          template_name?: string
+          updated_at?: string
         }
         Relationships: []
       }
