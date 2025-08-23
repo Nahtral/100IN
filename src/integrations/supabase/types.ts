@@ -833,8 +833,54 @@ export type Database = {
         }
         Relationships: []
       }
+      game_log_ai_jobs: {
+        Row: {
+          ai_response: Json | null
+          completed_at: string | null
+          confidence_score: number | null
+          created_at: string | null
+          error_message: string | null
+          game_log_id: string | null
+          id: string
+          screenshot_url: string
+          status: string | null
+        }
+        Insert: {
+          ai_response?: Json | null
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          game_log_id?: string | null
+          id?: string
+          screenshot_url: string
+          status?: string | null
+        }
+        Update: {
+          ai_response?: Json | null
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          game_log_id?: string | null
+          id?: string
+          screenshot_url?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_log_ai_jobs_game_log_id_fkey"
+            columns: ["game_log_id"]
+            isOneToOne: false
+            referencedRelation: "game_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_logs: {
         Row: {
+          ai_confidence: number | null
+          ai_processed: boolean | null
           assists: number | null
           blocks: number | null
           created_at: string
@@ -852,15 +898,20 @@ export type Database = {
           player_id: string
           plus_minus: number | null
           points: number | null
+          raw_ai_data: Json | null
           rebounds: number | null
           result: string
+          screenshot_url: string | null
           steals: number | null
           three_points_attempted: number | null
           three_points_made: number | null
           turnovers: number | null
           updated_at: string
+          upload_method: string | null
         }
         Insert: {
+          ai_confidence?: number | null
+          ai_processed?: boolean | null
           assists?: number | null
           blocks?: number | null
           created_at?: string
@@ -878,15 +929,20 @@ export type Database = {
           player_id: string
           plus_minus?: number | null
           points?: number | null
+          raw_ai_data?: Json | null
           rebounds?: number | null
           result: string
+          screenshot_url?: string | null
           steals?: number | null
           three_points_attempted?: number | null
           three_points_made?: number | null
           turnovers?: number | null
           updated_at?: string
+          upload_method?: string | null
         }
         Update: {
+          ai_confidence?: number | null
+          ai_processed?: boolean | null
           assists?: number | null
           blocks?: number | null
           created_at?: string
@@ -904,13 +960,16 @@ export type Database = {
           player_id?: string
           plus_minus?: number | null
           points?: number | null
+          raw_ai_data?: Json | null
           rebounds?: number | null
           result?: string
+          screenshot_url?: string | null
           steals?: number | null
           three_points_attempted?: number | null
           three_points_made?: number | null
           turnovers?: number | null
           updated_at?: string
+          upload_method?: string | null
         }
         Relationships: []
       }
