@@ -19,10 +19,15 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  User
+  User,
+  Edit,
+  Trash2,
+  Eye,
+  Plus
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -44,11 +49,15 @@ interface CommunicationCenterProps {
 
 const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) => {
   const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
   const [communications, setCommunications] = useState<CommunicationRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
   const [showScheduleMeeting, setShowScheduleMeeting] = useState(false);
   const [showRequestReport, setShowRequestReport] = useState(false);
+  const [showScheduleCall, setShowScheduleCall] = useState(false);
+  const [selectedCommunication, setSelectedCommunication] = useState<CommunicationRecord | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   
   // Form states
   const [messageForm, setMessageForm] = useState({
@@ -72,6 +81,15 @@ const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) =>
     period: '',
     details: '',
     deadline: undefined as Date | undefined
+  });
+
+  const [callForm, setCallForm] = useState({
+    recipient: '',
+    purpose: '',
+    date: undefined as Date | undefined,
+    time: '',
+    duration: '30',
+    notes: ''
   });
 
   useEffect(() => {
@@ -307,6 +325,120 @@ const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) =>
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleScheduleCall = async () => {
+    try {
+      setLoading(true);
+      
+      // Log communication event
+      const { error: analyticsError } = await supabase
+        .from('analytics_events')
+        .insert({
+          event_type: 'partner_communication',
+          event_data: {
+            type: 'call',
+            purpose: callForm.purpose,
+            recipient: callForm.recipient,
+            scheduled_for: callForm.date?.toISOString()
+          }
+        });
+
+      if (analyticsError) throw analyticsError;
+
+      // Create new call record
+      const scheduledDateTime = callForm.date && callForm.time 
+        ? new Date(`${format(callForm.date, 'yyyy-MM-dd')}T${callForm.time}`)
+        : undefined;
+
+      const newCall: CommunicationRecord = {
+        id: Date.now().toString(),
+        type: 'call',
+        subject: `Call: ${callForm.purpose}`,
+        content: callForm.notes,
+        recipient: callForm.recipient,
+        status: 'scheduled',
+        created_at: new Date().toISOString(),
+        scheduled_for: scheduledDateTime?.toISOString()
+      };
+
+      setCommunications(prev => [newCall, ...prev]);
+      
+      // Reset form
+      setCallForm({
+        recipient: '',
+        purpose: '',
+        date: undefined,
+        time: '',
+        duration: '30',
+        notes: ''
+      });
+      
+      setShowScheduleCall(false);
+      
+      toast({
+        title: "Success",
+        description: "Call scheduled successfully.",
+      });
+    } catch (error) {
+      console.error('Error scheduling call:', error);
+      toast({
+        title: "Error",
+        description: "Failed to schedule call.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditCommunication = (communication: CommunicationRecord) => {
+    setSelectedCommunication(communication);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteCommunication = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this communication record?')) {
+      return;
+    }
+
+    try {
+      setCommunications(prev => prev.filter(comm => comm.id !== id));
+      
+      toast({
+        title: "Success",
+        description: "Communication record deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting communication:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete communication record.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateCommunicationStatus = async (id: string, newStatus: string) => {
+    try {
+      setCommunications(prev => 
+        prev.map(comm => 
+          comm.id === id ? { ...comm, status: newStatus as any } : comm
+        )
+      );
+      
+      toast({
+        title: "Success",
+        description: "Communication status updated.",
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update status.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -579,12 +711,102 @@ const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) =>
           </DialogContent>
         </Dialog>
 
-        <Button className="mobile-btn bg-gradient-to-r from-orange-500 to-orange-600 h-auto py-4">
-          <div className="flex flex-col items-center gap-2">
-            <Phone className="h-5 w-5" />
-            <span>Schedule Call</span>
-          </div>
-        </Button>
+        <Dialog open={showScheduleCall} onOpenChange={setShowScheduleCall}>
+          <DialogTrigger asChild>
+            <Button className="mobile-btn bg-gradient-to-r from-orange-500 to-orange-600 h-auto py-4">
+              <div className="flex flex-col items-center gap-2">
+                <Phone className="h-5 w-5" />
+                <span>Schedule Call</span>
+              </div>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Schedule New Call</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Call With</label>
+                <Select value={callForm.recipient} onValueChange={(value) => setCallForm(prev => ({ ...prev, recipient: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select recipient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="team_manager">Team Manager</SelectItem>
+                    <SelectItem value="head_coach">Head Coach</SelectItem>
+                    <SelectItem value="executive_team">Executive Team</SelectItem>
+                    <SelectItem value="marketing_director">Marketing Director</SelectItem>
+                    <SelectItem value="partnership_manager">Partnership Manager</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Purpose</label>
+                <Input
+                  value={callForm.purpose}
+                  onChange={(e) => setCallForm(prev => ({ ...prev, purpose: e.target.value }))}
+                  placeholder="Call purpose or topic"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {callForm.date ? format(callForm.date, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={callForm.date}
+                      onSelect={(date) => setCallForm(prev => ({ ...prev, date }))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-sm font-medium">Time</label>
+                  <Input
+                    type="time"
+                    value={callForm.time}
+                    onChange={(e) => setCallForm(prev => ({ ...prev, time: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Duration (min)</label>
+                  <Select value={callForm.duration} onValueChange={(value) => setCallForm(prev => ({ ...prev, duration: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="45">45 min</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Notes</label>
+                <Textarea
+                  value={callForm.notes}
+                  onChange={(e) => setCallForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Call agenda or notes..."
+                  rows={3}
+                />
+              </div>
+              <Button onClick={handleScheduleCall} disabled={loading} className="w-full">
+                <Phone className="h-4 w-4 mr-2" />
+                Schedule Call
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Communication History */}
@@ -600,46 +822,166 @@ const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) =>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {communications.length > 0 ? communications.map((comm) => (
-              <div key={comm.id} className="flex items-start gap-4 p-4 rounded-lg border hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-2">
-                  {getTypeIcon(comm.type)}
-                  {getStatusIcon(comm.status)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium truncate">{comm.subject}</h4>
-                    <Badge variant="outline" className="ml-2">
-                      {comm.status}
-                    </Badge>
+            {communications.map((comm) => (
+              <Card 
+                key={comm.id} 
+                className="p-4 hover:shadow-md transition-shadow cursor-pointer group"
+                onClick={() => isSuperAdmin && handleEditCommunication(comm)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 rounded-lg bg-gray-100">
+                      {getTypeIcon(comm.type)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium">{comm.subject}</h4>
+                        <Badge 
+                          variant={comm.status === 'completed' || comm.status === 'sent' ? 'default' : 'secondary'}
+                          className={cn(
+                            "text-xs",
+                            comm.status === 'completed' && "bg-green-100 text-green-800",
+                            comm.status === 'sent' && "bg-green-100 text-green-800",
+                            comm.status === 'scheduled' && "bg-blue-100 text-blue-800",
+                            comm.status === 'pending' && "bg-yellow-100 text-yellow-800"
+                          )}
+                        >
+                          {comm.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{comm.content}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {comm.recipient}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(comm.created_at), 'MMM dd, yyyy')}
+                        </div>
+                        {comm.scheduled_for && (
+                          <div className="flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            {format(new Date(comm.scheduled_for), 'MMM dd, HH:mm')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{comm.content}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      {comm.recipient}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {format(new Date(comm.created_at), 'MMM dd, yyyy')}
-                    </span>
-                    {comm.scheduled_for && (
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon className="h-3 w-3" />
-                        {format(new Date(comm.scheduled_for), 'MMM dd, HH:mm')}
-                      </span>
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(comm.status)}
+                    {isSuperAdmin && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditCommunication(comm);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCommunication(comm.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
+              </Card>
+            ))}
+            {communications.length === 0 && (
+              <div className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No communications yet</h3>
+                <p className="text-gray-600">Start by sending a message or scheduling a meeting.</p>
               </div>
-            )) : (
-              <p className="text-center text-muted-foreground py-8">
-                No communication history yet. Start by sending a message or scheduling a meeting.
-              </p>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Communication Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Communication</DialogTitle>
+          </DialogHeader>
+          {selectedCommunication && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Type</label>
+                  <Input value={selectedCommunication.type} readOnly />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status</label>
+                  <Select 
+                    value={selectedCommunication.status} 
+                    onValueChange={(value) => updateCommunicationStatus(selectedCommunication.id, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Subject</label>
+                <Input value={selectedCommunication.subject} readOnly />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Content</label>
+                <Textarea value={selectedCommunication.content} rows={4} readOnly />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Recipient</label>
+                <Input value={selectedCommunication.recipient} readOnly />
+              </div>
+              {selectedCommunication.scheduled_for && (
+                <div>
+                  <label className="text-sm font-medium">Scheduled For</label>
+                  <Input 
+                    value={format(new Date(selectedCommunication.scheduled_for), 'PPP p')} 
+                    readOnly 
+                  />
+                </div>
+              )}
+              <div className="flex gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                  Close
+                </Button>
+                {isSuperAdmin && (
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      handleDeleteCommunication(selectedCommunication.id);
+                      setShowEditModal(false);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
