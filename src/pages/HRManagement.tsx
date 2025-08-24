@@ -53,9 +53,13 @@ const HRManagement = () => {
   const [isEmployee, setIsEmployee] = useState(false);
 
   useEffect(() => {
-    fetchStats();
-    checkEmployeeStatus();
-  }, [user]);
+    if (user) {
+      fetchStats();
+      checkEmployeeStatus();
+    } else {
+      setLoading(false);
+    }
+  }, [user, isSuperAdmin, hasRole]);
 
   const checkEmployeeStatus = async () => {
     if (!isSuperAdmin && !hasRole('staff') && !hasRole('coach') && user) {
