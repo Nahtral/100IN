@@ -226,13 +226,13 @@ const HRManagement = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="employees">Employees</TabsTrigger>
+        <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-8' : 'grid-cols-4'}`}>
+          {isSuperAdmin && <TabsTrigger value="dashboard">Dashboard</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="employees">Employees</TabsTrigger>}
           <TabsTrigger value="timetracking">Time Tracking</TabsTrigger>
           <TabsTrigger value="timeoff">Time Off</TabsTrigger>
-          <TabsTrigger value="payroll">Payroll</TabsTrigger>
-          <TabsTrigger value="benefits">Benefits</TabsTrigger>
+          {isSuperAdmin && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="benefits">Benefits</TabsTrigger>}
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
         </TabsList>
