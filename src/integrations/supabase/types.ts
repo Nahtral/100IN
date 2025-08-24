@@ -3381,6 +3381,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      mask_sensitive_email: {
+        Args: { email_input: string }
+        Returns: string
+      }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }
         Returns: boolean
