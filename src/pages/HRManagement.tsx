@@ -46,7 +46,7 @@ const HRManagement = () => {
     todaysHours: 0
   });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(isSuperAdmin ? 'dashboard' : 'timetracking');
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showAddEmployeeForm, setShowAddEmployeeForm] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -56,6 +56,10 @@ const HRManagement = () => {
     if (user) {
       fetchStats();
       checkEmployeeStatus();
+      // Set appropriate default tab for non-super admins
+      if (!isSuperAdmin && activeTab === 'dashboard') {
+        setActiveTab('timetracking');
+      }
     } else {
       setLoading(false);
     }
