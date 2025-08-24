@@ -9,11 +9,14 @@ import { Plus, Users } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import Layout from '@/components/layout/Layout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { ChatOptionsMenu } from '@/components/chat/ChatOptionsMenu';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function Chat() {
   const { user } = useAuth();
   const { isSuperAdmin } = useUserRole();
   const { currentUser } = useCurrentUser();
+  const { toast } = useToast();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [chats, setChats] = useState<any[]>([]);
@@ -33,7 +36,11 @@ export default function Chat() {
           *,
           chat_participants!chat_participants_chat_id_fkey(
             user_id,
-            role
+            role,
+            profiles:user_id(
+              full_name,
+              avatar_url
+            )
           )
         `)
         .order('updated_at', { ascending: false });
@@ -71,6 +78,34 @@ export default function Chat() {
     };
   };
 
+  const handleSearchHistory = () => {
+    toast({
+      title: "Info",
+      description: "Global search functionality will be implemented",
+    });
+  };
+
+  const handleManageArchived = () => {
+    toast({
+      title: "Info",
+      description: "Archived chat management will be implemented",
+    });
+  };
+
+  const handleChatSettings = () => {
+    toast({
+      title: "Info",
+      description: "Chat settings will be implemented",
+    });
+  };
+
+  const handleClearAll = () => {
+    toast({
+      title: "Info",
+      description: "Clear all chat history functionality will be implemented",
+    });
+  };
+
   return (
     <Layout currentUser={currentUser}>
       <div className="flex h-[calc(100vh-4rem)]">
@@ -96,6 +131,13 @@ export default function Chat() {
                   <Users className="h-4 w-4" />
                 </Button>
               )}
+              <ChatOptionsMenu
+                onNewChat={() => setShowCreateModal(true)}
+                onSearchHistory={handleSearchHistory}
+                onManageArchived={handleManageArchived}
+                onSettings={handleChatSettings}
+                onClearAll={handleClearAll}
+              />
             </div>
           </div>
         </div>
@@ -103,6 +145,7 @@ export default function Chat() {
           chats={chats}
           selectedChatId={selectedChatId}
           onSelectChat={setSelectedChatId}
+          onChatsUpdate={fetchChats}
         />
       </div>
 
