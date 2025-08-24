@@ -15,9 +15,77 @@ import {
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const MedicalDashboard = () => {
   const { currentUser } = useCurrentUser();
+  const [medicalData, setMedicalData] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMedicalData = async () => {
+      try {
+        // Get all players for injury tracking
+        const { data: players } = await supabase
+          .from('players')
+          .select('id, user_id')
+          .eq('is_active', true);
+
+        // Get health wellness data to check for injuries
+        const { data: healthData } = await supabase
+          .from('health_wellness')
+          .select('*')
+          .order('date', { ascending: false });
+
+        // Get daily health check-ins for fitness data
+        const { data: checkInData } = await supabase
+          .from('daily_health_checkins')
+          .select('*')
+          .order('check_in_date', { ascending: false });
+
+        // Get medical appointments
+        const { data: appointments } = await supabase
+          .from('medical_appointments')
+          .select('*')
+          .gte('appointment_date', new Date().toISOString())
+          .order('appointment_date', { ascending: true })
+          .limit(10);
+
+        // Calculate stats
+        const activeInjuries = healthData?.filter(h => h.injury_status === 'injured').length || 0;
+        const clearedPlayers = (players?.length || 0) - activeInjuries;
+        
+        // Get recent fitness assessments
+        const recentFitness = checkInData?.slice(0, 5) || [];
+        const avgFitness = checkInData?.length > 0 ? 
+          Math.round(checkInData.reduce((sum, c) => sum + (c.training_readiness || 0), 0) / checkInData.length) : 0;
+
+        // Group recent injuries
+        const recentInjuries = healthData?.filter(h => h.injury_status === 'injured').slice(0, 5) || [];
+
+        setMedicalData({
+          activeInjuries,
+          clearedPlayers,
+          fitnessTests: appointments?.filter(a => a.appointment_type === 'fitness_test').length || 0,
+          avgFitness,
+          recentInjuries,
+          recentFitness,
+          appointments: appointments || []
+        });
+      } catch (error) {
+        console.error('Error fetching medical data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMedicalData();
+  }, []);
+
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading medical data...</div>;
+  }
   return (
     <Layout currentUser={currentUser}>
       <div className="space-y-6">
@@ -40,7 +108,7 @@ const MedicalDashboard = () => {
             <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{medicalData.activeInjuries}</div>
             <p className="text-xs text-muted-foreground">
               Requiring attention
             </p>
@@ -53,7 +121,7 @@ const MedicalDashboard = () => {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
+            <div className="text-2xl font-bold">{medicalData.clearedPlayers}</div>
             <p className="text-xs text-muted-foreground">
               Fit to play
             </p>
@@ -66,7 +134,7 @@ const MedicalDashboard = () => {
             <Activity className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{medicalData.fitnessTests}</div>
             <p className="text-xs text-muted-foreground">
               Scheduled this week
             </p>
@@ -79,7 +147,7 @@ const MedicalDashboard = () => {
             <TrendingUp className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">78</div>
+            <div className="text-2xl font-bold">{medicalData.avgFitness}</div>
             <p className="text-xs text-muted-foreground">
               Team average score
             </p>
@@ -100,48 +168,25 @@ const MedicalDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { 
-                  player: "Marcus Johnson", 
-                  injury: "Ankle Sprain", 
-                  status: "recovering", 
-                  date: "2 days ago",
-                  severity: "moderate"
-                },
-                { 
-                  player: "Sarah Chen", 
-                  injury: "Knee Strain", 
-                  status: "treatment", 
-                  date: "1 week ago",
-                  severity: "mild"
-                },
-                { 
-                  player: "David Rodriguez", 
-                  injury: "Shoulder Pain", 
-                  status: "monitoring", 
-                  date: "3 days ago",
-                  severity: "mild"
-                }
-              ].map((injury, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{injury.player}</p>
-                    <p className="text-sm text-gray-600">{injury.injury}</p>
-                    <p className="text-xs text-gray-500">{injury.date}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={
-                      injury.severity === 'severe' ? 'destructive' :
-                      injury.severity === 'moderate' ? 'secondary' : 'outline'
-                    }>
-                      {injury.severity}
-                    </Badge>
-                    <p className="text-xs text-gray-500 mt-1">{injury.status}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+           <div className="space-y-3">
+             {medicalData.recentInjuries?.length > 0 ? medicalData.recentInjuries.map((injury, index) => (
+               <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                 <div>
+                   <p className="font-medium">Player #{injury.player_id}</p>
+                   <p className="text-sm text-gray-600">{injury.injury_description || 'Injury reported'}</p>
+                   <p className="text-xs text-gray-500">{new Date(injury.date).toLocaleDateString()}</p>
+                 </div>
+                 <div className="text-right">
+                   <Badge variant="destructive">
+                     {injury.injury_status}
+                   </Badge>
+                   <p className="text-xs text-gray-500 mt-1">Active</p>
+                 </div>
+               </div>
+             )) : (
+               <p className="text-center text-muted-foreground py-4">No recent injuries</p>
+             )}
+           </div>
             <Button className="w-full mt-4 bg-gradient-to-r from-red-500 to-red-600">
               View All Injuries
             </Button>
@@ -160,29 +205,24 @@ const MedicalDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { player: "Alex Thompson", score: 85, improvement: "+5", date: "Today" },
-                { player: "Emma Wilson", score: 78, improvement: "+2", date: "Yesterday" },
-                { player: "Jake Martinez", score: 92, improvement: "+8", date: "2 days ago" },
-                { player: "Sofia Garcia", score: 76, improvement: "-3", date: "3 days ago" }
-              ].map((assessment, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{assessment.player}</p>
-                    <p className="text-sm text-gray-600">Fitness Score: {assessment.score}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={
-                      assessment.improvement.startsWith('+') ? 'default' : 'destructive'
-                    }>
-                      {assessment.improvement}
-                    </Badge>
-                    <p className="text-xs text-gray-500 mt-1">{assessment.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+           <div className="space-y-3">
+             {medicalData.recentFitness?.length > 0 ? medicalData.recentFitness.map((assessment, index) => (
+               <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                 <div>
+                   <p className="font-medium">Player #{assessment.player_id}</p>
+                   <p className="text-sm text-gray-600">Training Readiness: {assessment.training_readiness || 'N/A'}</p>
+                 </div>
+                 <div className="text-right">
+                   <Badge variant="outline">
+                     {assessment.energy_level || 'N/A'}/10
+                   </Badge>
+                   <p className="text-xs text-gray-500 mt-1">{new Date(assessment.check_in_date).toLocaleDateString()}</p>
+                 </div>
+               </div>
+             )) : (
+               <p className="text-center text-muted-foreground py-4">No recent fitness assessments</p>
+             )}
+           </div>
             <Button className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600">
               Schedule Assessment
             </Button>
@@ -202,52 +242,25 @@ const MedicalDashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {[
-              { 
-                time: "9:00 AM", 
-                type: "Fitness Test", 
-                player: "Team A (U16)", 
-                location: "Medical Center",
-                status: "scheduled"
-              },
-              { 
-                time: "11:00 AM", 
-                type: "Injury Follow-up", 
-                player: "Marcus Johnson", 
-                location: "Clinic Room 1",
-                status: "confirmed"
-              },
-              { 
-                time: "2:00 PM", 
-                type: "Physical Therapy", 
-                player: "Sarah Chen", 
-                location: "Therapy Room",
-                status: "in-progress"
-              },
-              { 
-                time: "4:00 PM", 
-                type: "Health Screening", 
-                player: "New Players", 
-                location: "Medical Center",
-                status: "scheduled"
-              }
-            ].map((appointment, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
-                <div>
-                  <p className="font-medium">{appointment.type}</p>
-                  <p className="text-sm text-gray-600">{appointment.player}</p>
-                  <p className="text-xs text-gray-500">{appointment.location}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">{appointment.time}</p>
-                  <Badge variant="outline" className="text-xs">
-                    {appointment.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+           <div className="space-y-3">
+             {medicalData.appointments?.length > 0 ? medicalData.appointments.map((appointment, index) => (
+               <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+                 <div>
+                   <p className="font-medium">{appointment.appointment_type}</p>
+                   <p className="text-sm text-gray-600">Player #{appointment.player_id}</p>
+                   <p className="text-xs text-gray-500">{appointment.location || 'TBD'}</p>
+                 </div>
+                 <div className="text-right">
+                   <p className="text-sm font-medium">{new Date(appointment.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                   <Badge variant="outline" className="text-xs">
+                     {appointment.status}
+                   </Badge>
+                 </div>
+               </div>
+             )) : (
+               <p className="text-center text-muted-foreground py-4">No upcoming appointments</p>
+             )}
+           </div>
         </CardContent>
       </Card>
 

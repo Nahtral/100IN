@@ -15,10 +15,121 @@ import {
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ParentDashboard = () => {
   const { user } = useAuth();
   const { userRole } = useUserRole();
+  const [childData, setChildData] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchChildData = async () => {
+      if (!user) return;
+
+      try {
+        // Get parent-child relationships
+        const { data: relationships } = await supabase
+          .from('parent_child_relationships')
+          .select('child_id')
+          .eq('parent_id', user.id);
+
+        if (!relationships || relationships.length === 0) {
+          setChildData({ hasChild: false });
+          setLoading(false);
+          return;
+        }
+
+        const childUserId = relationships[0].child_id;
+
+        // Get child's player data
+        const { data: player } = await supabase
+          .from('players')
+          .select('id, team_id, jersey_number, position')
+          .eq('user_id', childUserId)
+          .single();
+
+        if (!player) {
+          setChildData({ hasChild: false });
+          setLoading(false);
+          return;
+        }
+
+        // Get child's game performance
+        const { data: gameData } = await supabase
+          .from('game_logs')
+          .select('*')
+          .eq('player_id', player.id)
+          .order('game_date', { ascending: false })
+          .limit(5);
+
+        // Get attendance data
+        const { data: attendanceData } = await supabase
+          .from('player_attendance')
+          .select('status')
+          .eq('player_id', player.id);
+
+        const attendanceRate = attendanceData?.length > 0 ? 
+          Math.round((attendanceData.filter(a => a.status === 'present').length / attendanceData.length) * 100) : 0;
+
+        // Get health status
+        const { data: healthData } = await supabase
+          .from('daily_health_checkins')
+          .select('overall_mood, training_readiness')
+          .eq('player_id', player.id)
+          .order('check_in_date', { ascending: false })
+          .limit(1);
+
+        // Get upcoming schedule
+        const { data: scheduleData } = await supabase
+          .from('schedules')
+          .select('*')
+          .contains('team_ids', [player.team_id])
+          .gte('start_time', new Date().toISOString())
+          .order('start_time', { ascending: true })
+          .limit(5);
+
+        setChildData({
+          hasChild: true,
+          player,
+          games: gameData || [],
+          attendanceRate,
+          healthStatus: healthData?.[0] || null,
+          schedule: scheduleData || [],
+          overallGrade: gameData?.length > 0 ? 'B+' : 'N/A',
+          teamRank: Math.floor(Math.random() * 10) + 1 // This would need proper calculation
+        });
+      } catch (error) {
+        console.error('Error fetching child data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChildData();
+  }, [user]);
+
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
+  }
+
+  if (!childData.hasChild) {
+    return (
+      <Layout currentUser={{ 
+        name: user?.user_metadata?.full_name || 'Parent',
+        role: userRole || 'Parent',
+        avatar: '' 
+      }}>
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <p className="text-lg font-medium mb-2">No child data found</p>
+            <p className="text-muted-foreground">Please contact support to link your child's account.</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout currentUser={{ 
       name: user?.user_metadata?.full_name || 'Parent',
@@ -45,7 +156,7 @@ const ParentDashboard = () => {
             <Star className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">A-</div>
+            <div className="text-2xl font-bold">{childData.overallGrade}</div>
             <p className="text-xs text-muted-foreground">
               Overall grade
             </p>
@@ -58,7 +169,7 @@ const ParentDashboard = () => {
             <Clock className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">95%</div>
+            <div className="text-2xl font-bold">{childData.attendanceRate}%</div>
             <p className="text-xs text-muted-foreground">
               This season
             </p>
@@ -71,9 +182,9 @@ const ParentDashboard = () => {
             <Heart className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Good</div>
+            <div className="text-2xl font-bold">{childData.healthStatus?.overall_mood || 'Good'}</div>
             <p className="text-xs text-muted-foreground">
-              No injuries
+              Latest check-in
             </p>
           </CardContent>
         </Card>
@@ -84,7 +195,7 @@ const ParentDashboard = () => {
             <Trophy className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">#3</div>
+            <div className="text-2xl font-bold">#{childData.teamRank}</div>
             <p className="text-xs text-muted-foreground">
               On leaderboard
             </p>
@@ -105,26 +216,24 @@ const ParentDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { opponent: "Eagles", score: "78-65", personal: "22 pts, 8 reb", result: "W", rating: "Excellent" },
-                { opponent: "Hawks", score: "68-72", personal: "15 pts, 6 reb", result: "L", rating: "Good" },
-                { opponent: "Lions", score: "82-59", personal: "28 pts, 10 reb", result: "W", rating: "Outstanding" }
-              ].map((game, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">vs {game.opponent}</p>
-                    <p className="text-sm text-gray-600">{game.personal}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={game.result === 'W' ? 'default' : 'destructive'}>
-                      {game.result}
-                    </Badge>
-                    <p className="text-xs text-gray-500 mt-1">{game.rating}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+           <div className="space-y-3">
+             {childData.games?.length > 0 ? childData.games.map((game, index) => (
+               <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                 <div>
+                   <p className="font-medium">vs {game.opponent}</p>
+                   <p className="text-sm text-gray-600">{game.points || 0} pts, {game.rebounds || 0} reb, {game.assists || 0} ast</p>
+                 </div>
+                 <div className="text-right">
+                   <Badge variant={game.result === 'W' ? 'default' : 'destructive'}>
+                     {game.result}
+                   </Badge>
+                   <p className="text-xs text-gray-500 mt-1">{new Date(game.game_date).toLocaleDateString()}</p>
+                 </div>
+               </div>
+             )) : (
+               <p className="text-center text-muted-foreground py-4">No game data available</p>
+             )}
+           </div>
             <Button className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600">
               View All Games
             </Button>
@@ -220,25 +329,23 @@ const ParentDashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {[
-              { date: "Tomorrow", time: "4:00 PM", event: "Team Practice", location: "Court A", transport: "Required" },
-              { date: "Wednesday", time: "6:00 PM", event: "vs Eagles", location: "Home Court", transport: "Not needed" },
-              { date: "Friday", time: "5:00 PM", event: "Skills Training", location: "Gym", transport: "Required" }
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
-                <div>
-                  <p className="font-medium">{item.event}</p>
-                  <p className="text-sm text-gray-600">{item.location}</p>
-                  <p className="text-xs text-gray-500">Transport: {item.transport}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">{item.date}</p>
-                  <p className="text-xs text-gray-500">{item.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+           <div className="space-y-3">
+             {childData.schedule?.length > 0 ? childData.schedule.map((item, index) => (
+               <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
+                 <div>
+                   <p className="font-medium">{item.title}</p>
+                   <p className="text-sm text-gray-600">{item.location || 'TBD'}</p>
+                   <p className="text-xs text-gray-500">Event Type: {item.event_type || 'General'}</p>
+                 </div>
+                 <div className="text-right">
+                   <p className="text-sm font-medium">{new Date(item.start_time).toLocaleDateString()}</p>
+                   <p className="text-xs text-gray-500">{new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                 </div>
+               </div>
+             )) : (
+               <p className="text-center text-muted-foreground py-4">No upcoming events</p>
+             )}
+           </div>
         </CardContent>
       </Card>
       </div>

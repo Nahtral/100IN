@@ -15,10 +15,87 @@ import {
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useUpcomingSchedule } from "@/hooks/useDashboardData";
 
 const CoachDashboard = () => {
   const { user } = useAuth();
   const { userRole } = useUserRole();
+  const [coachData, setCoachData] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+  const { schedule } = useUpcomingSchedule();
+
+  useEffect(() => {
+    const fetchCoachData = async () => {
+      if (!user) return;
+      
+      try {
+        // Get coach's teams
+        const { data: teams } = await supabase
+          .from('teams')
+          .select('id, name')
+          .eq('coach_id', user.id);
+
+        if (!teams || teams.length === 0) {
+          setCoachData({ teams: [], activePlayers: 0, wins: 0, avgScore: 0, nextGame: 0 });
+          setLoading(false);
+          return;
+        }
+
+        const teamIds = teams.map(t => t.id);
+
+        // Get active players for coach's teams
+        const { data: players } = await supabase
+          .from('players')
+          .select('id, team_id')
+          .in('team_id', teamIds)
+          .eq('is_active', true);
+
+        // Get team performance data
+        const { data: gameData } = await supabase
+          .from('game_logs')
+          .select('result, points, game_date, player_id')
+          .in('player_id', (players || []).map(p => p.id));
+
+        // Calculate stats
+        const wins = gameData?.filter(g => g.result === 'W').length || 0;
+        const totalPoints = gameData?.reduce((sum, g) => sum + (g.points || 0), 0) || 0;
+        const avgScore = gameData?.length ? (totalPoints / gameData.length).toFixed(1) : '0.0';
+
+        // Get upcoming games from schedule
+        const nextGameDays = schedule.length > 0 ? 
+          Math.ceil((new Date(schedule[0]?.start_time).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+        // Get top performers
+        const playerStats = (players || []).map(player => {
+          const playerGames = gameData?.filter(g => g.player_id === player.id) || [];
+          const avgPoints = playerGames.length ? 
+            (playerGames.reduce((sum, g) => sum + (g.points || 0), 0) / playerGames.length).toFixed(1) : '0.0';
+          return { ...player, avgPoints: parseFloat(avgPoints) };
+        }).sort((a, b) => b.avgPoints - a.avgPoints).slice(0, 3);
+
+        setCoachData({
+          teams,
+          activePlayers: players?.length || 0,
+          wins,
+          avgScore,
+          nextGame: Math.max(0, nextGameDays),
+          topPerformers: playerStats
+        });
+      } catch (error) {
+        console.error('Error fetching coach data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoachData();
+  }, [user, schedule]);
+
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
+  }
   return (
     <Layout currentUser={{ 
       name: user?.user_metadata?.full_name || 'Coach',
@@ -45,9 +122,9 @@ const CoachDashboard = () => {
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">18</div>
+            <div className="text-2xl font-bold">{coachData.activePlayers}</div>
             <p className="text-xs text-muted-foreground">
-              U16 Team
+              {coachData.teams?.length > 0 ? coachData.teams[0].name : 'No team assigned'}
             </p>
           </CardContent>
         </Card>
@@ -58,7 +135,7 @@ const CoachDashboard = () => {
             <Trophy className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{coachData.wins}</div>
             <p className="text-xs text-muted-foreground">
               This season
             </p>
@@ -71,7 +148,7 @@ const CoachDashboard = () => {
             <Target className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">78.4</div>
+            <div className="text-2xl font-bold">{coachData.avgScore}</div>
             <p className="text-xs text-muted-foreground">
               Points per game
             </p>
@@ -84,7 +161,7 @@ const CoachDashboard = () => {
             <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{coachData.nextGame}</div>
             <p className="text-xs text-muted-foreground">
               Days away
             </p>
@@ -147,24 +224,22 @@ const CoachDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { name: "Marcus Johnson", metric: "28.5 PPG", improvement: "+12%", position: "PG" },
-              { name: "Ashley Chen", metric: "11.2 RPG", improvement: "+8%", position: "C" },
-              { name: "David Rodriguez", metric: "7.8 APG", improvement: "+15%", position: "SG" }
-            ].map((player, index) => (
+            {coachData.topPerformers?.length > 0 ? coachData.topPerformers.map((player, index) => (
               <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                <div>
-                  <p className="font-medium">{player.name}</p>
-                  <p className="text-sm text-gray-600">{player.position} - {player.metric}</p>
-                </div>
-                <Badge variant="outline" className="text-green-600 border-green-200">
-                  {player.improvement}
-                </Badge>
-              </div>
-            ))}
-            <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
-              View All Players
-            </Button>
+                 <div>
+                   <p className="font-medium">Player #{player.id}</p>
+                   <p className="text-sm text-gray-600">{player.avgPoints} PPG</p>
+                 </div>
+                 <Badge variant="outline" className="text-green-600 border-green-200">
+                   Top Performer
+                 </Badge>
+               </div>
+             )) : (
+               <p className="text-center text-muted-foreground py-4">No player performance data available</p>
+             )}
+             <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
+               View All Players
+             </Button>
           </CardContent>
         </Card>
       </div>
@@ -181,70 +256,28 @@ const CoachDashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[
-              { 
-                date: "Tomorrow", 
-                time: "4:00 PM", 
-                event: "Practice Session", 
-                location: "Court A", 
-                type: "practice",
-                focus: "Defensive drills"
-              },
-              { 
-                date: "Wednesday", 
-                time: "6:00 PM", 
-                event: "vs Eagles Basketball", 
-                location: "Home Court", 
-                type: "game",
-                focus: "League Championship"
-              },
-              { 
-                date: "Friday", 
-                time: "4:30 PM", 
-                event: "Team Fitness", 
-                location: "Gym", 
-                type: "training",
-                focus: "Conditioning"
-              },
-              { 
-                date: "Saturday", 
-                time: "10:00 AM", 
-                event: "Strategy Session", 
-                location: "Meeting Room", 
-                type: "meeting",
-                focus: "Game analysis"
-              }
-            ].map((item, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 rounded-lg border border-gray-100 hover:border-orange-200 transition-colors">
-                <div className="text-center min-w-[80px]">
-                  <p className="text-sm font-medium text-gray-600">{item.date}</p>
-                  <p className="text-xs text-gray-500">{item.time}</p>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{item.event}</p>
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${
-                        item.type === 'game' ? 'text-green-600 border-green-200' :
-                        item.type === 'practice' ? 'text-blue-600 border-blue-200' :
-                        item.type === 'training' ? 'text-orange-600 border-orange-200' :
-                        'text-purple-600 border-purple-200'
-                      }`}
-                    >
-                      {item.type}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">{item.location} • {item.focus}</p>
-                </div>
-                {item.type === 'game' && <Trophy className="h-5 w-5 text-yellow-500" />}
-                {item.type === 'practice' && <Activity className="h-5 w-5 text-blue-500" />}
-                {item.type === 'training' && <Zap className="h-5 w-5 text-orange-500" />}
-                {item.type === 'meeting' && <Clock className="h-5 w-5 text-purple-500" />}
-              </div>
-            ))}
-          </div>
+           <div className="space-y-4">
+             {schedule.length > 0 ? schedule.map((item, index) => (
+               <div key={index} className="flex items-center gap-4 p-4 rounded-lg border border-gray-100 hover:border-orange-200 transition-colors">
+                 <div className="text-center min-w-[80px]">
+                   <p className="text-sm font-medium text-gray-600">{new Date(item.start_time).toLocaleDateString()}</p>
+                   <p className="text-xs text-gray-500">{new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                 </div>
+                 <div className="flex-1">
+                   <div className="flex items-center gap-2">
+                     <p className="font-medium">{item.title}</p>
+                     <Badge variant="outline" className="text-xs text-blue-600 border-blue-200">
+                       {item.event_type || 'event'}
+                     </Badge>
+                   </div>
+                   <p className="text-sm text-gray-600">{item.location || 'TBD'} • {item.description || 'No description'}</p>
+                 </div>
+                 <Calendar className="h-5 w-5 text-blue-500" />
+               </div>
+             )) : (
+               <p className="text-center text-muted-foreground py-4">No upcoming events</p>
+             )}
+           </div>
         </CardContent>
       </Card>
       </div>
