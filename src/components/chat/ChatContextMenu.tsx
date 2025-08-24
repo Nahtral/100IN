@@ -46,7 +46,7 @@ export const ChatContextMenu: React.FC<ChatContextMenuProps> = ({
         <ContextMenuSeparator />
         <ContextMenuItem onClick={() => onPin(chat.id)}>
           <Pin className="mr-2 h-4 w-4" />
-          {chat.is_pinned ? 'Unpin' : 'Sticky on Top'}
+          {(chat as any).is_pinned ? 'Unpin' : 'Sticky on Top'}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => onMute(chat.id)}>
           <VolumeX className="mr-2 h-4 w-4" />

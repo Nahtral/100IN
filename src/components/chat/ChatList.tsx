@@ -138,11 +138,11 @@ export const ChatList: React.FC<ChatListProps> = ({
 
   const handlePinChat = async (chatId: string) => {
     const chat = chats.find(c => c.id === chatId);
-    const newPinnedState = !chat?.is_pinned;
+    const newPinnedState = !(chat as any)?.is_pinned;
     
     const { error } = await supabase
       .from('chats')
-      .update({ is_pinned: newPinnedState })
+      .update({ is_pinned: newPinnedState } as any)
       .eq('id', chatId);
 
     if (error) {
@@ -229,7 +229,7 @@ export const ChatList: React.FC<ChatListProps> = ({
               )}
               onClick={() => onSelectChat(chat.id)}
             >
-              {chat.is_pinned && (
+              {(chat as any).is_pinned && (
                 <Pin className="absolute top-2 right-2 h-3 w-3 text-primary" />
               )}
               <div className="flex items-start gap-3">

@@ -191,6 +191,9 @@ export type Database = {
           created_by: string
           id: string
           is_archived: boolean | null
+          is_muted: boolean | null
+          is_pinned: boolean | null
+          last_read_at: string | null
           name: string | null
           team_id: string | null
           updated_at: string
@@ -203,6 +206,9 @@ export type Database = {
           created_by: string
           id?: string
           is_archived?: boolean | null
+          is_muted?: boolean | null
+          is_pinned?: boolean | null
+          last_read_at?: string | null
           name?: string | null
           team_id?: string | null
           updated_at?: string
@@ -215,6 +221,9 @@ export type Database = {
           created_by?: string
           id?: string
           is_archived?: boolean | null
+          is_muted?: boolean | null
+          is_pinned?: boolean | null
+          last_read_at?: string | null
           name?: string | null
           team_id?: string | null
           updated_at?: string
