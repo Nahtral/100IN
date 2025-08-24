@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Send, 
   Paperclip, 
@@ -110,64 +111,89 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => 
 
   return (
     <>
-      <div className="border-t border-border p-4">
-        <div className="flex items-end gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
+      <div className="border-t border-border bg-background">
+        {/* Text Preview Area - Shows what's being typed on mobile */}
+        {message.trim() && (
+          <div className="px-4 pt-3 pb-2 border-b border-border/50">
+            <div className="bg-muted/30 rounded-lg p-3 max-h-24 overflow-y-auto">
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                {message}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div className="p-4">
+          <div className="flex items-end gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={uploading}
+                  className="shrink-0"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => handleAttachmentClick('image')}>
+                  <Image className="h-4 w-4 mr-2" />
+                  Photo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAttachmentClick('video')}>
+                  <Video className="h-4 w-4 mr-2" />
+                  Video
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAttachmentClick('file')}>
+                  <File className="h-4 w-4 mr-2" />
+                  File
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAttachmentClick('location')}>
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Location
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAttachmentClick('link')}>
+                  <Link className="h-4 w-4 mr-2" />
+                  Link
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <div className="flex-1 min-w-0">
+              {/* Use Textarea for better mobile experience */}
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type a message..."
                 disabled={uploading}
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => handleAttachmentClick('image')}>
-                <Image className="h-4 w-4 mr-2" />
-                Photo
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAttachmentClick('video')}>
-                <Video className="h-4 w-4 mr-2" />
-                Video
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAttachmentClick('file')}>
-                <File className="h-4 w-4 mr-2" />
-                File
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAttachmentClick('location')}>
-                <MapPin className="h-4 w-4 mr-2" />
-                Location
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAttachmentClick('link')}>
-                <Link className="h-4 w-4 mr-2" />
-                Link
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <div className="flex-1">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              disabled={uploading}
-            />
+                className="min-h-[44px] max-h-32 resize-none rounded-full border-2 px-4 py-3 text-base leading-5 
+                           focus:border-primary focus:ring-0 bg-muted/50 
+                           placeholder:text-muted-foreground/70
+                           md:text-sm md:leading-4"
+                rows={1}
+              />
+            </div>
+            
+            <Button
+              onClick={handleSend}
+              disabled={!message.trim() || uploading}
+              size="sm"
+              className="shrink-0 h-11 w-11 rounded-full bg-primary hover:bg-primary/90 
+                         disabled:bg-muted disabled:text-muted-foreground"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
           </div>
           
-          <Button
-            onClick={handleSend}
-            disabled={!message.trim() || uploading}
-            size="sm"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {uploading && (
+            <div className="flex items-center gap-2 mt-3 px-2">
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <p className="text-sm text-muted-foreground">Uploading...</p>
+            </div>
+          )}
         </div>
-        
-        {uploading && (
-          <p className="text-sm text-muted-foreground mt-2">Uploading...</p>
-        )}
       </div>
 
       <input
