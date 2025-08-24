@@ -66,13 +66,6 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
 
       const filteredUsers = profilesWithRoles.filter(profile => {
         if (profile.id === user?.id) return false; // Exclude current user
-        
-        // For private chats, exclude coach users
-        if (chatType === 'private') {
-          const hasCoachRole = profile.user_roles.some((ur: any) => ur.role === 'coach');
-          return !hasCoachRole;
-        }
-        
         return true;
       });
       
@@ -247,10 +240,7 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
 
           {/* User Selection */}
           <div className="space-y-3">
-            <Label>
-              Select Users 
-              {chatType === 'private' && <span className="text-muted-foreground ml-1">(excludes coaches)</span>}
-            </Label>
+            <Label>Select Users</Label>
             
             {selectedUsers.length > 0 && (
               <div className="flex flex-wrap gap-1">
