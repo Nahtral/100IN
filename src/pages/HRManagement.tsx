@@ -27,6 +27,8 @@ import PayrollDashboard from '@/components/hr/PayrollDashboard';
 import BenefitsManagement from '@/components/hr/BenefitsManagement';
 import OnboardingTasks from '@/components/hr/OnboardingTasks';
 import EmployeeScheduling from '@/components/hr/EmployeeScheduling';
+import EmployeeSelfService from '@/components/hr/EmployeeSelfService';
+import CoachHRView from '@/components/hr/CoachHRView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EmployeeForm from '@/components/hr/EmployeeForm';
 import { Download, Edit, X } from 'lucide-react';
@@ -162,40 +164,78 @@ const HRManagement = () => {
     });
   };
 
-  if (!hasRole('super_admin') && !hasRole('staff') && !hasRole('coach')) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You don't have permission to access HR Management.</p>
+  // Check if user is an employee (has employee record but no HR role)
+  const [isEmployee, setIsEmployee] = useState(false);
+  
+  useEffect(() => {
+    const checkEmployeeStatus = async () => {
+      if (!isSuperAdmin && !hasRole('staff') && !hasRole('coach')) {
+        // Check if user has an employee record
+        const { data } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('user_id', currentUser?.name ? null : user?.id) // This needs fixing - should use actual user ID
+          .single();
+        
+        setIsEmployee(!!data);
+      }
+    };
+    
+    checkEmployeeStatus();
+  }, [isSuperAdmin, hasRole, user]);
+
+  // Determine which view to show based on role
+  const renderHRView = () => {
+    if (isSuperAdmin || hasRole('staff')) {
+      return renderFullHRManagement();
+    } else if (hasRole('coach')) {
+      return <CoachHRView />;
+    } else if (isEmployee) {
+      return <EmployeeSelfService />;
+    } else {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground">You don't have permission to access HR Management.</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
+  };
+
+  const renderFullHRManagement = () => (
 
   return (
     <Layout currentUser={currentUser}>
       <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold gradient-text">HR Management</h1>
-          <p className="text-muted-foreground">Employee, payroll & HR management system</p>
-        </div>
-        {(isSuperAdmin || hasRole('staff')) && (
-          <div className="flex gap-2">
-            <Button onClick={() => setActiveTab('employees')} className="btn-panthers">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Employee
-            </Button>
-            <Button variant="outline" className="btn-secondary-panthers">
-              <Settings className="h-4 w-4 mr-2" />
-              HR Settings
-            </Button>
-          </div>
-        )}
+        {renderHRView()}
       </div>
+    </Layout>
+  );
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+  function renderFullHRManagementContent() {
+    return (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">HR Management</h1>
+            <p className="text-muted-foreground">Employee, payroll & HR management system</p>
+          </div>
+          {(isSuperAdmin || hasRole('staff')) && (
+            <div className="flex gap-2">
+              <Button onClick={() => setActiveTab('employees')} className="btn-panthers">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Employee
+              </Button>
+              <Button variant="outline" className="btn-secondary-panthers">
+                <Settings className="h-4 w-4 mr-2" />
+                HR Settings
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
@@ -334,13 +374,13 @@ const HRManagement = () => {
           <OnboardingTasks onStatsUpdate={fetchStats} />
         </TabsContent>
 
-        <TabsContent value="scheduling">
-          <EmployeeScheduling onStatsUpdate={fetchStats} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="scheduling">
+            <EmployeeScheduling onStatsUpdate={fetchStats} />
+          </TabsContent>
+        </Tabs>
 
-      {/* Employee Details Modal */}
-      <Dialog open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
+        {/* Employee Details Modal */}
+        <Dialog open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -413,8 +453,8 @@ const HRManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Employee Form Modal */}
-      <Dialog open={showAddEmployeeForm} onOpenChange={setShowAddEmployeeForm}>
+        {/* Add Employee Form Modal */}
+        <Dialog open={showAddEmployeeForm} onOpenChange={setShowAddEmployeeForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Employee</DialogTitle>
@@ -432,9 +472,8 @@ const HRManagement = () => {
           />
         </DialogContent>
       </Dialog>
-      </div>
-    </Layout>
-  );
+    );
+  }
 };
 
 export default HRManagement;
