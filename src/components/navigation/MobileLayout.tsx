@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BottomTabNav } from './BottomTabNav';
 import { MoreDrawer } from './MoreDrawer';
 import Header from '@/components/layout/Header';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useErrorBoundary } from '@/hooks/useErrorBoundary';
 
@@ -57,7 +58,10 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, currentUse
             />
           </div>
         </div>
-        <Header currentUser={currentUser} />
+        <div className="flex items-center gap-2">
+          <NotificationCenter />
+          <Header currentUser={currentUser} />
+        </div>
       </header>
 
       {/* Main content with bottom padding for tab nav */}
