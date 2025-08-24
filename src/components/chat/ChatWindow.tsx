@@ -35,7 +35,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
       .from('chats')
       .select(`
         *,
-        chat_participants(
+        chat_participants!chat_participants_chat_id_fkey(
           user_id,
           role,
           profiles:user_id(full_name)
@@ -62,16 +62,32 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
       .from('messages')
       .select(`
         *,
-        profiles:sender_id(full_name),
         message_reactions(
           emoji,
-          user_id,
-          profiles:user_id(full_name)
+          user_id
         )
       `)
       .eq('chat_id', chatId)
-      .or(`is_archived.is.false,sender_id.eq.${user?.id}`) // Show non-archived messages or user's own archived messages
       .order('created_at', { ascending: true });
+
+    // Get sender profiles separately
+    if (data && data.length > 0) {
+      const senderIds = [...new Set(data.map(msg => msg.sender_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', senderIds);
+
+      // Attach sender info to messages
+      const messagesWithProfiles = data.map(message => ({
+        ...message,
+        sender: profiles?.find(p => p.id === message.sender_id)
+      }));
+      
+      setMessages(messagesWithProfiles || []);
+    } else {
+      setMessages([]);
+    }
 
     if (error) {
       console.error('Error fetching messages:', error);
@@ -80,8 +96,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
         description: "Failed to load messages",
         variant: "destructive",
       });
-    } else {
-      setMessages(data || []);
     }
     setLoading(false);
   };
