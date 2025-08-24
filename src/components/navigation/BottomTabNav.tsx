@@ -68,7 +68,7 @@ export const BottomTabNav: React.FC<BottomTabNavProps> = ({ onMoreClick }) => {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-black backdrop-blur border-t border-border z-50 safe-area-inset-bottom md:bg-black lg:bg-black">
+    <nav className="fixed bottom-0 left-0 right-0 bg-black backdrop-blur border-t border-border z-50 md:bg-black lg:bg-black" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="flex justify-around items-center h-16 px-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;

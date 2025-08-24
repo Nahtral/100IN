@@ -128,6 +128,24 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans;
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+    /* Ensure proper mobile viewport behavior */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure fixed elements work properly on mobile */
+  html {
+    /* Prevent zoom on iOS double-tap */
+    touch-action: manipulation;
+    /* Stable viewport on mobile */
+    -webkit-text-size-adjust: none;
+  }
+  
+  /* Fix for mobile browsers that change viewport height */
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for modern browsers */
   }
 
   /* Bold Typography Hierarchy */
