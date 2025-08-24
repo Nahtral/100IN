@@ -146,7 +146,8 @@ const HRManagement = () => {
   );
 
   const handleCardClick = (section: string) => {
-    if (isSuperAdmin || hasRole('staff')) {
+    // Only super admins can navigate to different sections
+    if (isSuperAdmin) {
       if (section === 'employees-detail') {
         setShowEmployeeModal(true);
       } else {
@@ -185,11 +186,11 @@ const HRManagement = () => {
   };
 
   const renderHRView = () => {
-    if (isSuperAdmin || hasRole('staff')) {
+    // Only super admins have access to full HR management dashboard
+    if (isSuperAdmin) {
       return renderFullHRManagement();
-    } else if (hasRole('coach')) {
-      return <CoachHRView />;
-    } else if (isEmployee) {
+    } else if (hasRole('coach') || hasRole('staff') || isEmployee) {
+      // Coaches, staff, and employees only get self-service features
       return <EmployeeSelfService />;
     } else {
       return (
@@ -210,7 +211,7 @@ const HRManagement = () => {
           <h1 className="text-3xl font-bold gradient-text">HR Management</h1>
           <p className="text-muted-foreground">Employee, payroll & HR management system</p>
         </div>
-        {(isSuperAdmin || hasRole('staff')) && (
+        {isSuperAdmin && (
           <div className="flex gap-2">
             <Button onClick={() => setActiveTab('employees')} className="btn-panthers">
               <UserPlus className="h-4 w-4 mr-2" />
