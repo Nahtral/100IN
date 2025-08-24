@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Save } from 'lucide-react';
+import { InputSanitizer } from '@/utils/inputSanitizer';
+import { useSecurityMonitoring } from '@/hooks/useSecurityMonitoring';
 
 // Relaxed schema for super admin manual entry
 const relaxedPlayerFormSchema = z.object({
@@ -36,6 +38,8 @@ interface PlayerFormProps {
 }
 
 const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoading = false, isRequiredFieldsOnly = true }) => {
+  const { validateSensitiveInput, checkSQLInjection, logSecurityEvent } = useSecurityMonitoring();
+  
   const form = useForm<PlayerFormData>({
     resolver: zodResolver(relaxedPlayerFormSchema),
     defaultValues: {
@@ -55,6 +59,41 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
 
   const positions = ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'];
 
+  // Enhanced form submission with security validation
+  const handleSecureSubmit = (data: PlayerFormData) => {
+    // Check for SQL injection attempts
+    const checkFields = [data.fullName, data.email, data.medicalNotes, data.emergencyContactName];
+    const hasSQLInjection = checkFields.some(field => field && checkSQLInjection(field));
+    
+    if (hasSQLInjection) {
+      logSecurityEvent('form_security_violation', {
+        form_type: 'player_form',
+        violation_type: 'sql_injection_attempt'
+      }, 'critical');
+      return; // Block submission
+    }
+
+    // Sanitize sensitive data
+    const sanitizedData = {
+      ...data,
+      fullName: validateSensitiveInput(data.fullName, 'personal'),
+      email: InputSanitizer.sanitizeEmail(data.email || ''),
+      phone: InputSanitizer.sanitizePhone(data.phone || ''),
+      medicalNotes: validateSensitiveInput(data.medicalNotes || '', 'medical'),
+      emergencyContactName: validateSensitiveInput(data.emergencyContactName || '', 'personal'),
+      emergencyContactPhone: InputSanitizer.sanitizePhone(data.emergencyContactPhone || ''),
+    };
+
+    // Log form submission for audit
+    logSecurityEvent('form_submission', {
+      form_type: 'player_form',
+      has_medical_data: !!data.medicalNotes,
+      has_contact_data: !!data.emergencyContactName
+    }, 'low');
+
+    onSubmit(sanitizedData);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -65,7 +104,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mobile-space-y">
+          <form onSubmit={form.handleSubmit(handleSecureSubmit)} className="mobile-space-y">
             <div className="mobile-form-group grid grid-cols-1 sm:grid-cols-2 mobile-gap">
               <FormField
                 control={form.control}

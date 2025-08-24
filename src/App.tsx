@@ -26,6 +26,7 @@ import NewsManager from "./pages/NewsManager";
 import PartnershipManagement from "./pages/PartnershipManagement";
 import MedicalManagement from "./pages/MedicalManagement";
 import ShotIQ from "./pages/ShotIQ";
+import Security from "./pages/Security";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -127,6 +128,11 @@ const App = () => (
             <Route path="/medical-management" element={
               <RoleProtectedRoute allowedRoles={['super_admin', 'medical']}>
                 <MedicalManagement />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/security" element={
+              <RoleProtectedRoute allowedRoles={['super_admin']}>
+                <Security />
               </RoleProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

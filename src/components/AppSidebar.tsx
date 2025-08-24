@@ -108,6 +108,12 @@ export function AppSidebar() {
       showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
     },
     {
+      title: 'Security',
+      href: '/security',
+      icon: Shield,
+      showCondition: () => actualIsSuperAdmin,
+    },
+    {
       title: 'Settings',
       href: '/settings',
       icon: Settings,
