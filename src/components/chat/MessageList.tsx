@@ -1,9 +1,9 @@
 import React from 'react';
-import { Message } from './Message';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { VirtualizedMessageList } from './VirtualizedMessageList';
+import { OptimisticMessage } from '@/hooks/useOptimisticMessages';
 
 interface MessageListProps {
-  messages: any[];
+  messages: OptimisticMessage[];
   currentUserId?: string;
   onAddReaction: (messageId: string, emoji: string) => void;
   onRemoveReaction: (messageId: string, emoji: string) => void;
@@ -11,6 +11,9 @@ interface MessageListProps {
   onDeleteMessage: (messageId: string) => void;
   onArchiveMessage: (messageId: string) => void;
   onRecallMessage: (messageId: string) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -22,29 +25,23 @@ export const MessageList: React.FC<MessageListProps> = ({
   onDeleteMessage,
   onArchiveMessage,
   onRecallMessage,
+  onLoadMore = () => {},
+  hasMore = false,
+  loadingMore = false,
 }) => {
   return (
-    <ScrollArea className="h-full p-4">
-      <div className="space-y-4">
-        {messages.map((message, index) => (
-          <Message
-            key={message.id}
-            message={message}
-            isOwn={message.sender_id === currentUserId}
-            showAvatar={
-              index === 0 ||
-              messages[index - 1].sender_id !== message.sender_id
-            }
-            onAddReaction={onAddReaction}
-            onRemoveReaction={onRemoveReaction}
-            onEditMessage={onEditMessage}
-            onDeleteMessage={onDeleteMessage}
-            onArchiveMessage={onArchiveMessage}
-            onRecallMessage={onRecallMessage}
-            currentUserId={currentUserId}
-          />
-        ))}
-      </div>
-    </ScrollArea>
+    <VirtualizedMessageList
+      messages={messages}
+      currentUserId={currentUserId}
+      onAddReaction={onAddReaction}
+      onRemoveReaction={onRemoveReaction}
+      onEditMessage={onEditMessage}
+      onDeleteMessage={onDeleteMessage}
+      onArchiveMessage={onArchiveMessage}
+      onRecallMessage={onRecallMessage}
+      onLoadMore={onLoadMore}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
+    />
   );
 };

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { MessageList } from './MessageList';
+import { VirtualizedMessageList } from './VirtualizedMessageList';
 import { MessageInput } from './MessageInput';
 import { ChatHeader } from './ChatHeader';
 import { useToast } from '@/components/ui/use-toast';
+import { useOptimisticMessages } from '@/hooks/useOptimisticMessages';
+import { useChatOptimizations } from '@/hooks/useChatOptimizations';
 
 interface ChatWindowProps {
   chatId: string;
@@ -13,22 +15,114 @@ interface ChatWindowProps {
 export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<any[]>([]);
   const [chat, setChat] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Original API functions
+  const sendMessageAPI = async (content: string, messageType: string = 'text', mediaUrl?: string, mediaType?: string, mediaSize?: number) => {
+    if (!user || !content.trim() && !mediaUrl) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        chat_id: chatId,
+        sender_id: user.id,
+        content: content.trim() || null,
+        message_type: messageType,
+        media_url: mediaUrl || null,
+        media_type: mediaType || null,
+        media_size: mediaSize || null,
+      });
+
+    if (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  };
+
+  const editMessageAPI = async (messageId: string, newContent: string) => {
+    if (!user) return;
+
+    const { data: originalMessage } = await supabase
+      .from('messages')
+      .select('content, edit_history')
+      .eq('id', messageId)
+      .single();
+
+    if (!originalMessage) return;
+
+    const editHistory = Array.isArray(originalMessage.edit_history) 
+      ? originalMessage.edit_history 
+      : [];
+    
+    const updatedHistory = [...editHistory, {
+      content: originalMessage.content,
+      edited_at: new Date().toISOString(),
+    }];
+
+    const { error } = await supabase
+      .from('messages')
+      .update({
+        content: newContent,
+        is_edited: true,
+        edit_history: updatedHistory,
+      })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error editing message:', error);
+      throw error;
+    }
+  };
+
+  const deleteMessageAPI = async (messageId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting message:', error);
+      throw error;
+    }
+  };
+
+  // Use optimistic messages hook
+  const {
+    messages,
+    loading,
+    setLoading,
+    sendMessage,
+    editMessage,
+    deleteMessage,
+    updateMessagesFromRealtime,
+  } = useOptimisticMessages({
+    chatId,
+    currentUserId: user?.id,
+    onSendMessage: sendMessageAPI,
+    onEditMessage: editMessageAPI,
+    onDeleteMessage: deleteMessageAPI,
+  });
+
+  // Use chat optimizations hook
+  const {
+    loadMoreMessages,
+    hasMore,
+    loadingMore,
+    refreshMessages,
+  } = useChatOptimizations({
+    chatId,
+    onMessagesUpdate: updateMessagesFromRealtime,
+    setLoading,
+  });
+
+  // Fetch chat details
   useEffect(() => {
     if (chatId) {
       fetchChat();
-      fetchMessages();
-      subscribeToMessages();
     }
   }, [chatId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const fetchChat = async () => {
     const { data, error } = await supabase
@@ -53,126 +147,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
       });
     } else {
       setChat(data);
-    }
-  };
-
-  const fetchMessages = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('messages')
-      .select(`
-        *,
-        message_reactions(
-          emoji,
-          user_id
-        )
-      `)
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
-
-    // Get sender profiles separately
-    if (data && data.length > 0) {
-      const senderIds = [...new Set(data.map(msg => msg.sender_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', senderIds);
-
-      // Attach sender info to messages
-      const messagesWithProfiles = data.map(message => ({
-        ...message,
-        sender: profiles?.find(p => p.id === message.sender_id)
-      }));
-      
-      setMessages(messagesWithProfiles || []);
-    } else {
-      setMessages([]);
-    }
-
-    if (error) {
-      console.error('Error fetching messages:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load messages",
-        variant: "destructive",
-      });
-    }
-    setLoading(false);
-  };
-
-  const subscribeToMessages = () => {
-    const channel = supabase
-      .channel(`chat-${chatId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `chat_id=eq.${chatId}`
-        },
-        (payload) => {
-          // Fetch the full message with profiles
-          fetchMessages();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `chat_id=eq.${chatId}`
-        },
-        () => {
-          fetchMessages();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'messages',
-          filter: `chat_id=eq.${chatId}`
-        },
-        () => {
-          fetchMessages();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const sendMessage = async (content: string, messageType: string = 'text', mediaUrl?: string, mediaType?: string, mediaSize?: number) => {
-    if (!user || !content.trim() && !mediaUrl) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        chat_id: chatId,
-        sender_id: user.id,
-        content: content.trim() || null,
-        message_type: messageType,
-        media_url: mediaUrl || null,
-        media_type: mediaType || null,
-        media_size: mediaSize || null,
-      });
-
-    if (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive",
-      });
     }
   };
 
@@ -204,68 +178,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
 
     if (error) {
       console.error('Error removing reaction:', error);
-    }
-  };
-
-  const editMessage = async (messageId: string, newContent: string) => {
-    if (!user) return;
-
-    const { data: originalMessage } = await supabase
-      .from('messages')
-      .select('content, edit_history')
-      .eq('id', messageId)
-      .single();
-
-    if (!originalMessage) return;
-
-    const editHistory = Array.isArray(originalMessage.edit_history) 
-      ? originalMessage.edit_history 
-      : [];
-    
-    const updatedHistory = [...editHistory, {
-      content: originalMessage.content,
-      edited_at: new Date().toISOString(),
-    }];
-
-    const { error } = await supabase
-      .from('messages')
-      .update({
-        content: newContent,
-        is_edited: true,
-        edit_history: updatedHistory,
-      })
-      .eq('id', messageId);
-
-    if (error) {
-      console.error('Error editing message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to edit message",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const deleteMessage = async (messageId: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .delete()
-      .eq('id', messageId);
-
-    if (error) {
-      console.error('Error deleting message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete message",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Message deleted successfully",
-      });
     }
   };
 
@@ -336,19 +248,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
     <div className="flex flex-col h-full">
       <ChatHeader chat={chat} onChatUpdated={fetchChat} />
       
-      <div className="flex-1 overflow-hidden">
-        <MessageList
-          messages={messages}
-          currentUserId={user?.id}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onEditMessage={editMessage}
-          onDeleteMessage={deleteMessage}
-          onArchiveMessage={archiveMessage}
-          onRecallMessage={recallMessage}
-        />
-        <div ref={messagesEndRef} />
-      </div>
+      <VirtualizedMessageList
+        messages={messages}
+        currentUserId={user?.id}
+        onAddReaction={addReaction}
+        onRemoveReaction={removeReaction}
+        onEditMessage={editMessage}
+        onDeleteMessage={deleteMessage}
+        onArchiveMessage={archiveMessage}
+        onRecallMessage={recallMessage}
+        onLoadMore={loadMoreMessages}
+        hasMore={hasMore}
+        loadingMore={loadingMore}
+      />
 
       <MessageInput onSendMessage={sendMessage} />
     </div>
