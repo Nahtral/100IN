@@ -7,6 +7,7 @@ import { ChatHeader } from './ChatHeader';
 import { useToast } from '@/components/ui/use-toast';
 import { useOptimisticMessages } from '@/hooks/useOptimisticMessages';
 import { useChatOptimizations } from '@/hooks/useChatOptimizations';
+import { useNotificationHelpers } from '@/hooks/useNotificationHelpers';
 
 interface ChatWindowProps {
   chatId: string;
@@ -16,6 +17,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [chat, setChat] = useState<any>(null);
+  const { notifyChatMessage, notifyChatMention } = useNotificationHelpers();
 
   // Original API functions
   const sendMessageAPI = async (content: string, messageType: string = 'text', mediaUrl?: string, mediaType?: string, mediaSize?: number) => {
@@ -36,6 +38,57 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
     if (error) {
       console.error('Error sending message:', error);
       throw error;
+    }
+
+    // Send notifications to other chat participants
+    if (chat && user) {
+      try {
+        // Get sender name from profiles
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        const senderName = senderProfile?.full_name || 'Someone';
+        const messageContent = content || 'Sent a file';
+        
+        // Check for mentions in the message
+        const mentionRegex = /@(\w+)/g;
+        const mentions = messageContent.match(mentionRegex);
+        
+        // Get all participants except the sender
+        const otherParticipants = chat.chat_participants?.filter(
+          (p: any) => p.user_id !== user.id
+        ) || [];
+
+        for (const participant of otherParticipants) {
+          const isMentioned = mentions?.some(mention => 
+            mention.toLowerCase().includes(participant.profiles?.full_name?.toLowerCase() || '')
+          );
+
+          if (isMentioned) {
+            // High priority notification for mentions
+            await notifyChatMention(
+              participant.user_id,
+              senderName,
+              chatId,
+              messageContent
+            );
+          } else {
+            // Normal notification for regular messages
+            await notifyChatMessage(
+              participant.user_id,
+              senderName,
+              chatId,
+              messageContent
+            );
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error sending notifications:', notificationError);
+        // Don't throw - message was sent successfully, notification is secondary
+      }
     }
   };
 
