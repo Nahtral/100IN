@@ -26,21 +26,27 @@ export default function Chat() {
   }, [user]);
 
   const fetchChats = async () => {
-    const { data, error } = await supabase
-      .from('chats')
-      .select(`
-        *,
-        chat_participants!inner(
-          user_id,
-          role
-        )
-      `)
-      .order('updated_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .select(`
+          *,
+          chat_participants!inner(
+            user_id,
+            role
+          )
+        `)
+        .order('updated_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching chats:', error);
-    } else {
-      setChats(data || []);
+      if (error) {
+        console.error('Error fetching chats:', error);
+        throw error;
+      } else {
+        setChats(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load chats:', error);
+      // You could add a toast notification here for better UX
     }
   };
 
