@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import InjuryReportForm from './InjuryReportForm';
 
 interface InjuryDetailsModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ const InjuryDetailsModal: React.FC<InjuryDetailsModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showReportForm, setShowReportForm] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -199,7 +201,10 @@ const InjuryDetailsModal: React.FC<InjuryDetailsModalProps> = ({
               </Select>
             </div>
             {isSuperAdmin && (
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => setShowReportForm(true)}
+              >
                 <Plus className="h-4 w-4" />
                 Report Injury
               </Button>
@@ -344,6 +349,12 @@ const InjuryDetailsModal: React.FC<InjuryDetailsModalProps> = ({
           </div>
         </div>
       </DialogContent>
+      
+      <InjuryReportForm
+        isOpen={showReportForm}
+        onClose={() => setShowReportForm(false)}
+        onSuccess={fetchInjuries}
+      />
     </Dialog>
   );
 };

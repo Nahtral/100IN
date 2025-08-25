@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import FitnessAssessmentForm from './FitnessAssessmentForm';
 
 interface FitnessDetailsModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ const FitnessDetailsModal: React.FC<FitnessDetailsModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [scoreFilter, setScoreFilter] = useState('all');
+  const [showAssessmentForm, setShowAssessmentForm] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -214,7 +216,10 @@ const FitnessDetailsModal: React.FC<FitnessDetailsModalProps> = ({
               </Select>
             </div>
             {isSuperAdmin && (
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => setShowAssessmentForm(true)}
+              >
                 <Plus className="h-4 w-4" />
                 Add Assessment
               </Button>
@@ -334,6 +339,12 @@ const FitnessDetailsModal: React.FC<FitnessDetailsModalProps> = ({
           </div>
         </div>
       </DialogContent>
+      
+      <FitnessAssessmentForm
+        isOpen={showAssessmentForm}
+        onClose={() => setShowAssessmentForm(false)}
+        onSuccess={fetchFitnessRecords}
+      />
     </Dialog>
   );
 };

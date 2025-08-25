@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import DailyCheckInForm from './DailyCheckInForm';
 
 interface CheckInDetailsModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ const CheckInDetailsModal: React.FC<CheckInDetailsModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
+  const [showCheckInForm, setShowCheckInForm] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -233,7 +235,10 @@ const CheckInDetailsModal: React.FC<CheckInDetailsModalProps> = ({
               </Select>
             </div>
             {isSuperAdmin && (
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => setShowCheckInForm(true)}
+              >
                 <Plus className="h-4 w-4" />
                 Add Check-in
               </Button>
@@ -421,6 +426,12 @@ const CheckInDetailsModal: React.FC<CheckInDetailsModalProps> = ({
           </div>
         </div>
       </DialogContent>
+      
+      <DailyCheckInForm
+        isOpen={showCheckInForm}
+        onClose={() => setShowCheckInForm(false)}
+        onSuccess={fetchCheckIns}
+      />
     </Dialog>
   );
 };
