@@ -10,10 +10,13 @@ import {
   Calendar,
   Moon,
   Zap,
-  Shield
+  Shield,
+  Brain
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import EmergencyAlertModal from './EmergencyAlertModal';
+import AIHealthAnalysisModal from './AIHealthAnalysisModal';
 
 interface HealthDashboardProps {
   userRole: string;
@@ -34,6 +37,8 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
     checkinStreak: 0
   });
   const [loading, setLoading] = useState(true);
+  const [emergencyModalOpen, setEmergencyModalOpen] = useState(false);
+  const [aiAnalysisModalOpen, setAiAnalysisModalOpen] = useState(false);
 
   useEffect(() => {
     fetchHealthOverview();
@@ -118,12 +123,18 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
             <p className="text-gray-600">Monitor player wellness, injuries, and medical information</p>
           </div>
           <div className="flex gap-2">
-            <Button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
+            <Button 
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+              onClick={() => setEmergencyModalOpen(true)}
+            >
               <AlertTriangle className="h-4 w-4 mr-2" />
               EMERGENCY
             </Button>
-            <Button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
-              <Activity className="h-4 w-4 mr-2" />
+            <Button 
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              onClick={() => setAiAnalysisModalOpen(true)}
+            >
+              <Brain className="h-4 w-4 mr-2" />
               AI Analysis
             </Button>
           </div>
@@ -195,6 +206,20 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
             </div>
           </CardContent>
         </Card>
+
+        {/* Modals */}
+        <EmergencyAlertModal
+          isOpen={emergencyModalOpen}
+          onClose={() => setEmergencyModalOpen(false)}
+          playerProfile={playerProfile}
+        />
+        
+        <AIHealthAnalysisModal
+          isOpen={aiAnalysisModalOpen}
+          onClose={() => setAiAnalysisModalOpen(false)}
+          playerProfile={playerProfile}
+          userRole={userRole}
+        />
       </div>
     );
   }
@@ -275,6 +300,20 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Modals for Staff/Medical Dashboard */}
+      <EmergencyAlertModal
+        isOpen={emergencyModalOpen}
+        onClose={() => setEmergencyModalOpen(false)}
+        playerProfile={null}
+      />
+      
+      <AIHealthAnalysisModal
+        isOpen={aiAnalysisModalOpen}
+        onClose={() => setAiAnalysisModalOpen(false)}
+        playerProfile={null}
+        userRole={userRole}
+      />
     </div>
   );
 };

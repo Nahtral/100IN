@@ -11,12 +11,15 @@ import {
   Shield,
   Stethoscope,
   HeartPulse,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import AppointmentSchedulingModal from './AppointmentSchedulingModal';
+import MedicalClearanceModal from './MedicalClearanceModal';
 
 interface MedicalLogProps {
   userRole: string;
@@ -34,6 +37,8 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
   const [medicalHistory, setMedicalHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('medical-history');
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [clearanceModalOpen, setClearanceModalOpen] = useState(false);
 
   useEffect(() => {
     fetchMedicalHistory();
@@ -248,8 +253,11 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
                 <p className="text-gray-600 mb-4">
                   Medical appointments will be displayed here when scheduled.
                 </p>
-                <Button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
-                  <Calendar className="h-4 w-4 mr-2" />
+                <Button 
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                  onClick={() => setAppointmentModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
                   Schedule New Appointment
                 </Button>
               </div>
@@ -289,6 +297,7 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
                 <Button 
                   variant="outline" 
                   className="border-green-200 text-green-700 hover:bg-green-50"
+                  onClick={() => setClearanceModalOpen(true)}
                 >
                   Request Medical Clearance Assessment
                 </Button>
@@ -297,6 +306,20 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <AppointmentSchedulingModal
+        isOpen={appointmentModalOpen}
+        onClose={() => setAppointmentModalOpen(false)}
+        playerProfile={playerProfile}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <MedicalClearanceModal
+        isOpen={clearanceModalOpen}
+        onClose={() => setClearanceModalOpen(false)}
+        playerProfile={playerProfile}
+      />
     </div>
   );
 };
