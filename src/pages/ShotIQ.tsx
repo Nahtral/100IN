@@ -3,7 +3,7 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ShotIQSettings from '@/components/shotiq/settings/ShotIQSettings';
 import TrainingHistory from '@/components/shotiq/history/TrainingHistory';
-import ShotHeatmap from '@/components/shotiq/analytics/ShotHeatmap';
+import InteractiveCourtHeatmap from '@/components/shotiq/analytics/InteractiveCourtHeatmap';
 import AdvancedCharts from '@/components/shotiq/analytics/AdvancedCharts';
 import ShotTracker from '@/components/shotiq/ShotTracker';
 import VideoLogger from '@/components/shotiq/VideoLogger';
@@ -842,14 +842,8 @@ const ShotIQ = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ShotHeatmap 
-                      shots={playerAnalytics?.recentShots?.map((shot: any) => ({
-                        x: shot.court_x_position || Math.random() * 400 + 200,
-                        y: shot.court_y_position || Math.random() * 300 + 200,
-                        made: shot.made,
-                        arc: shot.arc_degrees,
-                        depth: shot.depth_inches
-                      })) || []}
+                    <InteractiveCourtHeatmap 
+                      playerId={selectedPlayer}
                     />
                   </CardContent>
                 </Card>
