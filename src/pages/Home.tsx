@@ -192,7 +192,7 @@ const Home = () => {
                 </div>
               ))}
               <Button asChild variant="outline" className="w-full">
-                <Link to="/dashboard">
+                <Link to="/news">
                   View All Updates <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>

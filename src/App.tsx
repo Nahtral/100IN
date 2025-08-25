@@ -22,6 +22,7 @@ import UserManagement from "./pages/UserManagement";
 import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
 import HealthWellness from "./pages/HealthWellness";
+import News from "./pages/News";
 import NewsManager from "./pages/NewsManager";
 import PartnershipManagement from "./pages/PartnershipManagement";
 import MedicalManagement from "./pages/MedicalManagement";
@@ -100,11 +101,16 @@ const App = () => (
                 <HealthWellness />
               </RoleProtectedRoute>
             } />
-            <Route path="/news-manager" element={
-              <RoleProtectedRoute allowedRoles={['super_admin']}>
-                <NewsManager />
-              </RoleProtectedRoute>
-            } />
+          <Route path="/news" element={
+            <ProtectedRoute>
+              <News />
+            </ProtectedRoute>
+          } />
+          <Route path="/news-manager" element={
+            <RoleProtectedRoute allowedRoles={['super_admin']}>
+              <NewsManager />
+            </RoleProtectedRoute>
+          } />
             <Route path="/chat" element={
               <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach', 'player']}>
                 <Chat />
