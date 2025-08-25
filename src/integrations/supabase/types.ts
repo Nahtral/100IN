@@ -3551,6 +3551,14 @@ export type Database = {
         Args: { notification_id: string }
         Returns: undefined
       }
+      mask_employee_compensation: {
+        Args: {
+          _employee_user_id: string
+          _hourly_rate: number
+          _salary: number
+        }
+        Returns: Record<string, unknown>
+      }
       mask_sensitive_email: {
         Args: { email_input: string }
         Returns: string

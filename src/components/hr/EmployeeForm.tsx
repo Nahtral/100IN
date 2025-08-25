@@ -46,8 +46,8 @@ interface Employee {
   hire_date: string;
   employment_status: string;
   payment_type: string;
-  hourly_rate: number;
-  salary: number;
+  hourly_rate?: number; // Optional - only visible to authorized users
+  salary?: number; // Optional - only visible to authorized users  
   emergency_contact_name: string;
   emergency_contact_phone: string;
 }

@@ -39,8 +39,8 @@ interface Employee {
   hire_date: string;
   employment_status: string;
   payment_type: string;
-  hourly_rate: number;
-  salary: number;
+  hourly_rate?: number; // Optional - only visible to authorized users
+  salary?: number; // Optional - only visible to authorized users
   emergency_contact_name: string;
   emergency_contact_phone: string;
 }
@@ -64,19 +64,36 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
 
   const fetchEmployees = async () => {
     try {
+      // Use secure query that only selects necessary fields and respects RLS
       const { data, error } = await supabase
         .from('employees')
-        .select('*')
+        .select(`
+          id,
+          employee_id,
+          first_name,
+          last_name,
+          email,
+          phone,
+          department,
+          position,
+          hire_date,
+          employment_status,
+          payment_type,
+          emergency_contact_name,
+          emergency_contact_phone
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      // Only show salary data to authorized users (handled by RLS policies)
       setEmployees(data || []);
       onStatsUpdate();
     } catch (error) {
       console.error('Error fetching employees:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch employees.",
+        description: "Failed to fetch employees. You may not have permission to view this data.",
         variant: "destructive",
       });
     } finally {
@@ -255,25 +272,27 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
                     </TableCell>
                     {(isSuperAdmin || hasRole('staff')) && (
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditEmployee(employee)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {isSuperAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteEmployee(employee.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                         <div className="flex items-center gap-2">
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={() => handleEditEmployee(employee)}
+                             title="Edit employee"
+                           >
+                             <Edit className="h-4 w-4" />
+                           </Button>
+                           {isSuperAdmin && (
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleDeleteEmployee(employee.id)}
+                               className="text-destructive hover:text-destructive"
+                               title="Delete employee (Super Admin only)"
+                             >
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           )}
+                         </div>
                       </TableCell>
                     )}
                   </TableRow>
