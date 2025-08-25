@@ -17,11 +17,21 @@ import Layout from "@/components/layout/Layout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
+import InjuryDetailsModal from "@/components/health/InjuryDetailsModal";
+import FitnessDetailsModal from "@/components/health/FitnessDetailsModal";
+import CheckInDetailsModal from "@/components/health/CheckInDetailsModal";
 
 const MedicalDashboard = () => {
   const { currentUser } = useCurrentUser();
+  const { isSuperAdmin } = useUserRole();
   const [medicalData, setMedicalData] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  
+  // Modal states
+  const [showInjuriesModal, setShowInjuriesModal] = useState(false);
+  const [showFitnessModal, setShowFitnessModal] = useState(false);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
 
   useEffect(() => {
     const fetchMedicalData = async () => {
@@ -102,7 +112,10 @@ const MedicalDashboard = () => {
         </div>
         {/* Medical Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-red-200">
+        <Card 
+          className="border-red-200 cursor-pointer hover:border-red-300 hover:shadow-md transition-all"
+          onClick={() => setShowInjuriesModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Injuries</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -110,25 +123,31 @@ const MedicalDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{medicalData.activeInjuries}</div>
             <p className="text-xs text-muted-foreground">
-              Requiring attention
+              Requiring attention • Click to view details
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-green-200">
+        <Card 
+          className="border-green-200 cursor-pointer hover:border-green-300 hover:shadow-md transition-all"
+          onClick={() => setShowCheckInModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cleared Players</CardTitle>
+            <CardTitle className="text-sm font-medium">Daily Check-ins</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{medicalData.clearedPlayers}</div>
             <p className="text-xs text-muted-foreground">
-              Fit to play
+              Today's reports • Click to view details
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-blue-200">
+        <Card 
+          className="border-blue-200 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
+          onClick={() => setShowFitnessModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Fitness Tests</CardTitle>
             <Activity className="h-4 w-4 text-blue-600" />
@@ -136,12 +155,15 @@ const MedicalDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{medicalData.fitnessTests}</div>
             <p className="text-xs text-muted-foreground">
-              Scheduled this week
+              Recent assessments • Click to view details
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-orange-200">
+        <Card 
+          className="border-orange-200 cursor-pointer hover:border-orange-300 hover:shadow-md transition-all"
+          onClick={() => setShowFitnessModal(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Fitness</CardTitle>
             <TrendingUp className="h-4 w-4 text-orange-600" />
@@ -149,7 +171,7 @@ const MedicalDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{medicalData.avgFitness}</div>
             <p className="text-xs text-muted-foreground">
-              Team average score
+              Team average • Click to view details
             </p>
           </CardContent>
         </Card>
@@ -281,6 +303,25 @@ const MedicalDashboard = () => {
           </a>
         </Button>
       </div>
+
+      {/* Detail Modals */}
+      <InjuryDetailsModal 
+        isOpen={showInjuriesModal}
+        onClose={() => setShowInjuriesModal(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <FitnessDetailsModal 
+        isOpen={showFitnessModal}
+        onClose={() => setShowFitnessModal(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
+      
+      <CheckInDetailsModal 
+        isOpen={showCheckInModal}
+        onClose={() => setShowCheckInModal(false)}
+        isSuperAdmin={isSuperAdmin}
+      />
       </div>
     </Layout>
   );
