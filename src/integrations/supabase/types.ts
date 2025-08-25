@@ -3492,6 +3492,10 @@ export type Database = {
         }
         Returns: string
       }
+      determine_shot_region: {
+        Args: { _x: number; _y: number }
+        Returns: string
+      }
       get_benefit_cost_analysis: {
         Args: { report_end_date?: string; report_start_date?: string }
         Returns: {
