@@ -540,18 +540,19 @@ const ShotIQ = () => {
   }, []);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-primary">ShotIQ</h1>
-          <p className="text-muted-foreground mt-2">
-            AI-powered basketball shot tracking and analysis
-          </p>
+    <Layout>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-primary">ShotIQ</h1>
+            <p className="text-muted-foreground mt-2">
+              AI-powered basketball shot tracking and analysis
+            </p>
+          </div>
+          <Badge variant="outline" className="text-lg px-4 py-2">
+            Super Admin Only
+          </Badge>
         </div>
-        <Badge variant="outline" className="text-lg px-4 py-2">
-          Super Admin Only
-        </Badge>
-      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
@@ -901,6 +902,7 @@ const ShotIQ = () => {
         mode={sessionModal.mode}
       />
     </div>
+    </Layout>
   );
 };
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import RoleProtectedRoute from '@/components/RoleProtectedRoute';
 import PartnerDashboard from '@/components/dashboards/PartnerDashboard';
+import Layout from '@/components/layout/Layout';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -222,15 +223,17 @@ const Partners = () => {
   if (!isSuperAdmin) {
     return (
       <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
-        <div className="mobile-section">
-          <div>
-            <h1 className="mobile-title">Partners</h1>
-            <p className="text-muted-foreground mobile-text">
-              Monitor your partnership performance
-            </p>
+        <Layout>
+          <div className="mobile-section">
+            <div>
+              <h1 className="mobile-title">Partners</h1>
+              <p className="text-muted-foreground mobile-text">
+                Monitor your partnership performance
+              </p>
+            </div>
+            <PartnerDashboard />
           </div>
-          <PartnerDashboard />
-        </div>
+        </Layout>
       </RoleProtectedRoute>
     );
   }
@@ -238,22 +241,25 @@ const Partners = () => {
   if (loading) {
     return (
       <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center animate-fade-in">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl mb-4 animate-pulse">
-              <Handshake className="h-8 w-8 text-white" />
+        <Layout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center animate-fade-in">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl mb-4 animate-pulse">
+                <Handshake className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Partnership Management</h2>
+              <p className="text-gray-600">Loading partnership data...</p>
             </div>
-            <h2 className="text-xl font-semibold mb-2">Partnership Management</h2>
-            <p className="text-gray-600">Loading partnership data...</p>
           </div>
-        </div>
+        </Layout>
       </RoleProtectedRoute>
     );
   }
 
   return (
     <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
-      <div className="mobile-section">
+      <Layout>
+        <div className="mobile-section">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -568,6 +574,7 @@ const Partners = () => {
           </TabsContent>
         </Tabs>
       </div>
+      </Layout>
     </RoleProtectedRoute>
   );
 };
