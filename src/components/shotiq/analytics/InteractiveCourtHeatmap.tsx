@@ -201,90 +201,168 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
   const drawBasketballCourt = (canvas: FabricCanvas) => {
     const { width, height } = courtDimensions;
     
-    // Court boundary
+    // Professional court colors matching reference
+    const courtColor = '#2d5b47'; // Dark green court color
+    const lineColor = '#ffffff';
+    const rimColor = '#ff6b35';
+    
+    // Court dimensions based on reference image proportions
+    const courtMargin = 40;
+    const courtWidth = width - (courtMargin * 2);
+    const courtHeight = height - (courtMargin * 2);
+    
+    // Key measurements (scaled to canvas)
+    const centerX = width / 2;
+    const baselineY = height - courtMargin;
+    const keyWidth = courtWidth * 0.2; // Paint width
+    const keyHeight = courtHeight * 0.35; // Paint height
+    const threePointRadius = courtWidth * 0.28;
+    const freeThrowRadius = keyWidth * 0.5;
+    
+    // Court boundary with proper background
     const courtBoundary = new Rect({
-      left: 50,
-      top: 50,
-      width: width - 100,
-      height: height - 100,
+      left: courtMargin,
+      top: courtMargin,
+      width: courtWidth,
+      height: courtHeight,
       fill: 'transparent',
-      stroke: '#ffffff',
+      stroke: lineColor,
       strokeWidth: 3,
       selectable: false,
     });
     canvas.add(courtBoundary);
 
-    // Three-point line
-    const centerX = width / 2;
-    const baselineY = height - 50;
-    const arcRadius = 180;
-    const arcCenterY = baselineY - 65;
-    const straightLineDistance = 140;
-    
-    const threePointPath = `
-      M ${centerX - straightLineDistance} ${baselineY}
-      L ${centerX - straightLineDistance} ${arcCenterY + 20}
-      A ${arcRadius} ${arcRadius} 0 0 1 ${centerX + straightLineDistance} ${arcCenterY + 20}
-      L ${centerX + straightLineDistance} ${baselineY}
-    `;
-    
-    const threePointLine = new Path(threePointPath, {
+    // Half-court line
+    const halfCourtLine = new Rect({
+      left: courtMargin,
+      top: height / 2,
+      width: courtWidth,
+      height: 0,
       fill: 'transparent',
-      stroke: '#ffffff',
+      stroke: lineColor,
       strokeWidth: 2,
       selectable: false,
     });
-    canvas.add(threePointLine);
+    canvas.add(halfCourtLine);
 
-    // Free throw circle
-    const freeThrowCircle = new Circle({
-      left: width / 2 - 60,
-      top: height - 240,
-      radius: 60,
+    // Center circle
+    const centerCircle = new Circle({
+      left: centerX - (courtWidth * 0.08),
+      top: (height / 2) - (courtWidth * 0.08),
+      radius: courtWidth * 0.08,
       fill: 'transparent',
-      stroke: '#ffffff',
+      stroke: lineColor,
       strokeWidth: 2,
       selectable: false,
     });
-    canvas.add(freeThrowCircle);
+    canvas.add(centerCircle);
 
-    // Rim
-    const rim = new Circle({
-      left: width / 2 - 9,
-      top: height - 70,
-      radius: 9,
-      fill: '#ff6b35',
-      stroke: '#ffffff',
-      strokeWidth: 2,
-      selectable: false,
-    });
-    canvas.add(rim);
-
-    // Backboard
-    const backboard = new Rect({
-      left: width / 2 - 30,
-      top: height - 50,
-      width: 60,
-      height: 4,
-      fill: '#ffffff',
-      selectable: false,
-    });
-    canvas.add(backboard);
-
-    // Paint area
+    // Paint area (key)
     const paint = new Rect({
-      left: width / 2 - 80,
-      top: height - 190,
-      width: 160,
-      height: 140,
+      left: centerX - (keyWidth / 2),
+      top: baselineY - keyHeight,
+      width: keyWidth,
+      height: keyHeight,
       fill: 'transparent',
-      stroke: '#ffffff',
+      stroke: lineColor,
       strokeWidth: 2,
       selectable: false,
     });
     canvas.add(paint);
 
-    // Draw court regions based on database data
+    // Free throw circle
+    const freeThrowCircle = new Circle({
+      left: centerX - freeThrowRadius,
+      top: baselineY - keyHeight - freeThrowRadius,
+      radius: freeThrowRadius,
+      fill: 'transparent',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable: false,
+    });
+    canvas.add(freeThrowCircle);
+
+    // Three-point line - accurate arc
+    const threePointArcY = baselineY - (keyHeight * 0.2);
+    const threePointCornerDistance = courtWidth * 0.075; // Distance from corners
+    
+    // Three-point arc
+    const threePointArc = new Circle({
+      left: centerX - threePointRadius,
+      top: threePointArcY - threePointRadius,
+      radius: threePointRadius,
+      fill: 'transparent',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable: false,
+      startAngle: 0.4, // Start angle for arc
+      endAngle: 2.74,  // End angle for arc
+    });
+    canvas.add(threePointArc);
+
+    // Three-point line corners (straight sections)
+    const leftThreePointCorner = new Rect({
+      left: courtMargin + threePointCornerDistance,
+      top: threePointArcY - (threePointRadius * 0.7),
+      width: 0,
+      height: (threePointRadius * 0.7),
+      fill: 'transparent',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable: false,
+    });
+    canvas.add(leftThreePointCorner);
+
+    const rightThreePointCorner = new Rect({
+      left: width - courtMargin - threePointCornerDistance,
+      top: threePointArcY - (threePointRadius * 0.7),
+      width: 0,
+      height: (threePointRadius * 0.7),  
+      fill: 'transparent',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable: false,
+    });
+    canvas.add(rightThreePointCorner);
+
+    // Rim
+    const rim = new Circle({
+      left: centerX - 8,
+      top: baselineY - 16,
+      radius: 8,
+      fill: rimColor,
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable: false,
+    });
+    canvas.add(rim);
+
+    // Backboard  
+    const backboard = new Rect({
+      left: centerX - 25,
+      top: baselineY - 8,
+      width: 50,
+      height: 3,
+      fill: lineColor,
+      selectable: false,
+    });
+    canvas.add(backboard);
+
+    // Restricted area (small arc under basket)
+    const restrictedArea = new Circle({
+      left: centerX - 20,
+      top: baselineY - 40,
+      radius: 20,
+      fill: 'transparent',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable: false,
+      startAngle: 0,
+      endAngle: Math.PI,
+    });
+    canvas.add(restrictedArea);
+
+    // Draw court regions for heatmap
     drawCourtRegions(canvas);
   };
 
