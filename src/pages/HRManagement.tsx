@@ -21,7 +21,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
-import EmployeeList from '@/components/hr/EmployeeList';
+import SecureEmployeeList from '@/components/hr/SecureEmployeeList';
 import TimeTracking from '@/components/hr/TimeTracking';
 import TimeOffManagement from '@/components/hr/TimeOffManagement';
 import PayrollDashboard from '@/components/hr/PayrollDashboard';
@@ -349,7 +349,7 @@ const HRManagement = () => {
         </TabsContent>
 
         <TabsContent value="employees">
-          <EmployeeList onStatsUpdate={fetchStats} />
+          <SecureEmployeeList onStatsUpdate={fetchStats} />
         </TabsContent>
 
         <TabsContent value="timetracking">
