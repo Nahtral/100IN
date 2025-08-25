@@ -411,9 +411,9 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
   const drawBasketballCourt = (canvas: FabricCanvas) => {
     const { width, height } = courtDimensions;
     
-    // Enhanced visibility colors
-    const lineColor = '#E0E0E0'; // Light gray for better contrast
-    const strokeWidth = 4; // Thicker lines for better visibility
+    // NBA court colors - hardwood and black lines
+    const lineColor = '#000000'; // Solid black lines
+    const strokeWidth = 4; // Bold lines for NBA court appearance
     const rimColor = '#ff6600';
     
     // Court dimensions with proper NBA proportions
@@ -424,8 +424,8 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     const threePointDistance = 280; // Distance from center to 3pt arc
     const cornerThreeDistance = 140; // Distance from baseline to corner 3pt
     
-    // Clear canvas and set background to darker gray for better contrast
-    canvas.backgroundColor = '#EFEFEF'; // Slightly darker background for contrast
+    // Clear canvas and set background to hardwood color
+    canvas.backgroundColor = '#E5C99F'; // Light natural hardwood color
     canvas.renderAll();
     
     // Court boundary (half court) - thicker lines
