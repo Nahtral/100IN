@@ -411,8 +411,9 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
   const drawBasketballCourt = (canvas: FabricCanvas) => {
     const { width, height } = courtDimensions;
     
-    // NBA court colors matching reference
-    const lineColor = '#ffffff';
+    // Enhanced visibility colors
+    const lineColor = '#E0E0E0'; // Light gray for better contrast
+    const strokeWidth = 4; // Thicker lines for better visibility
     const rimColor = '#ff6600';
     
     // Court dimensions with proper NBA proportions
@@ -423,11 +424,11 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     const threePointDistance = 280; // Distance from center to 3pt arc
     const cornerThreeDistance = 140; // Distance from baseline to corner 3pt
     
-    // Clear canvas and set background to light gray/transparent for court appearance
-    canvas.backgroundColor = '#f8f9fa'; // Light background like reference
+    // Clear canvas and set background to darker gray for better contrast
+    canvas.backgroundColor = '#EFEFEF'; // Slightly darker background for contrast
     canvas.renderAll();
     
-    // Court boundary (half court)
+    // Court boundary (half court) - thicker lines
     const courtBoundary = new Rect({
       left: 50,
       top: 50,
@@ -435,7 +436,7 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
       height: height - 100,
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 3,
+      strokeWidth: strokeWidth,
       selectable: false,
     });
     canvas.add(courtBoundary);
@@ -448,24 +449,24 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
       height: paintLength,
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 3,
+      strokeWidth: strokeWidth,
       selectable: false,
     });
     canvas.add(paintArea);
 
-    // Free throw circle
+    // Free throw circle - thicker for visibility
     const freeThrowCircle = new Circle({
       left: centerX - 60,
       top: baselineY - paintLength - 60,
       radius: 60,
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 3,
+      strokeWidth: strokeWidth,
       selectable: false,
     });
     canvas.add(freeThrowCircle);
 
-    // Three-point arc - create accurate NBA 3-point line
+    // Three-point arc - create accurate NBA 3-point line with thicker stroke
     const arcCenterY = baselineY - 30;
     const arcRadius = threePointDistance;
     
@@ -480,19 +481,19 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     const threePointLine = new Path(threePointPath, {
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 3,
+      strokeWidth: strokeWidth,
       selectable: false,
     });
     canvas.add(threePointLine);
 
-    // Restricted area (charge circle under basket)
+    // Restricted area (charge circle under basket) - thicker stroke
     const restrictedArea = new Circle({
       left: centerX - 30,
       top: baselineY - 30 - 30,
       radius: 30,
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 2,
+      strokeWidth: strokeWidth - 1, // Slightly thinner for restricted area
       selectable: false,
       startAngle: 0,
       endAngle: Math.PI, // Semicircle
@@ -627,15 +628,15 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     if (viewMode === 'heatmap') {
       drawCourtRegions(fabricCanvas);
     } else {
-      // Draw individual shots
+      // Draw individual shots with enhanced visibility
       shots.forEach(shot => {
         const shotMarker = new Circle({
-          left: (shot.court_x_position || 400) - 4,
-          top: (shot.court_y_position || 300) - 4,
-          radius: 4,
+          left: (shot.court_x_position || 400) - 6,
+          top: (shot.court_y_position || 300) - 6,
+          radius: 6, // Increased size for better visibility
           fill: shot.made ? '#22c55e' : '#ef4444',
-          stroke: '#ffffff',
-          strokeWidth: 1,
+          stroke: '#2d3748', // Dark border for contrast
+          strokeWidth: 2, // Thicker border
           selectable: false,
           shotMarker: true,
         } as any);
