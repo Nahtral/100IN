@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Canvas as FabricCanvas, Circle, Rect, Path, FabricText } from 'fabric';
+import { Canvas as FabricCanvas, Circle, Rect, Path, FabricText, Polygon } from 'fabric';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,39 +68,180 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
   const [showStats, setShowStats] = useState(true);
   const { toast } = useToast();
 
-  // Define half-court regions matching reference image
-  const courtRegions: CourtRegion[] = [
-    // Restricted Area (under basket)
-    { region_code: 'RA', region_name: 'Restricted Area', shot_type: '2PT', region_bounds: { type: 'circle', centerX: 400, centerY: 520, radius: 25 } },
+  // Define NBA-accurate court regions matching reference image
+  const getNBACourtRegions = (width: number, height: number) => {
+    const centerX = width / 2;
+    const baselineY = height - 50; // Basket position
     
-    // Paint areas
-    { region_code: 'PC', region_name: 'Paint Center', shot_type: '2PT', region_bounds: { type: 'rectangle', x1: 340, y1: 400, x2: 460, y2: 520 } },
-    { region_code: 'PL', region_name: 'Paint Left', shot_type: '2PT', region_bounds: { type: 'rectangle', x1: 240, y1: 400, x2: 340, y2: 520 } },
-    { region_code: 'PR', region_name: 'Paint Right', shot_type: '2PT', region_bounds: { type: 'rectangle', x1: 460, y1: 400, x2: 560, y2: 520 } },
-    
-    // Mid-range areas  
-    { region_code: 'MRL', region_name: 'Mid-Range Left', shot_type: '2PT', region_bounds: { type: 'rectangle', x1: 120, y1: 280, x2: 240, y2: 400 } },
-    { region_code: 'MRR', region_name: 'Mid-Range Right', shot_type: '2PT', region_bounds: { type: 'rectangle', x1: 560, y1: 280, x2: 680, y2: 400 } },
-    { region_code: 'MRT', region_name: 'Mid-Range Top', shot_type: '2PT', region_bounds: { type: 'rectangle', x1: 240, y1: 220, x2: 560, y2: 280 } },
-    
-    // 3-point areas
-    { region_code: 'C3L', region_name: 'Corner 3 Left', shot_type: '3PT', region_bounds: { type: 'rectangle', x1: 60, y1: 400, x2: 120, y2: 520 } },
-    { region_code: 'C3R', region_name: 'Corner 3 Right', shot_type: '3PT', region_bounds: { type: 'rectangle', x1: 680, y1: 400, x2: 740, y2: 520 } },
-    { region_code: 'W3L', region_name: 'Wing 3 Left', shot_type: '3PT', region_bounds: { type: 'rectangle', x1: 80, y1: 180, x2: 200, y2: 280 } },
-    { region_code: 'W3R', region_name: 'Wing 3 Right', shot_type: '3PT', region_bounds: { type: 'rectangle', x1: 600, y1: 180, x2: 720, y2: 280 } },
-    { region_code: 'AB3', region_name: 'Above Break 3', shot_type: '3PT', region_bounds: { type: 'rectangle', x1: 200, y1: 100, x2: 600, y2: 180 } },
-    
-    // Deep 3-point areas
-    { region_code: 'D3L', region_name: 'Deep 3 Left', shot_type: '3PT', region_bounds: { type: 'rectangle', x1: 60, y1: 50, x2: 200, y2: 180 } },
-    { region_code: 'D3R', region_name: 'Deep 3 Right', shot_type: '3PT', region_bounds: { type: 'rectangle', x1: 600, y1: 50, x2: 740, y2: 180 } },
-  ];
+    return [
+      // Corner 3s - exact NBA corner positioning
+      { 
+        region_code: 'C3L', 
+        region_name: 'Corner 3 Left', 
+        shot_type: '3PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [50, baselineY], [50, baselineY - 140], 
+            [120, baselineY - 140], [120, baselineY]
+          ]
+        } 
+      },
+      { 
+        region_code: 'C3R', 
+        region_name: 'Corner 3 Right', 
+        shot_type: '3PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [width - 120, baselineY], [width - 120, baselineY - 140], 
+            [width - 50, baselineY - 140], [width - 50, baselineY]
+          ]
+        } 
+      },
+      
+      // Mid-range areas (paint area sides)
+      { 
+        region_code: 'MRL', 
+        region_name: 'Mid-Range Left', 
+        shot_type: '2PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [120, baselineY], [120, baselineY - 140], 
+            [centerX - 80, baselineY - 140], [centerX - 80, baselineY]
+          ]
+        } 
+      },
+      { 
+        region_code: 'MRR', 
+        region_name: 'Mid-Range Right', 
+        shot_type: '2PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [centerX + 80, baselineY], [centerX + 80, baselineY - 140], 
+            [width - 120, baselineY - 140], [width - 120, baselineY]
+          ]
+        } 
+      },
+      
+      // Paint center area
+      { 
+        region_code: 'PC', 
+        region_name: 'Paint Center', 
+        shot_type: '2PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [centerX - 80, baselineY], [centerX - 80, baselineY - 140], 
+            [centerX + 80, baselineY - 140], [centerX + 80, baselineY]
+          ]
+        } 
+      },
+      
+      // Wing 3s - left and right wings
+      { 
+        region_code: 'W3L', 
+        region_name: 'Wing 3 Left', 
+        shot_type: '3PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [120, baselineY - 140], [120, baselineY - 280], 
+            [centerX - 120, baselineY - 280], [centerX - 80, baselineY - 140]
+          ]
+        } 
+      },
+      { 
+        region_code: 'W3R', 
+        region_name: 'Wing 3 Right', 
+        shot_type: '3PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [centerX + 80, baselineY - 140], [centerX + 120, baselineY - 280], 
+            [width - 120, baselineY - 280], [width - 120, baselineY - 140]
+          ]
+        } 
+      },
+      
+      // Above break 3 - top of arc
+      { 
+        region_code: 'AB3', 
+        region_name: 'Above Break 3', 
+        shot_type: '3PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [centerX - 120, baselineY - 280], [centerX - 120, baselineY - 350], 
+            [centerX + 120, baselineY - 350], [centerX + 120, baselineY - 280]
+          ]
+        } 
+      },
+      
+      // Mid-range top (free throw extended)
+      { 
+        region_code: 'MRT', 
+        region_name: 'Mid-Range Top', 
+        shot_type: '2PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [centerX - 80, baselineY - 140], [centerX - 120, baselineY - 280], 
+            [centerX + 120, baselineY - 280], [centerX + 80, baselineY - 140]
+          ]
+        } 
+      },
+      
+      // Deep 3s - beyond the arc
+      { 
+        region_code: 'D3L', 
+        region_name: 'Deep 3 Left', 
+        shot_type: '3PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [50, baselineY - 140], [50, 50], 
+            [120, 50], [120, baselineY - 280], [centerX - 120, baselineY - 350], [centerX - 120, baselineY - 280]
+          ]
+        } 
+      },
+      { 
+        region_code: 'D3R', 
+        region_name: 'Deep 3 Right', 
+        shot_type: '3PT', 
+        region_bounds: { 
+          type: 'polygon', 
+          points: [
+            [centerX + 120, baselineY - 280], [centerX + 120, baselineY - 350], [width - 120, baselineY - 280], 
+            [width - 120, 50], [width - 50, 50], [width - 50, baselineY - 140]
+          ]
+        } 
+      },
+      
+      // Restricted area (under basket)
+      { 
+        region_code: 'RA', 
+        region_name: 'Restricted Area', 
+        shot_type: '2PT', 
+        region_bounds: { 
+          type: 'circle', 
+          centerX: centerX, 
+          centerY: baselineY - 30, 
+          radius: 30 
+        } 
+      },
+    ];
+  };
 
   // Load initial data
   useEffect(() => {
+    const courtRegions = getNBACourtRegions(courtDimensions.width, courtDimensions.height);
     loadShotData();
     setRegions(courtRegions);
     console.log('Court regions set:', courtRegions.length);
-  }, [playerId, sessionId, dateRange]);
+  }, [playerId, sessionId, dateRange, courtDimensions]);
 
   // Initialize canvas
   useEffect(() => {
@@ -204,10 +345,11 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
 
 
   const determineRegion = (x: number, y: number): string => {
-    for (const region of courtRegions) {
+    for (const region of regions) {
       const bounds = region.region_bounds;
-      if (bounds.type === 'rectangle') {
-        if (x >= bounds.x1 && x <= bounds.x2 && y >= bounds.y1 && y <= bounds.y2) {
+      if (bounds.type === 'polygon') {
+        // For polygon regions, use a point-in-polygon test
+        if (isPointInPolygon([x, y], bounds.points)) {
           return region.region_code;
         }
       } else if (bounds.type === 'circle') {
@@ -220,12 +362,29 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     return 'MRT'; // Default to mid-range top
   };
 
+  // Point in polygon test helper function
+  const isPointInPolygon = (point: [number, number], polygon: [number, number][]): boolean => {
+    const [x, y] = point;
+    let inside = false;
+    
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+      
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+        inside = !inside;
+      }
+    }
+    
+    return inside;
+  };
+
   const calculateRegionStats = (shotData: ShotData[]) => {
     const regionMap = new Map<string, RegionStats>();
 
     shotData.forEach(shot => {
       const region = determineRegion(shot.court_x_position || 400, shot.court_y_position || 300);
-      const regionInfo = courtRegions.find(r => r.region_code === region);
+      const regionInfo = regions.find(r => r.region_code === region);
       
       if (!regionMap.has(region)) {
         regionMap.set(region, {
@@ -252,34 +411,28 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
   const drawBasketballCourt = (canvas: FabricCanvas) => {
     const { width, height } = courtDimensions;
     
-    // Professional half-court colors matching reference
-    const courtColor = '#2d5b47'; // Dark green court color like reference
+    // NBA court colors matching reference
     const lineColor = '#ffffff';
-    const rimColor = '#ff6b35';
+    const rimColor = '#ff6600';
     
-    // Half-court dimensions based on reference image
-    const courtMargin = 40;
-    const courtWidth = width - (courtMargin * 2);
-    const courtHeight = height - (courtMargin * 2);
-    
-    // Key measurements for half-court (scaled to canvas)
+    // Court dimensions with proper NBA proportions
     const centerX = width / 2;
-    const baselineY = height - courtMargin - 10; // Basket at bottom
-    const keyWidth = courtWidth * 0.25; // Paint width
-    const keyHeight = courtHeight * 0.3; // Paint height from baseline
-    const threePointRadius = courtWidth * 0.32;
-    const freeThrowRadius = keyWidth * 0.6;
+    const baselineY = height - 50; // Basket position
+    const paintWidth = 160; // Paint width (key)
+    const paintLength = 140; // Paint length from baseline
+    const threePointDistance = 280; // Distance from center to 3pt arc
+    const cornerThreeDistance = 140; // Distance from baseline to corner 3pt
     
-    // Set canvas background to match reference court color
-    canvas.backgroundColor = courtColor;
+    // Clear canvas and set background to light gray/transparent for court appearance
+    canvas.backgroundColor = '#f8f9fa'; // Light background like reference
     canvas.renderAll();
     
-    // Half-court boundary
+    // Court boundary (half court)
     const courtBoundary = new Rect({
-      left: courtMargin,
-      top: courtMargin,
-      width: courtWidth,
-      height: courtHeight,
+      left: 50,
+      top: 50,
+      width: width - 100,
+      height: height - 100,
       fill: 'transparent',
       stroke: lineColor,
       strokeWidth: 3,
@@ -287,73 +440,70 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     });
     canvas.add(courtBoundary);
 
-    // Paint area (key) - main rectangle from baseline up
-    const paint = new Rect({
-      left: centerX - (keyWidth / 2),
-      top: baselineY - keyHeight,
-      width: keyWidth,
-      height: keyHeight,
+    // Paint area (key) - the rectangular area under the basket
+    const paintArea = new Rect({
+      left: centerX - paintWidth / 2,
+      top: baselineY - paintLength,
+      width: paintWidth,
+      height: paintLength,
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 2,
+      strokeWidth: 3,
       selectable: false,
     });
-    canvas.add(paint);
+    canvas.add(paintArea);
 
     // Free throw circle
-    const freeThrowY = baselineY - keyHeight;
     const freeThrowCircle = new Circle({
-      left: centerX - freeThrowRadius,
-      top: freeThrowY - freeThrowRadius,
-      radius: freeThrowRadius,
+      left: centerX - 60,
+      top: baselineY - paintLength - 60,
+      radius: 60,
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 2,
+      strokeWidth: 3,
       selectable: false,
     });
     canvas.add(freeThrowCircle);
 
-    // Three-point line using Path for accurate shape matching reference
-    const threePointArcCenterY = baselineY - 20; // Arc center near baseline
-    const cornerDistance = courtMargin + 20; // Distance from court edges
+    // Three-point arc - create accurate NBA 3-point line
+    const arcCenterY = baselineY - 30;
+    const arcRadius = threePointDistance;
     
-    // Create three-point line path matching reference image shape
+    // Create 3-point line as SVG path for exact NBA shape
     const threePointPath = `
-      M ${cornerDistance} ${baselineY}
-      L ${cornerDistance} ${baselineY - 120}
-      Q ${centerX - threePointRadius * 0.7} ${threePointArcCenterY - threePointRadius * 0.8} ${centerX} ${threePointArcCenterY - threePointRadius}
-      Q ${centerX + threePointRadius * 0.7} ${threePointArcCenterY - threePointRadius * 0.8} ${width - cornerDistance} ${baselineY - 120}
-      L ${width - cornerDistance} ${baselineY}
+      M 120 ${baselineY}
+      L 120 ${baselineY - cornerThreeDistance}
+      A ${arcRadius} ${arcRadius} 0 0 1 ${width - 120} ${baselineY - cornerThreeDistance}
+      L ${width - 120} ${baselineY}
     `;
     
     const threePointLine = new Path(threePointPath, {
       fill: 'transparent',
       stroke: lineColor,
-      strokeWidth: 2,
+      strokeWidth: 3,
       selectable: false,
     });
     canvas.add(threePointLine);
 
-    // Restricted area (semicircle under basket)
-    const restrictedRadius = 25;
+    // Restricted area (charge circle under basket)
     const restrictedArea = new Circle({
-      left: centerX - restrictedRadius,
-      top: baselineY - restrictedRadius - 5,
-      radius: restrictedRadius,
+      left: centerX - 30,
+      top: baselineY - 30 - 30,
+      radius: 30,
       fill: 'transparent',
       stroke: lineColor,
       strokeWidth: 2,
       selectable: false,
       startAngle: 0,
-      endAngle: Math.PI,
+      endAngle: Math.PI, // Semicircle
     });
     canvas.add(restrictedArea);
 
-    // Backboard  
+    // Backboard
     const backboard = new Rect({
-      left: centerX - 30,
-      top: baselineY - 5,
-      width: 60,
+      left: centerX - 36,
+      top: baselineY - 4,
+      width: 72,
       height: 4,
       fill: lineColor,
       selectable: false,
@@ -363,17 +513,17 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     // Rim
     const rim = new Circle({
       left: centerX - 9,
-      top: baselineY - 20,
+      top: baselineY - 18 - 9,
       radius: 9,
-      fill: rimColor,
-      stroke: lineColor,
-      strokeWidth: 2,
+      fill: 'transparent',
+      stroke: rimColor,
+      strokeWidth: 3,
       selectable: false,
     });
     canvas.add(rim);
 
     // Draw court regions for heatmap
-    drawCourtRegions(canvas);
+    setTimeout(() => drawCourtRegions(canvas), 50);
   };
 
   const drawCourtRegions = (canvas: FabricCanvas) => {
@@ -387,20 +537,21 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
       let regionShape: any = null;
       let centerX = 0, centerY = 0;
 
-      // Create region shape based on bounds
-      if (bounds.type === 'rectangle') {
-        const width = bounds.x2 - bounds.x1;
-        const height = bounds.y2 - bounds.y1;
-        centerX = bounds.x1 + width / 2;
-        centerY = bounds.y1 + height / 2;
+      // Create region shape based on bounds type
+      if (bounds.type === 'polygon') {
+        // Convert points to Fabric.js format
+        const fabricPoints = bounds.points.map((point: [number, number]) => ({
+          x: point[0],
+          y: point[1]
+        }));
+        
+        // Calculate center point for text positioning
+        centerX = bounds.points.reduce((sum: number, point: [number, number]) => sum + point[0], 0) / bounds.points.length;
+        centerY = bounds.points.reduce((sum: number, point: [number, number]) => sum + point[1], 0) / bounds.points.length;
 
-        regionShape = new Rect({
-          left: bounds.x1,
-          top: bounds.y1,
-          width: width,
-          height: height,
+        regionShape = new Polygon(fabricPoints, {
           fill: getRegionColor(stats.percentage),
-          opacity: 0.7, // Increased opacity for better visibility
+          opacity: 0.7,
           selectable: false,
           stroke: 'rgba(255,255,255,0.3)',
           strokeWidth: 1,
@@ -414,7 +565,7 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
           top: bounds.centerY - bounds.radius,
           radius: bounds.radius,
           fill: getRegionColor(stats.percentage),
-          opacity: 0.7, // Increased opacity for better visibility
+          opacity: 0.7,
           selectable: false,
           stroke: 'rgba(255,255,255,0.3)',
           strokeWidth: 1,
@@ -424,11 +575,11 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
       if (regionShape) {
         canvas.add(regionShape);
 
-        // Add stats text with better styling matching reference
-        const statsText = new FabricText(`${stats.makes} / ${stats.attempts}\n${stats.percentage.toFixed(1)}%`, {
+        // Add stats text with dark background matching reference
+        const statsText = new FabricText(`${stats.makes} / ${stats.attempts}\n${stats.percentage.toFixed(2)}%`, {
           left: centerX,
           top: centerY,
-          fontSize: 14,
+          fontSize: 12,
           fill: '#ffffff',
           textAlign: 'center',
           originX: 'center',
@@ -436,9 +587,21 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
           selectable: false,
           fontWeight: 'bold',
           fontFamily: 'Arial, sans-serif',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          padding: 6,
         });
+
+        // Create dark background box for text
+        const textBg = new Rect({
+          left: centerX - 35,
+          top: centerY - 18,
+          width: 70,
+          height: 36,
+          fill: 'rgba(0,0,0,0.8)',
+          rx: 4,
+          ry: 4,
+          selectable: false,
+        });
+
+        canvas.add(textBg);
         canvas.add(statsText);
       }
     });
@@ -518,12 +681,12 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     percentage: shots.length > 0 ? ((shots.filter(s => s.made).length / shots.length) * 100) : 0,
     twoPointers: shots.filter(s => {
       const region = determineRegion(s.court_x_position || 400, s.court_y_position || 300);
-      const regionInfo = courtRegions.find(r => r.region_code === region);
+      const regionInfo = regions.find(r => r.region_code === region);
       return regionInfo?.shot_type === '2PT';
     }),
     threePointers: shots.filter(s => {
       const region = determineRegion(s.court_x_position || 400, s.court_y_position || 300);
-      const regionInfo = courtRegions.find(r => r.region_code === region);
+      const regionInfo = regions.find(r => r.region_code === region);
       return regionInfo?.shot_type === '3PT';
     }),
   };
