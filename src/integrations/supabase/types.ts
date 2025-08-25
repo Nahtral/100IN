@@ -3512,6 +3512,10 @@ export type Database = {
           total_enrolled: number
         }[]
       }
+      get_current_user_team_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_employee_compensation_secure: {
         Args: { employee_uuid: string }
         Returns: {
@@ -3566,6 +3570,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_same_team_member: {
+        Args: { _team_id: string }
         Returns: boolean
       }
       is_super_admin: {
