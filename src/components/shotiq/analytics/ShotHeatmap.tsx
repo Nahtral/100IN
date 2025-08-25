@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas as FabricCanvas, Circle, Rect, Line } from 'fabric';
+import { Canvas as FabricCanvas, Circle, Rect, Line, Path } from 'fabric';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -72,19 +72,29 @@ const ShotHeatmap: React.FC<ShotHeatmapProps> = ({
     });
     canvas.add(courtBoundary);
 
-    // Three-point line (simplified arc)
-    const threePointArc = new Circle({
-      left: width / 2 - 150,
-      top: height - 200,
-      radius: 150,
+    // Three-point line - create proper arc with straight sides
+    const centerX = width / 2;
+    const baselineY = height - 50; // Bottom of court
+    const arcRadius = 180; // 3-point arc radius
+    const arcCenterY = baselineY - 65; // Position arc center above baseline
+    const straightLineDistance = 140; // Distance from center to where straight lines start
+    
+    // Create the three-point arc using a path
+    const threePointPath = `
+      M ${centerX - straightLineDistance} ${baselineY}
+      L ${centerX - straightLineDistance} ${arcCenterY + 20}
+      A ${arcRadius} ${arcRadius} 0 0 1 ${centerX + straightLineDistance} ${arcCenterY + 20}
+      L ${centerX + straightLineDistance} ${baselineY}
+    `;
+    
+    // Create fabric path object for three-point line
+    const threePointLine = new Path(threePointPath, {
       fill: 'transparent',
       stroke: '#ffffff',
       strokeWidth: 2,
-      startAngle: 0,
-      endAngle: Math.PI,
       selectable: false,
     });
-    canvas.add(threePointArc);
+    canvas.add(threePointLine);
 
     // Free throw circle
     const freeThrowCircle = new Circle({
