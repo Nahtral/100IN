@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Shield, Eye, AlertTriangle, Lock, User, Database } from 'lucide-react';
+import { Shield, Eye, AlertTriangle, Lock, User, Database, Plus, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import SecurityEventModal from './SecurityEventModal';
+import SecurityMetricsModal from './SecurityMetricsModal';
 
 interface SecurityEvent {
   id: string;
@@ -34,6 +36,11 @@ const SecurityDashboard = () => {
     dataAccess: 0
   });
   const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [eventModalMode, setEventModalMode] = useState<'view' | 'edit' | 'create'>('view');
+  const [metricsModalOpen, setMetricsModalOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<{type: string, title: string}>({type: '', title: ''});
   const { isSuperAdmin } = useUserRole();
   const { toast } = useToast();
 
@@ -120,6 +127,23 @@ const SecurityDashboard = () => {
     }
   };
 
+  const openEventModal = (event: SecurityEvent | null, mode: 'view' | 'edit' | 'create') => {
+    setSelectedEvent(event);
+    setEventModalMode(mode);
+    setEventModalOpen(true);
+  };
+
+  const openMetricsModal = (metricType: string, metricTitle: string) => {
+    setSelectedMetric({ type: metricType, title: metricTitle });
+    setMetricsModalOpen(true);
+  };
+
+  const closeModals = () => {
+    setEventModalOpen(false);
+    setMetricsModalOpen(false);
+    setSelectedEvent(null);
+  };
+
   if (!isSuperAdmin) {
     return (
       <Alert>
@@ -153,70 +177,91 @@ const SecurityDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Security Dashboard</h1>
-        <Button onClick={fetchSecurityData} variant="outline">
-          <Shield className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => openEventModal(null, 'create')} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create Event
+          </Button>
+          <Button onClick={fetchSecurityData} variant="outline">
+            <Shield className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Security Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
+        <Card className="hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => openMetricsModal('totalEvents', 'Total Events')}>
           <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Eye className="h-4 w-4 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Total Events (24h)</p>
-                <p className="text-2xl font-bold">{metrics.totalEvents}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Eye className="h-4 w-4 text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Events (24h)</p>
+                  <p className="text-2xl font-bold">{metrics.totalEvents}</p>
+                </div>
               </div>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => openMetricsModal('criticalAlerts', 'Critical Alerts')}>
           <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Critical Alerts</p>
-                <p className="text-2xl font-bold text-red-600">{metrics.criticalAlerts}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Critical Alerts</p>
+                  <p className="text-2xl font-bold text-red-600">{metrics.criticalAlerts}</p>
+                </div>
               </div>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => openMetricsModal('suspiciousActivity', 'Suspicious Activity')}>
           <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Shield className="h-4 w-4 text-orange-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Suspicious Activity</p>
-                <p className="text-2xl font-bold text-orange-600">{metrics.suspiciousActivity}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Shield className="h-4 w-4 text-orange-500" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Suspicious Activity</p>
+                  <p className="text-2xl font-bold text-orange-600">{metrics.suspiciousActivity}</p>
+                </div>
               </div>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => openMetricsModal('authFailures', 'Authentication Failures')}>
           <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Lock className="h-4 w-4 text-yellow-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Auth Failures</p>
-                <p className="text-2xl font-bold text-yellow-600">{metrics.authFailures}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Lock className="h-4 w-4 text-yellow-500" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Auth Failures</p>
+                  <p className="text-2xl font-bold text-yellow-600">{metrics.authFailures}</p>
+                </div>
               </div>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => openMetricsModal('dataAccess', 'Data Access Events')}>
           <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Database className="h-4 w-4 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Data Access</p>
-                <p className="text-2xl font-bold">{metrics.dataAccess}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Database className="h-4 w-4 text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Data Access</p>
+                  <p className="text-2xl font-bold">{metrics.dataAccess}</p>
+                </div>
               </div>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -236,18 +281,22 @@ const SecurityDashboard = () => {
               <p className="text-gray-500 text-center py-8">No security events found</p>
             ) : (
               securityEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div 
+                  key={event.id} 
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                  onClick={() => openEventModal(event, 'view')}
+                >
                   <div className="flex items-center space-x-3">
                     {getEventIcon((event.event_data as any)?.security_event_type)}
                     <div>
                       <p className="font-medium">
                         {((event.event_data as any)?.security_event_type as string)?.replace(/_/g, ' ').toUpperCase() || 'Security Event'}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         {new Date(event.created_at).toLocaleString()}
                       </p>
                       {(event.event_data as any)?.user_role && (
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           User Role: {(event.event_data as any).user_role}
                         </p>
                       )}
@@ -316,6 +365,22 @@ const SecurityDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <SecurityEventModal
+        event={selectedEvent}
+        isOpen={eventModalOpen}
+        onClose={closeModals}
+        onRefresh={fetchSecurityData}
+        mode={eventModalMode}
+      />
+
+      <SecurityMetricsModal
+        isOpen={metricsModalOpen}
+        onClose={closeModals}
+        metricType={selectedMetric.type}
+        metricTitle={selectedMetric.title}
+      />
     </div>
   );
 };
