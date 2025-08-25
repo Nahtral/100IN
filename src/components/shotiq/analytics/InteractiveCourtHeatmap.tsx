@@ -119,6 +119,14 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     // Add click handler for shot tracking
     canvas.on('mouse:down', handleCanvasClick);
 
+    // Force initial visualization after canvas setup
+    setTimeout(() => {
+      if (regionStats.length > 0) {
+        drawCourtRegions(canvas);
+        canvas.renderAll();
+      }
+    }, 100);
+
     return () => {
       canvas.dispose();
     };
