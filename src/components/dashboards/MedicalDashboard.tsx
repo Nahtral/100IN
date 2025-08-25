@@ -21,6 +21,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import InjuryDetailsModal from "@/components/health/InjuryDetailsModal";
 import FitnessDetailsModal from "@/components/health/FitnessDetailsModal";
 import CheckInDetailsModal from "@/components/health/CheckInDetailsModal";
+import MedicalReportGenerator from "@/components/health/MedicalReportGenerator";
 
 const MedicalDashboard = () => {
   const { currentUser } = useCurrentUser();
@@ -32,6 +33,7 @@ const MedicalDashboard = () => {
   const [showInjuriesModal, setShowInjuriesModal] = useState(false);
   const [showFitnessModal, setShowFitnessModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showReportGenerator, setShowReportGenerator] = useState(false);
 
   useEffect(() => {
     const fetchMedicalData = async () => {
@@ -209,9 +211,12 @@ const MedicalDashboard = () => {
                <p className="text-center text-muted-foreground py-4">No recent injuries</p>
              )}
            </div>
-            <Button className="w-full mt-4 bg-gradient-to-r from-red-500 to-red-600">
-              View All Injuries
-            </Button>
+             <Button 
+               className="w-full mt-4 bg-gradient-to-r from-red-500 to-red-600"
+               onClick={() => setShowInjuriesModal(true)}
+             >
+               View All Injuries
+             </Button>
           </CardContent>
         </Card>
 
@@ -245,9 +250,12 @@ const MedicalDashboard = () => {
                <p className="text-center text-muted-foreground py-4">No recent fitness assessments</p>
              )}
            </div>
-            <Button className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600">
-              Schedule Assessment
-            </Button>
+             <Button 
+               className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600"
+               onClick={() => setShowFitnessModal(true)}
+             >
+               Schedule Assessment
+             </Button>
           </CardContent>
         </Card>
       </div>
@@ -288,14 +296,21 @@ const MedicalDashboard = () => {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-4 mt-6">
-        <Button className="mobile-button">
-          <Calendar className="h-4 w-4 mr-2" />
-          Schedule Medical Check
-        </Button>
-        <Button variant="outline" className="mobile-button">
-          <FileText className="h-4 w-4 mr-2" />
-          Generate Report
-        </Button>
+         <Button 
+           className="mobile-button"
+           onClick={() => setShowCheckInModal(true)}
+         >
+           <Calendar className="h-4 w-4 mr-2" />
+           Schedule Medical Check
+         </Button>
+         <Button 
+           variant="outline" 
+           className="mobile-button"
+           onClick={() => setShowReportGenerator(true)}
+         >
+           <FileText className="h-4 w-4 mr-2" />
+           Generate Report
+         </Button>
         <Button variant="outline" asChild className="mobile-button">
           <a href="/medical-management">
             <Building2 className="h-4 w-4 mr-2" />
@@ -321,6 +336,11 @@ const MedicalDashboard = () => {
         isOpen={showCheckInModal}
         onClose={() => setShowCheckInModal(false)}
         isSuperAdmin={isSuperAdmin}
+      />
+      
+      <MedicalReportGenerator
+        isOpen={showReportGenerator}
+        onClose={() => setShowReportGenerator(false)}
       />
       </div>
     </Layout>
