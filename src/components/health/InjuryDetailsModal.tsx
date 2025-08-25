@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import InjuryReportForm from './InjuryReportForm';
+import EditInjuryModal from './EditInjuryModal';
 
 interface InjuryDetailsModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ const InjuryDetailsModal: React.FC<InjuryDetailsModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showReportForm, setShowReportForm] = useState(false);
+  const [editingInjury, setEditingInjury] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -327,6 +329,7 @@ const InjuryDetailsModal: React.FC<InjuryDetailsModalProps> = ({
                               size="sm"
                               variant="outline"
                               className="h-8 w-8 p-0"
+                              onClick={() => setEditingInjury(injury)}
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
@@ -354,6 +357,13 @@ const InjuryDetailsModal: React.FC<InjuryDetailsModalProps> = ({
         isOpen={showReportForm}
         onClose={() => setShowReportForm(false)}
         onSuccess={fetchInjuries}
+      />
+      
+      <EditInjuryModal
+        isOpen={!!editingInjury}
+        onClose={() => setEditingInjury(null)}
+        onSuccess={fetchInjuries}
+        injury={editingInjury}
       />
     </Dialog>
   );
