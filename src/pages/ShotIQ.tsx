@@ -63,6 +63,7 @@ const ShotIQ = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
 
+  const [activeTab, setActiveTab] = useState('live-tracking');
   const [isRecording, setIsRecording] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
   const [sessionName, setSessionName] = useState('Training Session');
@@ -467,6 +468,10 @@ const ShotIQ = () => {
     setSessionModal({ open: true, mode: 'create', session: null });
   };
 
+  const closeModal = () => {
+    setSessionModal({ open: false, mode: 'view', session: null });
+  };
+
   const handleSessionArchive = async (session: any) => {
     try {
       // For now, we'll just add a note about archiving since the table might not have status column
@@ -522,10 +527,6 @@ const ShotIQ = () => {
     }
   };
 
-  const closeModal = () => {
-    setSessionModal({ open: false, mode: 'view', session: null });
-  };
-
   useEffect(() => {
     initializeCamera();
     
@@ -540,423 +541,366 @@ const ShotIQ = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-primary">ShotIQ</h1>
-            <p className="text-muted-foreground mt-2">
-              AI-powered basketball shot tracking and analysis
-            </p>
-          </div>
-          <Badge variant="outline" className="text-lg px-4 py-2">
-            Super Admin Only
-          </Badge>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-primary">ShotIQ</h1>
+          <p className="text-muted-foreground mt-2">
+            AI-powered basketball shot tracking and analysis
+          </p>
         </div>
+        <Badge variant="outline" className="text-lg px-4 py-2">
+          Super Admin Only
+        </Badge>
+      </div>
 
-        <Tabs defaultValue="live" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="live">Live Tracking</TabsTrigger>
-            <TabsTrigger value="sessions">Sessions</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="live-tracking">Live Tracking</TabsTrigger>
+          <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="live" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Shot Tracker Component */}
-              <div className="lg:col-span-2">
-                <ShotTracker
-                  playerId={selectedPlayer || ''}
-                  onShotTracked={(shot) => {
-                    setRealtimeAnalysis({
-                      arc_degrees: shot.arc,
-                      depth_inches: shot.depth,
-                      lr_deviation_inches: shot.deviation,
-                      made: shot.made,
-                      shot_type: 'live_tracking',
-                      court_x_position: Math.random() * 100,
-                      court_y_position: Math.random() * 100,
-                      audio_feedback: ''
-                    });
-                    setShotCount(prev => prev + 1);
-                    if (shot.made) setMakes(prev => prev + 1);
-                  }}
-                />
-              </div>
-
-              {/* Camera Feed - Secondary */}
-              <Card className="lg:col-span-2" style={{ display: 'none' }}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Camera className="h-5 w-5" />
-                    Live Camera Feed
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative">
-                    <video
-                      ref={videoRef}
-                      className="w-full rounded-lg bg-black"
-                      autoPlay
-                      muted
-                      playsInline
-                    />
-                    <canvas
-                      ref={canvasRef}
-                      className="absolute top-0 left-0 w-full h-full opacity-50"
-                    />
-                    
-                    {/* Overlay UI */}
-                    <div className="absolute top-4 left-4 right-4 flex justify-between">
-                      <Badge variant="secondary">
-                        {currentSession ? 'Recording' : 'Ready'}
-                      </Badge>
-                      {realtimeAnalysis && (
-                        <Badge variant={realtimeAnalysis.made ? "default" : "outline"}>
-                          {realtimeAnalysis.made ? 'MAKE' : 'MISS'}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Shot feedback overlay */}
-                    {realtimeAnalysis && (
-                      <div className="absolute bottom-4 left-4 right-4 bg-black/80 text-white p-4 rounded-lg">
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <div className="text-sm opacity-80">Arc</div>
-                            <div className="font-bold">{realtimeAnalysis.arc_degrees.toFixed(1)}°</div>
-                          </div>
-                          <div>
-                            <div className="text-sm opacity-80">Depth</div>
-                            <div className="font-bold">{realtimeAnalysis.depth_inches.toFixed(1)}"</div>
-                          </div>
-                          <div>
-                            <div className="text-sm opacity-80">L/R</div>
-                            <div className="font-bold">{realtimeAnalysis.lr_deviation_inches.toFixed(1)}"</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Controls & Stats */}
-              <div className="space-y-6">
-                {/* Session Setup */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Session Setup</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="player-select">Select Player</Label>
-                      <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a player" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {players?.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              {player.full_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="session-name">Session Name</Label>
-                      <Input
-                        id="session-name"
-                        value={sessionName}
-                        onChange={(e) => setSessionName(e.target.value)}
-                        placeholder="Training Session"
-                      />
-                    </div>
-
-                    {!currentSession ? (
-                      <Button onClick={startSession} className="w-full" disabled={!selectedPlayer}>
-                        <Play className="h-4 w-4 mr-2" />
-                        Start Session
-                      </Button>
-                    ) : (
-                      <div className="space-y-2">
-                        <Button onClick={captureShot} className="w-full">
-                          <Target className="h-4 w-4 mr-2" />
-                          Capture Shot
-                        </Button>
-                        <Button onClick={endSession} variant="outline" className="w-full">
-                          <Square className="h-4 w-4 mr-2" />
-                          End Session
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Live Stats */}
-                {currentSession && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Live Stats</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-primary">{shotCount}</div>
-                          <div className="text-sm text-muted-foreground">Shots</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-primary">{makes}</div>
-                          <div className="text-sm text-muted-foreground">Makes</div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between text-sm mb-2">
-                          <span>Shooting %</span>
-                          <span>{shotCount > 0 ? ((makes / shotCount) * 100).toFixed(1) : 0}%</span>
-                        </div>
-                        <Progress value={shotCount > 0 ? (makes / shotCount) * 100 : 0} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="sessions" className="space-y-6">
-            {/* Sessions Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Shot Sessions</h2>
-                <p className="text-muted-foreground">Manage and review shot training sessions</p>
-              </div>
-              {isSuperAdmin && (
-                <Button onClick={handleSessionCreate}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Session
-                </Button>
-              )}
+        <TabsContent value="live-tracking" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Shot Tracker Component */}
+            <div className="lg:col-span-2">
+              <ShotTracker
+                playerId={selectedPlayer || ''}
+                onShotTracked={(shot) => {
+                  setRealtimeAnalysis({
+                    arc_degrees: shot.arc,
+                    depth_inches: shot.depth,
+                    lr_deviation_inches: shot.deviation,
+                    made: shot.made,
+                    shot_type: 'live_tracking',
+                    court_x_position: Math.random() * 100,
+                    court_y_position: Math.random() * 100,
+                    audio_feedback: ''
+                  });
+                  setShotCount(prev => prev + 1);
+                  if (shot.made) setMakes(prev => prev + 1);
+                }}
+              />
             </div>
 
-            {/* Sessions Overview Stats */}
-            {shotSessions && shotSessions.length > 0 && (
+            {/* Controls & Stats */}
+            <div className="space-y-6">
+              {/* Session Setup */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Sessions Overview
-                  </CardTitle>
+                  <CardTitle>Session Setup</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{shotSessions.length}</div>
-                      <div className="text-sm text-muted-foreground">Total Sessions</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {shotSessions.filter(s => !(s.notes && s.notes.includes('[ARCHIVED'))).length}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Active Sessions</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Shots</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0) > 0 ? (
-                          (shotSessions.reduce((acc, s) => acc + (s.makes || 0), 0) / 
-                           shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0) * 100).toFixed(1)
-                        ) : '0'}%
-                      </div>
-                      <div className="text-sm text-muted-foreground">Overall Accuracy</div>
-                    </div>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="player-select">Select Player</Label>
+                    <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a player" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {players?.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </CardContent>
-              </Card>
-            )}
 
-            {/* Sessions Grid */}
-            {sessionsLoading ? (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                  Loading sessions...
-                </CardContent>
-              </Card>
-            ) : shotSessions && shotSessions.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {shotSessions.map((session) => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    onView={handleSessionView}
-                    onEdit={handleSessionEdit}
-                    onArchive={handleSessionArchive}
-                    onDelete={handleSessionDelete}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-lg font-semibold mb-2">No Sessions Yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start creating shot training sessions to track player performance
-                  </p>
-                  {isSuperAdmin && (
-                    <Button onClick={handleSessionCreate}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create First Session
+                  <div>
+                    <Label htmlFor="session-name">Session Name</Label>
+                    <Input
+                      id="session-name"
+                      value={sessionName}
+                      onChange={(e) => setSessionName(e.target.value)}
+                      placeholder="Training Session"
+                    />
+                  </div>
+
+                  {!currentSession ? (
+                    <Button onClick={startSession} className="w-full" disabled={!selectedPlayer}>
+                      <Play className="h-4 w-4 mr-2" />
+                      Start Session
                     </Button>
+                  ) : (
+                    <div className="space-y-2">
+                      <Button onClick={captureShot} className="w-full">
+                        <Target className="h-4 w-4 mr-2" />
+                        Capture Shot
+                      </Button>
+                      <Button onClick={endSession} variant="outline" className="w-full">
+                        <Square className="h-4 w-4 mr-2" />
+                        End Session
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
 
-          <TabsContent value="analytics">
-            <div className="space-y-6">
-              {/* Player Selection for Analytics */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Player Analytics</CardTitle>
-                  <CardDescription>
-                    Select a player to view detailed shot analytics and performance data
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="analytics-player-select">Select Player</Label>
-                      <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a player to analyze" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {players?.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              {player.full_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {selectedPlayer && (
-                <>
-                  {/* Player Stats Overview */}
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-primary">
-                            {playerAnalytics?.shooting_percentage?.toFixed(1) || '0.0'}%
-                          </div>
-                          <div className="text-sm text-muted-foreground">Shooting %</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-primary">
-                            {playerAnalytics?.total_shots || 0}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Total Shots</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-primary">
-                            {playerAnalytics?.avg_arc_degrees?.toFixed(1) || '0.0'}°
-                          </div>
-                          <div className="text-sm text-muted-foreground">Avg Arc</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-primary">
-                            {playerAnalytics?.total_sessions || 0}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Sessions</div>
-                        </div>
+              {/* Live Stats */}
+              {currentSession && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Live Stats</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{shotCount}</div>
+                        <div className="text-sm text-muted-foreground">Shots</div>
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Shot Heatmap */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Shot Heatmap</CardTitle>
-                      <CardDescription>
-                        Visual representation of shot locations and accuracy
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ShotHeatmap 
-                        shots={playerAnalytics?.recentShots?.map((shot: any) => ({
-                          x: shot.court_x_position || Math.random() * 400 + 200,
-                          y: shot.court_y_position || Math.random() * 300 + 200,
-                          made: shot.made,
-                          arc: shot.arc_degrees,
-                          depth: shot.depth_inches
-                        })) || []}
-                      />
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Advanced Charts */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Performance Analysis</CardTitle>
-                      <CardDescription>
-                        Detailed charts showing shooting mechanics and trends
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <AdvancedCharts 
-                        shots={playerAnalytics?.recentShots?.map((shot: any) => ({
-                          id: shot.id,
-                          arc: shot.arc_degrees || 45 + Math.random() * 10,
-                          depth: shot.depth_inches || (Math.random() - 0.5) * 8,
-                          deviation: shot.lr_deviation_inches || (Math.random() - 0.5) * 6,
-                          made: shot.made,
-                          timestamp: shot.created_at,
-                          shotType: shot.shot_type || 'catch-and-shoot'
-                        })) || []}
-                      />
-                    </CardContent>
-                  </Card>
-                </>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{makes}</div>
+                        <div className="text-sm text-muted-foreground">Makes</div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Shooting %</span>
+                        <span>{shotCount > 0 ? ((makes / shotCount) * 100).toFixed(1) : 0}%</span>
+                      </div>
+                      <Progress value={shotCount > 0 ? (makes / shotCount) * 100 : 0} />
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="history">
-            <TrainingHistory playerId={selectedPlayer} />
-          </TabsContent>
+        <TabsContent value="sessions" className="space-y-6">
+          {/* Sessions Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Shot Sessions</h2>
+              <p className="text-muted-foreground">Manage and review shot training sessions</p>
+            </div>
+            {isSuperAdmin && (
+              <Button onClick={handleSessionCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Session
+              </Button>
+            )}
+          </div>
 
-          <TabsContent value="settings">
-            <ShotIQSettings playerId={selectedPlayer} />
-          </TabsContent>
-        </Tabs>
+          {/* Sessions Overview Stats */}
+          {shotSessions && shotSessions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Sessions Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{shotSessions.length}</div>
+                    <div className="text-sm text-muted-foreground">Total Sessions</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">
+                      {shotSessions.filter(s => !(s.notes && s.notes.includes('[ARCHIVED'))).length}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Active Sessions</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">
+                      {shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Shots</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">
+                      {shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0) > 0 ? (
+                        (shotSessions.reduce((acc, s) => acc + (s.makes || 0), 0) / 
+                         shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0) * 100).toFixed(1)
+                      ) : '0'}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">Overall Accuracy</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Session Modal */}
-        <ShotSessionModal
-          session={sessionModal.session}
-          open={sessionModal.open}
-          onClose={closeModal}
-          onSuccess={() => {
-            refetchSessions();
-            closeModal();
-          }}
-          mode={sessionModal.mode}
-        />
-      </div>
+          {/* Sessions Grid */}
+          {sessionsLoading ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                Loading sessions...
+              </CardContent>
+            </Card>
+          ) : shotSessions && shotSessions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {shotSessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  onView={handleSessionView}
+                  onEdit={handleSessionEdit}
+                  onArchive={handleSessionArchive}
+                  onDelete={handleSessionDelete}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-semibold mb-2">No Sessions Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start creating shot training sessions to track player performance
+                </p>
+                {isSuperAdmin && (
+                  <Button onClick={handleSessionCreate}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Session
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <div className="space-y-6">
+            {/* Player Selection for Analytics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Player Analytics</CardTitle>
+                <CardDescription>
+                  Select a player to view detailed shot analytics and performance data
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="analytics-player-select">Select Player</Label>
+                    <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a player to analyze" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {players?.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {selectedPlayer && (
+              <>
+                {/* Player Stats Overview */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {playerAnalytics?.shooting_percentage?.toFixed(1) || '0.0'}%
+                        </div>
+                        <div className="text-sm text-muted-foreground">Shooting %</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {playerAnalytics?.total_shots || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Total Shots</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {playerAnalytics?.avg_arc_degrees?.toFixed(1) || '0.0'}°
+                        </div>
+                        <div className="text-sm text-muted-foreground">Avg Arc</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {playerAnalytics?.total_sessions || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Sessions</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Shot Heatmap */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Shot Heatmap</CardTitle>
+                    <CardDescription>
+                      Visual representation of shot locations and accuracy
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ShotHeatmap 
+                      shots={playerAnalytics?.recentShots?.map((shot: any) => ({
+                        x: shot.court_x_position || Math.random() * 400 + 200,
+                        y: shot.court_y_position || Math.random() * 300 + 200,
+                        made: shot.made,
+                        arc: shot.arc_degrees,
+                        depth: shot.depth_inches
+                      })) || []}
+                    />
+                  </CardContent>
+                </Card>
+                
+                {/* Advanced Charts */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Performance Analysis</CardTitle>
+                    <CardDescription>
+                      Detailed charts showing shooting mechanics and trends
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <AdvancedCharts 
+                      shots={playerAnalytics?.recentShots?.map((shot: any) => ({
+                        id: shot.id,
+                        arc: shot.arc_degrees || 45 + Math.random() * 10,
+                        depth: shot.depth_inches || (Math.random() - 0.5) * 8,
+                        deviation: shot.lr_deviation_inches || (Math.random() - 0.5) * 6,
+                        made: shot.made,
+                        timestamp: shot.created_at,
+                        shotType: shot.shot_type || 'catch-and-shoot'
+                      })) || []}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history">
+          <TrainingHistory playerId={selectedPlayer} />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <ShotIQSettings playerId={selectedPlayer} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Session Modal */}
+      <ShotSessionModal
+        session={sessionModal.session}
+        open={sessionModal.open}
+        onClose={closeModal}
+        onSuccess={() => {
+          refetchSessions();
+          closeModal();
+        }}
+        mode={sessionModal.mode}
+      />
+    </div>
   );
 };
 

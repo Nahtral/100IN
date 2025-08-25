@@ -22,7 +22,9 @@ import {
   Calendar,
   Users,
   FileText,
-  Search
+  Search,
+  BarChart3,
+  MessageSquare
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/integrations/supabase/client";
@@ -279,14 +281,22 @@ const Partners = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="partners" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              Partner Organizations ({partners.length})
+              Organizations ({partners.length})
             </TabsTrigger>
             <TabsTrigger value="sponsorships" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Sponsorship Agreements ({sponsorships.length})
+              Sponsorships ({sponsorships.length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="communication" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Communication
             </TabsTrigger>
           </TabsList>
 
@@ -536,6 +546,24 @@ const Partners = () => {
               <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Sponsorship Management</h3>
               <p className="text-gray-600">Sponsorship agreement management coming soon.</p>
+            </div>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-4">
+            <div className="text-center py-8">
+              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Partnership Analytics</h3>
+              <p className="text-gray-600">Partnership performance analytics coming soon.</p>
+            </div>
+          </TabsContent>
+
+          {/* Communication Tab */}
+          <TabsContent value="communication" className="space-y-4">
+            <div className="text-center py-8">
+              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Partner Communication</h3>
+              <p className="text-gray-600">Communication center coming soon.</p>
             </div>
           </TabsContent>
         </Tabs>
