@@ -141,31 +141,47 @@ const ShotIQ = () => {
   const { data: players, isLoading: playersLoading } = useQuery({
     queryKey: ['players'],
     queryFn: async () => {
-      // First get players
+      // Get players with both linked users and manual entries
       const { data: playersData, error: playersError } = await supabase
         .from('players')
-        .select('id, user_id')
+        .select('id, user_id, manual_entry_name, manual_entry_email, position, jersey_number')
         .eq('is_active', true);
 
       if (playersError) throw playersError;
 
-      // Then get profiles for these users
-      const userIds = playersData?.map(p => p.user_id) || [];
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', userIds);
+      // Get profiles for players that have user_id
+      const playersWithUserId = playersData?.filter(p => p.user_id) || [];
+      const userIds = playersWithUserId.map(p => p.user_id);
+      
+      let profilesData = [];
+      if (userIds.length > 0) {
+        const { data, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
 
-      if (profilesError) throw profilesError;
+        if (profilesError) throw profilesError;
+        profilesData = data || [];
+      }
 
       // Combine the data
       const combinedData = playersData?.map(player => {
-        const profile = profilesData?.find(p => p.id === player.user_id);
-        return {
-          ...player,
-          full_name: profile?.full_name || profile?.email || 'Unknown Player',
-          email: profile?.email
-        };
+        if (player.user_id) {
+          // Player with linked user account
+          const profile = profilesData?.find(p => p.id === player.user_id);
+          return {
+            ...player,
+            full_name: profile?.full_name || profile?.email || 'Unknown Player',
+            email: profile?.email
+          };
+        } else {
+          // Manually entered player
+          return {
+            ...player,
+            full_name: player.manual_entry_name || 'Unknown Player',
+            email: player.manual_entry_email
+          };
+        }
       });
 
       return combinedData as Player[];
