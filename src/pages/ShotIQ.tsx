@@ -7,6 +7,8 @@ import ShotHeatmap from '@/components/shotiq/analytics/ShotHeatmap';
 import AdvancedCharts from '@/components/shotiq/analytics/AdvancedCharts';
 import ShotTracker from '@/components/shotiq/ShotTracker';
 import VideoLogger from '@/components/shotiq/VideoLogger';
+import ShotSessionModal from '@/components/shotiq/ShotSessionModal';
+import SessionCard from '@/components/shotiq/SessionCard';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -26,10 +28,14 @@ import {
   Settings,
   Download,
   Pause,
-  RotateCcw
+  RotateCcw,
+  Plus,
+  Clock,
+  TrendingUp
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Player {
   id: string;
@@ -51,6 +57,7 @@ interface ShotAnalysis {
 
 const ShotIQ = () => {
   const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -65,6 +72,17 @@ const ShotIQ = () => {
   const [realtimeAnalysis, setRealtimeAnalysis] = useState<ShotAnalysis | null>(null);
   const [rimHeight, setRimHeight] = useState(120); // 10 feet in inches
   const [audioEnabled, setAudioEnabled] = useState(true);
+  
+  // Modal states
+  const [sessionModal, setSessionModal] = useState<{
+    open: boolean;
+    mode: 'view' | 'create' | 'edit';
+    session?: any;
+  }>({
+    open: false,
+    mode: 'view',
+    session: null
+  });
 
   // Fetch player analytics data
   const { data: playerAnalytics } = useQuery({
@@ -151,6 +169,59 @@ const ShotIQ = () => {
       });
 
       return combinedData as Player[];
+    }
+  });
+
+  // Fetch shot sessions with enhanced data
+  const { data: shotSessions, isLoading: sessionsLoading, refetch: refetchSessions } = useQuery({
+    queryKey: ['shot-sessions'],
+    queryFn: async () => {
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('shot_sessions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (sessionsError) throw sessionsError;
+
+      // Get player names for sessions
+      const playerIds = [...new Set(sessionsData?.map(s => s.player_id) || [])];
+      const playerProfiles = await Promise.all(
+        playerIds.map(async (playerId) => {
+          const { data: playerData } = await supabase
+            .from('players')
+            .select('id, user_id')
+            .eq('id', playerId)
+            .single();
+
+          if (playerData) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', playerData.user_id)
+              .single();
+
+            return {
+              player_id: playerId,
+              player_name: profileData?.full_name || profileData?.email || 'Unknown Player'
+            };
+          }
+          return null;
+        })
+      );
+
+      const playerMap = playerProfiles.reduce((acc, profile) => {
+        if (profile) {
+          acc[profile.player_id] = profile.player_name;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+
+      return sessionsData?.map(session => ({
+        ...session,
+        player_name: playerMap[session.player_id] || 'Unknown Player',
+        status: (session.notes && session.notes.includes('[ARCHIVED')) ? 'archived' as const : 'active' as const
+      })) || [];
     }
   });
 
@@ -367,6 +438,78 @@ const ShotIQ = () => {
     }
   };
 
+  // Modal handlers
+  const handleSessionView = (session: any) => {
+    setSessionModal({ open: true, mode: 'view', session });
+  };
+
+  const handleSessionEdit = (session: any) => {
+    setSessionModal({ open: true, mode: 'edit', session });
+  };
+
+  const handleSessionCreate = () => {
+    setSessionModal({ open: true, mode: 'create', session: null });
+  };
+
+  const handleSessionArchive = async (session: any) => {
+    try {
+      // For now, we'll just add a note about archiving since the table might not have status column
+      const { error } = await supabase
+        .from('shot_sessions')
+        .update({ 
+          notes: (session.notes || '') + (session.notes ? '\n' : '') + `[ARCHIVED at ${new Date().toISOString()}]`
+        })
+        .eq('id', session.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Session Archived",
+        description: "Session has been marked as archived in notes",
+      });
+
+      refetchSessions();
+    } catch (error) {
+      console.error('Error archiving session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to archive session",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSessionDelete = async (session: any) => {
+    if (!confirm('Are you sure you want to delete this session? This will also delete all associated shot data.')) {
+      return;
+    }
+
+    try {
+      await supabase.from('shots').delete().eq('session_id', session.id);
+      const { error } = await supabase.from('shot_sessions').delete().eq('id', session.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Session Deleted",
+        description: "Session and all associated data have been deleted",
+      });
+
+      refetchSessions();
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete session",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const closeModal = () => {
+    setSessionModal({ open: false, mode: 'view', session: null });
+  };
+
   useEffect(() => {
     initializeCamera();
     
@@ -394,8 +537,9 @@ const ShotIQ = () => {
         </div>
 
         <Tabs defaultValue="live" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="live">Live Tracking</TabsTrigger>
+            <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -567,6 +711,102 @@ const ShotIQ = () => {
             </div>
           </TabsContent>
 
+          <TabsContent value="sessions" className="space-y-6">
+            {/* Sessions Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Shot Sessions</h2>
+                <p className="text-muted-foreground">Manage and review shot training sessions</p>
+              </div>
+              {isSuperAdmin && (
+                <Button onClick={handleSessionCreate}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Session
+                </Button>
+              )}
+            </div>
+
+            {/* Sessions Overview Stats */}
+            {shotSessions && shotSessions.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Sessions Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{shotSessions.length}</div>
+                      <div className="text-sm text-muted-foreground">Total Sessions</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">
+                        {shotSessions.filter(s => !(s.notes && s.notes.includes('[ARCHIVED'))).length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Active Sessions</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">
+                        {shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Total Shots</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">
+                        {shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0) > 0 ? (
+                          (shotSessions.reduce((acc, s) => acc + (s.makes || 0), 0) / 
+                           shotSessions.reduce((acc, s) => acc + (s.total_shots || 0), 0) * 100).toFixed(1)
+                        ) : '0'}%
+                      </div>
+                      <div className="text-sm text-muted-foreground">Overall Accuracy</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Sessions Grid */}
+            {sessionsLoading ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                  Loading sessions...
+                </CardContent>
+              </Card>
+            ) : shotSessions && shotSessions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {shotSessions.map((session) => (
+                  <SessionCard
+                    key={session.id}
+                    session={session}
+                    onView={handleSessionView}
+                    onEdit={handleSessionEdit}
+                    onArchive={handleSessionArchive}
+                    onDelete={handleSessionDelete}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-semibold mb-2">No Sessions Yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Start creating shot training sessions to track player performance
+                  </p>
+                  {isSuperAdmin && (
+                    <Button onClick={handleSessionCreate}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create First Session
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
           <TabsContent value="analytics">
             <div className="space-y-6">
               {/* Player Selection for Analytics */}
@@ -688,6 +928,18 @@ const ShotIQ = () => {
             <ShotIQSettings playerId={selectedPlayer} />
           </TabsContent>
         </Tabs>
+
+        {/* Session Modal */}
+        <ShotSessionModal
+          session={sessionModal.session}
+          open={sessionModal.open}
+          onClose={closeModal}
+          onSuccess={() => {
+            refetchSessions();
+            closeModal();
+          }}
+          mode={sessionModal.mode}
+        />
       </div>
   );
 };
