@@ -3512,6 +3512,35 @@ export type Database = {
           total_enrolled: number
         }[]
       }
+      get_employee_compensation_secure: {
+        Args: { employee_uuid: string }
+        Returns: {
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          employee_id: string
+          hourly_rate: number
+          salary: number
+        }[]
+      }
+      get_employees_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          department: string
+          email: string
+          employee_id: string
+          employment_status: string
+          first_name: string
+          has_compensation_access: boolean
+          hire_date: string
+          id: string
+          last_name: string
+          payment_type: string
+          phone: string
+          position: string
+          updated_at: string
+        }[]
+      }
       get_safe_profile_info: {
         Args: { profile_id: string }
         Returns: {
@@ -3542,6 +3571,14 @@ export type Database = {
       is_super_admin: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      log_employee_access: {
+        Args: {
+          access_type: string
+          accessed_employee_id: string
+          includes_sensitive_data?: boolean
+        }
+        Returns: undefined
       }
       mark_all_notifications_read: {
         Args: { user_uuid?: string }

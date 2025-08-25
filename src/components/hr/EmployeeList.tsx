@@ -33,16 +33,20 @@ interface Employee {
   first_name: string;
   last_name: string;
   email: string;
-  phone: string;
-  department: string;
+  phone?: string;
+  department?: string;
   position: string;
   hire_date: string;
   employment_status: string;
   payment_type: string;
-  hourly_rate?: number; // Optional - only visible to authorized users
-  salary?: number; // Optional - only visible to authorized users
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
+  created_at?: string;
+  updated_at?: string;
+  has_compensation_access?: boolean;
+  // Sensitive fields only available to authorized users
+  hourly_rate?: number;
+  salary?: number;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
 }
 
 interface EmployeeListProps {
@@ -64,31 +68,22 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
 
   const fetchEmployees = async () => {
     try {
-      // Use secure query that only selects necessary fields and respects RLS
+      // Use secure function that masks sensitive data based on user role
       const { data, error } = await supabase
-        .from('employees')
-        .select(`
-          id,
-          employee_id,
-          first_name,
-          last_name,
-          email,
-          phone,
-          department,
-          position,
-          hire_date,
-          employment_status,
-          payment_type,
-          emergency_contact_name,
-          emergency_contact_phone
-        `)
-        .order('created_at', { ascending: false });
+        .rpc('get_employees_secure');
 
       if (error) throw error;
-      
-      // Only show salary data to authorized users (handled by RLS policies)
       setEmployees(data || []);
       onStatsUpdate();
+      
+      // Log the access for audit purposes
+      if (data && data.length > 0) {
+        await supabase.rpc('log_employee_access', {
+          accessed_employee_id: null, // bulk access
+          access_type: 'list_view',
+          includes_sensitive_data: false
+        });
+      }
     } catch (error) {
       console.error('Error fetching employees:', error);
       toast({
@@ -108,8 +103,46 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
     employee.position.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEditEmployee = (employee: Employee) => {
-    setEditingEmployee(employee);
+  const handleEditEmployee = async (employee: Employee) => {
+    // Load sensitive data if user has access and is editing
+    if (employee.has_compensation_access) {
+      try {
+        const { data, error } = await supabase
+          .rpc('get_employee_compensation_secure', { employee_uuid: employee.id });
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const compensation = data[0];
+          const fullEmployee = {
+            ...employee,
+            hourly_rate: compensation.hourly_rate,
+            salary: compensation.salary,
+            emergency_contact_name: compensation.emergency_contact_name,
+            emergency_contact_phone: compensation.emergency_contact_phone
+          };
+          setEditingEmployee(fullEmployee);
+          
+          // Log sensitive data access
+          await supabase.rpc('log_employee_access', {
+            accessed_employee_id: employee.id,
+            access_type: 'edit_form',
+            includes_sensitive_data: true
+          });
+        }
+      } catch (error) {
+        console.error('Error loading employee compensation:', error);
+        toast({
+          title: "Warning",
+          description: "Could not load sensitive employee data.",
+          variant: "destructive",
+        });
+        setEditingEmployee(employee);
+      }
+    } else {
+      setEditingEmployee(employee);
+    }
+    
     setIsFormOpen(true);
   };
 

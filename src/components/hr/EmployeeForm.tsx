@@ -40,16 +40,20 @@ interface Employee {
   first_name: string;
   last_name: string;
   email: string;
-  phone: string;
-  department: string;
+  phone?: string;
+  department?: string;
   position: string;
   hire_date: string;
   employment_status: string;
   payment_type: string;
-  hourly_rate?: number; // Optional - only visible to authorized users
-  salary?: number; // Optional - only visible to authorized users  
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
+  created_at?: string;
+  updated_at?: string;
+  has_compensation_access?: boolean;
+  // Sensitive fields only available to authorized users
+  hourly_rate?: number;
+  salary?: number;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
 }
 
 interface EmployeeFormProps {
