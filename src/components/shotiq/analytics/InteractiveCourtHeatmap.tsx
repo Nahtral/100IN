@@ -360,9 +360,9 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
           width: width,
           height: height,
           fill: getRegionColor(stats.percentage),
-          opacity: 0.3,
+          opacity: 0.7, // Increased opacity for better visibility
           selectable: false,
-          stroke: '#ffffff',
+          stroke: 'rgba(255,255,255,0.3)',
           strokeWidth: 1,
         });
       } else if (bounds.type === 'circle') {
@@ -374,9 +374,9 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
           top: bounds.centerY - bounds.radius,
           radius: bounds.radius,
           fill: getRegionColor(stats.percentage),
-          opacity: 0.3,
+          opacity: 0.7, // Increased opacity for better visibility
           selectable: false,
-          stroke: '#ffffff',
+          stroke: 'rgba(255,255,255,0.3)',
           strokeWidth: 1,
         });
       }
@@ -384,19 +384,20 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
       if (regionShape) {
         canvas.add(regionShape);
 
-        // Add stats text
-        const statsText = new FabricText(`${stats.makes}/${stats.attempts}\n${stats.percentage.toFixed(1)}%`, {
+        // Add stats text with better styling matching reference
+        const statsText = new FabricText(`${stats.makes} / ${stats.attempts}\n${stats.percentage.toFixed(1)}%`, {
           left: centerX,
           top: centerY,
-          fontSize: 12,
+          fontSize: 14,
           fill: '#ffffff',
           textAlign: 'center',
           originX: 'center',
           originY: 'center',
           selectable: false,
           fontWeight: 'bold',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          padding: 4,
+          fontFamily: 'Arial, sans-serif',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          padding: 6,
         });
         canvas.add(statsText);
       }
