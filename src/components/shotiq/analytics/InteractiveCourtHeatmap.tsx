@@ -68,13 +68,14 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
   const [showStats, setShowStats] = useState(true);
   const { toast } = useToast();
 
-  // Define NBA-accurate court regions matching reference image
+  // Define NBA-accurate court regions matching reference image with official measurements
   const getNBACourtRegions = (width: number, height: number) => {
     const centerX = width / 2;
     const baselineY = height - 50; // Basket position
+    const corner3Y = baselineY - 158; // Corner 3s at official 22' from basket
     
     return [
-      // Corner 3s - exact NBA corner positioning
+      // Corner 3s - official NBA corner positioning (22' from basket)
       { 
         region_code: 'C3L', 
         region_name: 'Corner 3 Left', 
@@ -82,8 +83,8 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         region_bounds: { 
           type: 'polygon', 
           points: [
-            [50, baselineY], [50, baselineY - 140], 
-            [120, baselineY - 140], [120, baselineY]
+            [50, baselineY], [50, corner3Y], 
+            [120, corner3Y], [120, baselineY]
           ]
         } 
       },
@@ -94,8 +95,8 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         region_bounds: { 
           type: 'polygon', 
           points: [
-            [width - 120, baselineY], [width - 120, baselineY - 140], 
-            [width - 50, baselineY - 140], [width - 50, baselineY]
+            [width - 120, baselineY], [width - 120, corner3Y], 
+            [width - 50, corner3Y], [width - 50, baselineY]
           ]
         } 
       },
@@ -108,7 +109,7 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         region_bounds: { 
           type: 'polygon', 
           points: [
-            [120, baselineY], [120, baselineY - 140], 
+            [120, baselineY], [120, corner3Y], 
             [centerX - 80, baselineY - 140], [centerX - 80, baselineY]
           ]
         } 
@@ -121,7 +122,7 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
           type: 'polygon', 
           points: [
             [centerX + 80, baselineY], [centerX + 80, baselineY - 140], 
-            [width - 120, baselineY - 140], [width - 120, baselineY]
+            [width - 120, corner3Y], [width - 120, baselineY]
           ]
         } 
       },
@@ -140,7 +141,7 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         } 
       },
       
-      // Wing 3s - left and right wings
+      // Wing 3s - left and right wings between corner and arc
       { 
         region_code: 'W3L', 
         region_name: 'Wing 3 Left', 
@@ -148,8 +149,8 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         region_bounds: { 
           type: 'polygon', 
           points: [
-            [120, baselineY - 140], [120, baselineY - 280], 
-            [centerX - 120, baselineY - 280], [centerX - 80, baselineY - 140]
+            [120, corner3Y], [120, baselineY - 287], 
+            [centerX - 140, baselineY - 287], [centerX - 80, baselineY - 140]
           ]
         } 
       },
@@ -160,13 +161,13 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         region_bounds: { 
           type: 'polygon', 
           points: [
-            [centerX + 80, baselineY - 140], [centerX + 120, baselineY - 280], 
-            [width - 120, baselineY - 280], [width - 120, baselineY - 140]
+            [centerX + 80, baselineY - 140], [centerX + 140, baselineY - 287], 
+            [width - 120, baselineY - 287], [width - 120, corner3Y]
           ]
         } 
       },
       
-      // Above break 3 - top of arc
+      // Above break 3 - top of arc (beyond 23'9" line)
       { 
         region_code: 'AB3', 
         region_name: 'Above Break 3', 
@@ -174,13 +175,13 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         region_bounds: { 
           type: 'polygon', 
           points: [
-            [centerX - 120, baselineY - 280], [centerX - 120, baselineY - 350], 
-            [centerX + 120, baselineY - 350], [centerX + 120, baselineY - 280]
+            [centerX - 140, baselineY - 287], [centerX - 140, baselineY - 380], 
+            [centerX + 140, baselineY - 380], [centerX + 140, baselineY - 287]
           ]
         } 
       },
       
-      // Mid-range top (free throw extended)
+      // Mid-range top (free throw extended, inside 3pt line)
       { 
         region_code: 'MRT', 
         region_name: 'Mid-Range Top', 
@@ -188,8 +189,8 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
         region_bounds: { 
           type: 'polygon', 
           points: [
-            [centerX - 80, baselineY - 140], [centerX - 120, baselineY - 280], 
-            [centerX + 120, baselineY - 280], [centerX + 80, baselineY - 140]
+            [centerX - 80, baselineY - 140], [centerX - 140, baselineY - 287], 
+            [centerX + 140, baselineY - 287], [centerX + 80, baselineY - 140]
           ]
         } 
       },
@@ -416,13 +417,13 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     const strokeWidth = 4; // Bold lines for NBA court appearance
     const rimColor = '#ff6600';
     
-    // Court dimensions with proper NBA proportions
+    // NBA court dimensions with official measurements
     const centerX = width / 2;
     const baselineY = height - 50; // Basket position
     const paintWidth = 160; // Paint width (key)
     const paintLength = 140; // Paint length from baseline
-    const threePointDistance = 280; // Distance from center to 3pt arc
-    const cornerThreeDistance = 140; // Distance from baseline to corner 3pt
+    const threePointDistance = 287; // 23'9" = 287" total distance from basket center
+    const cornerThreeDistance = 158; // 22' = 264", but from basket center = 158
     
     // Clear canvas and set background to hardwood color
     canvas.backgroundColor = '#E5C99F'; // Light natural hardwood color
@@ -466,15 +467,18 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
     });
     canvas.add(freeThrowCircle);
 
-    // Three-point arc - create accurate NBA 3-point line with thicker stroke
-    const arcCenterY = baselineY - 30;
-    const arcRadius = threePointDistance;
+    // NBA Three-point arc - official 23'9" (287 inches) from basket center
+    const basketCenterY = baselineY - 30; // Actual basket position
+    const arcRadius = 287; // Official NBA distance
     
-    // Create 3-point line as SVG path for exact NBA shape
+    // Corner 3-point positions: 22' (264") from basket, adjusted for court positioning
+    const corner3Y = baselineY - cornerThreeDistance;
+    
+    // Create NBA-accurate 3-point line as SVG path
     const threePointPath = `
       M 120 ${baselineY}
-      L 120 ${baselineY - cornerThreeDistance}
-      A ${arcRadius} ${arcRadius} 0 0 1 ${width - 120} ${baselineY - cornerThreeDistance}
+      L 120 ${corner3Y}
+      A ${arcRadius} ${arcRadius} 0 0 1 ${width - 120} ${corner3Y}
       L ${width - 120} ${baselineY}
     `;
     
