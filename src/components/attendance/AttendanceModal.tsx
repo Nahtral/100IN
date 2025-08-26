@@ -60,7 +60,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const fetchPlayersAndAttendance = async () => {
     setLoading(true);
     try {
-      // Fetch players from selected teams with their profile info
+      // Fetch regular players from selected teams with their profile info
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select(`
@@ -79,6 +79,17 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         throw playersError;
       }
 
+      // Fetch manual players for this specific event
+      const { data: manualPlayersData, error: manualPlayersError } = await supabase
+        .from('manual_players')
+        .select('*')
+        .eq('schedule_id', eventId);
+
+      if (manualPlayersError) {
+        console.error('Manual players query error:', manualPlayersError);
+        throw manualPlayersError;
+      }
+
       // Fetch existing attendance records
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('player_attendance')
@@ -87,11 +98,31 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
       if (attendanceError) throw attendanceError;
 
-      setPlayers((playersData as unknown as Player[]) || []);
+      // Combine regular players and manual players into a unified format
+      const combinedPlayers: Player[] = [
+        ...(playersData || []).map(player => ({
+          id: player.id,
+          user_id: player.user_id,
+          jersey_number: player.jersey_number,
+          position: player.position,
+          team_id: player.team_id,
+          profiles: player.profiles
+        })),
+        ...(manualPlayersData || []).map(manualPlayer => ({
+          id: manualPlayer.id,
+          user_id: null,
+          jersey_number: manualPlayer.jersey_number,
+          position: manualPlayer.position,
+          team_id: null,
+          profiles: { full_name: manualPlayer.name }
+        }))
+      ];
+
+      setPlayers(combinedPlayers);
       
-      // Initialize attendance state
+      // Initialize attendance state for all players (regular + manual)
       const attendanceMap: Record<string, AttendanceRecord> = {};
-      playersData?.forEach(player => {
+      combinedPlayers.forEach(player => {
         const existingRecord = attendanceData?.find(a => a.player_id === player.id);
         attendanceMap[player.id] = {
           player_id: player.id,
