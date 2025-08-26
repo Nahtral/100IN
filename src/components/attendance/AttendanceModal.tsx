@@ -57,27 +57,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const fetchPlayersAndAttendance = async () => {
     setLoading(true);
     try {
-      console.log('Attempting to fetch players for teams:', teamIds);
-      console.log('Current user:', user);
-      
-      // First, let's check what teams exist and what the user's role is
-      const { data: userRoles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user?.id)
-        .eq('is_active', true);
-      
-      console.log('User roles:', userRoles);
-      
-      // Check if teams exist
-      const { data: teamsData } = await supabase
-        .from('teams')
-        .select('id, name')
-        .in('id', teamIds);
-      
-      console.log('Teams found:', teamsData);
-      
-      // Fetch players from selected teams (left join with profiles to handle null user_id)
+      // Fetch players from selected teams with their profile info if available
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select(`
@@ -93,12 +73,8 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
       if (playersError) {
         console.error('Players query error:', playersError);
-        console.error('Error details:', playersError.message, playersError.code);
         throw playersError;
       }
-
-      console.log('Fetched players:', playersData);
-      console.log('Players count:', playersData?.length || 0);
 
       // Fetch existing attendance records
       const { data: attendanceData, error: attendanceError } = await supabase
