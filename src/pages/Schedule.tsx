@@ -526,176 +526,178 @@ const Schedule = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {displayEvents.map((event, index) => {
-                      const eventDate = new Date(event.start_time);
-                      const isEventToday = isToday(eventDate);
-                      
-                      return (
-                        <div 
-                          key={event.id} 
-                          className={`border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in cursor-pointer ${
-                            isEventToday ? 'bg-blue-50 border-blue-200' : 'bg-white'
-                          }`}
-                          style={{ animationDelay: `${index * 100}ms` }}
-                          onClick={() => openEventDetails(event)}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                                <h3 className="text-lg font-semibold">{event.title}</h3>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {isEventToday && (
-                                    <Badge className="bg-blue-500 text-white animate-pulse">
-                                      Today
+                  <>
+                    <div className="space-y-4">
+                      {displayEvents.map((event, index) => {
+                        const eventDate = new Date(event.start_time);
+                        const isEventToday = isToday(eventDate);
+                        
+                        return (
+                          <div 
+                            key={event.id} 
+                            className={`border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in cursor-pointer ${
+                              isEventToday ? 'bg-blue-50 border-blue-200' : 'bg-white'
+                            }`}
+                            style={{ animationDelay: `${index * 100}ms` }}
+                            onClick={() => openEventDetails(event)}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                                  <h3 className="text-lg font-semibold">{event.title}</h3>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {isEventToday && (
+                                      <Badge className="bg-blue-500 text-white animate-pulse">
+                                        Today
+                                      </Badge>
+                                    )}
+                                    <Badge className={`${getEventTypeColor(event.event_type)} transition-all duration-200 hover:scale-105`}>
+                                      {event.event_type}
                                     </Badge>
-                                  )}
-                                  <Badge className={`${getEventTypeColor(event.event_type)} transition-all duration-200 hover:scale-105`}>
-                                    {event.event_type}
-                                  </Badge>
-                                  {event.opponent && (
-                                    <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
-                                      vs {event.opponent}
-                                    </Badge>
-                                  )}
+                                    {event.opponent && (
+                                      <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
+                                        vs {event.opponent}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                          
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-2">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  <span>
-                                    {format(new Date(event.start_time), 'MMM dd, yyyy • h:mm a')} - 
-                                    {format(new Date(event.end_time), 'h:mm a')}
-                                  </span>
+                            
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-2">
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    <span>
+                                      {format(new Date(event.start_time), 'MMM dd, yyyy • h:mm a')} - 
+                                      {format(new Date(event.end_time), 'h:mm a')}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" />
+                                    <span>{event.location}</span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  <span>{event.location}</span>
-                                </div>
+                                
+                                {event.description && (
+                                  <p className="text-sm text-gray-700">{event.description}</p>
+                                )}
                               </div>
                               
-                              {event.description && (
-                                <p className="text-sm text-gray-700">{event.description}</p>
-                              )}
-                            </div>
-                            
-                            <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0 sm:ml-4">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEventDetails(event);
-                                }}
-                                title="View Details"
-                                className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
-                                aria-label={`View details for ${event.title}`}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              {canManageAttendance && event.team_ids && event.team_ids.length > 0 && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openAttendanceModal(event);
-                                    }}
-                                    title="Track Attendance"
-                                    className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
-                                    aria-label={`Track attendance for ${event.title}`}
-                                  >
-                                    <Users className="h-4 w-4" />
-                                  </Button>
-                              )}
-                              {(isSuperAdmin || userRole === 'staff') && (
-                                <>
+                              <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0 sm:ml-4">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEventDetails(event);
+                                  }}
+                                  title="View Details"
+                                  className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
+                                  aria-label={`View details for ${event.title}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                {canManageAttendance && event.team_ids && event.team_ids.length > 0 && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        openEditForm(event);
+                                        openAttendanceModal(event);
                                       }}
-                                      className="transition-all duration-200 hover:scale-110 hover:bg-gray-50"
-                                      aria-label={`Edit ${event.title}`}
+                                      title="Track Attendance"
+                                      className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
+                                      aria-label={`Track attendance for ${event.title}`}
                                     >
-                                      <Edit className="h-4 w-4" />
+                                      <Users className="h-4 w-4" />
                                     </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        initiateDelete(event.id);
-                                      }}
-                                      className="transition-all duration-200 hover:scale-110 hover:bg-red-50"
-                                      aria-label={`Delete ${event.title}`}
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-500" />
-                                    </Button>
-                                </>
-                              )}
+                                )}
+                                {(isSuperAdmin || userRole === 'staff') && (
+                                  <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openEditForm(event);
+                                        }}
+                                        className="transition-all duration-200 hover:scale-110 hover:bg-gray-50"
+                                        aria-label={`Edit ${event.title}`}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          initiateDelete(event.id);
+                                        }}
+                                        className="transition-all duration-200 hover:scale-110 hover:bg-red-50"
+                                        aria-label={`Delete ${event.title}`}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="mt-8 flex justify-center">
-                      <Pagination>
-                        <PaginationContent>
-                          {hasPrevPage && (
-                            <PaginationItem>
-                              <PaginationPrevious 
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                className="cursor-pointer"
-                              />
-                            </PaginationItem>
-                          )}
-                          
-                          {/* Page numbers */}
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNumber;
-                            if (totalPages <= 5) {
-                              pageNumber = i + 1;
-                            } else if (currentPage <= 3) {
-                              pageNumber = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                              pageNumber = totalPages - 4 + i;
-                            } else {
-                              pageNumber = currentPage - 2 + i;
-                            }
-                            
-                            return (
-                              <PaginationItem key={pageNumber}>
-                                <PaginationLink
-                                  onClick={() => handlePageChange(pageNumber)}
-                                  isActive={currentPage === pageNumber}
-                                  className="cursor-pointer"
-                                >
-                                  {pageNumber}
-                                </PaginationLink>
-                              </PaginationItem>
-                            );
-                          })}
-                          
-                          {hasNextPage && (
-                            <PaginationItem>
-                              <PaginationNext 
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                className="cursor-pointer"
-                              />
-                            </PaginationItem>
-                          )}
-                        </PaginationContent>
-                      </Pagination>
+                        );
+                      })}
                     </div>
-                  )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="mt-8 flex justify-center">
+                        <Pagination>
+                          <PaginationContent>
+                            {hasPrevPage && (
+                              <PaginationItem>
+                                <PaginationPrevious 
+                                  onClick={() => handlePageChange(currentPage - 1)}
+                                  className="cursor-pointer"
+                                />
+                              </PaginationItem>
+                            )}
+                            
+                            {/* Page numbers */}
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                              let pageNumber;
+                              if (totalPages <= 5) {
+                                pageNumber = i + 1;
+                              } else if (currentPage <= 3) {
+                                pageNumber = i + 1;
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNumber = totalPages - 4 + i;
+                              } else {
+                                pageNumber = currentPage - 2 + i;
+                              }
+                              
+                              return (
+                                <PaginationItem key={pageNumber}>
+                                  <PaginationLink
+                                    onClick={() => handlePageChange(pageNumber)}
+                                    isActive={currentPage === pageNumber}
+                                    className="cursor-pointer"
+                                  >
+                                    {pageNumber}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                            })}
+                            
+                            {hasNextPage && (
+                              <PaginationItem>
+                                <PaginationNext 
+                                  onClick={() => handlePageChange(currentPage + 1)}
+                                  className="cursor-pointer"
+                                />
+                              </PaginationItem>
+                            )}
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
