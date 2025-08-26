@@ -13,9 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Player {
   id: string;
-  user_id: string;
+  user_id: string | null;
   jersey_number?: number;
   position?: string;
+  name?: string;
   profiles?: {
     full_name: string;
   } | null;
@@ -69,6 +70,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           jersey_number,
           position,
           team_id,
+          name,
           profiles(full_name)
         `)
         .in('team_id', teamIds)
@@ -108,6 +110,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           jersey_number: player.jersey_number,
           position: player.position,
           team_id: player.team_id,
+          name: player.name,
           profiles: player.profiles
         })),
         ...(manualPlayersData || []).map(manualPlayer => ({
@@ -379,7 +382,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                           {getStatusIcon(attendance[player.id]?.status || 'present')}
                            <div>
                               <p className="font-medium">
-                                {player.profiles?.full_name || 
+                                {player.profiles?.full_name || player.name || 
                                  (player.jersey_number ? `Player #${player.jersey_number}` : 'Unknown Player')}
                               </p>
                              <p className="text-xs sm:text-sm text-gray-600">
