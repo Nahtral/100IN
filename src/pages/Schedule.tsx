@@ -1,29 +1,21 @@
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Plus, Edit, Trash2, Clock, MapPin, Users, Eye, Archive, CalendarDays, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import EnhancedScheduleForm from '@/components/forms/EnhancedScheduleForm';
+import { Plus, Calendar, Clock, MapPin, Users, Eye, RefreshCw } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import ScheduleForm from '@/components/forms/ScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useAnalytics } from '@/hooks/useAnalytics';
-import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
-import { useScheduleCache } from '@/hooks/useScheduleCache';
 import { useToast } from '@/hooks/use-toast';
-import { format, isToday, isFuture, isPast } from 'date-fns';
-import { ErrorLogger } from '@/utils/errorLogger';
-import { InputSanitizer } from '@/utils/inputSanitizer';
+import { format, isToday, isFuture } from 'date-fns';
 
 interface ScheduleEvent {
   id: string;
@@ -36,24 +28,18 @@ interface ScheduleEvent {
   description?: string;
   team_ids?: string[];
   created_by: string;
-  created_at: string;
-  updated_at: string;
   is_recurring?: boolean;
-  recurrence_end_date?: string;
   recurrence_pattern?: string;
-  recurrence_days_of_week?: number[];
 }
 
 const Schedule = () => {
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<any>({});
-  const [pageSize] = useState(20);
+  const [userTeamIds, setUserTeamIds] = useState<string[]>([]);
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
     eventId: string;
@@ -65,793 +51,397 @@ const Schedule = () => {
     eventTitle: '',
     teamIds: []
   });
-  const [eventDetailModal, setEventDetailModal] = useState<{
-    isOpen: boolean;
-    event: ScheduleEvent | null;
-  }>({
-    isOpen: false,
-    event: null
-  });
-  
+
   const { user } = useAuth();
-  const { userRole, isSuperAdmin } = useUserRole();
   const { currentUser } = useCurrentUser();
-  const { trackPageView, trackUserAction } = useAnalytics();
-  const { measureApiCall } = usePerformanceMonitoring('Schedule');
+  const { userRole, isSuperAdmin } = useUserRole();
   const { toast } = useToast();
-  
-  // Use enhanced caching hook
-  const { events, totalCount, loading, error, fetchEvents, invalidateCache } = useScheduleCache();
 
+  // Fetch user's team assignments
   useEffect(() => {
-    trackPageView('Schedule');
-  }, [trackPageView]);
+    if (user?.id) {
+      fetchUserTeams();
+    }
+  }, [user?.id]);
 
-  // Show error alert if loading failed
+  // Fetch events when filters, tab, or user teams change
   useEffect(() => {
-    if (error) {
+    fetchEvents();
+  }, [filters, activeTab, userTeamIds]);
+
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('schedule_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'schedules' },
+        () => fetchEvents()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchUserTeams = async () => {
+    try {
+      if (isSuperAdmin || userRole === 'staff') {
+        // Super admins and staff see all teams
+        const { data, error } = await supabase
+          .from('teams')
+          .select('id');
+        
+        if (error) throw error;
+        setUserTeamIds(data?.map(t => t.id) || []);
+      } else {
+        // Regular users see only their assigned teams
+        const { data, error } = await supabase
+          .from('players')
+          .select('team_id')
+          .eq('user_id', user?.id)
+          .eq('is_active', true);
+        
+        if (error) throw error;
+        setUserTeamIds(data?.map(p => p.team_id).filter(Boolean) || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user teams:', error);
+    }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from('schedules')
+        .select('*')
+        .order('start_time', { ascending: activeTab === 'upcoming' });
+
+      // Apply team filtering by default
+      if (userTeamIds.length > 0 && !isSuperAdmin && userRole !== 'staff') {
+        query = query.overlaps('team_ids', userTeamIds);
+      }
+
+      // Apply date filtering based on tab
+      const now = new Date().toISOString();
+      if (activeTab === 'upcoming') {
+        query = query.gte('start_time', now);
+      } else {
+        query = query.lt('start_time', now);
+      }
+
+      // Apply additional filters
+      if (filters.event_type) {
+        query = query.eq('event_type', filters.event_type);
+      }
+      
+      if (filters.team_ids && filters.team_ids.length > 0) {
+        query = query.overlaps('team_ids', filters.team_ids);
+      }
+      
+      if (filters.location) {
+        query = query.ilike('location', `%${filters.location}%`);
+      }
+      
+      if (filters.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,opponent.ilike.%${filters.search}%`);
+      }
+      
+      if (filters.date_range) {
+        query = query
+          .gte('start_time', filters.date_range.start)
+          .lte('start_time', filters.date_range.end);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
       toast({
         title: "Error",
-        description: error,
+        description: "Failed to load events",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-  }, [error, toast]);
+  };
 
-  // Fetch events with current filters and pagination
-  useEffect(() => {
-    const currentFilters = {
-      ...filters,
-      ...(activeTab === 'upcoming' 
-        ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
-        : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
-      )
-    };
-    
-    fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
-  }, [fetchEvents, filters, activeTab, currentPage, pageSize]);
-
-  // Reset page when filters or tab changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, activeTab]);
-
-  // Calculate pagination
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const hasNextPage = currentPage < totalPages;
-  const hasPrevPage = currentPage > 1;
-
-  // Memoized display events (already filtered by backend)
-  const displayEvents = useMemo(() => {
-    return events.sort((a, b) => {
-      const aDate = new Date(a.start_time);
-      const bDate = new Date(b.start_time);
-      
-      if (activeTab === 'upcoming') {
-        // Prioritize today's events first for upcoming
-        if (isToday(aDate) && !isToday(bDate)) return -1;
-        if (!isToday(aDate) && isToday(bDate)) return 1;
-        return aDate.getTime() - bDate.getTime();
-      } else {
-        // Most recent first for past events
-        return bDate.getTime() - aDate.getTime();
-      }
-    });
-  }, [events, activeTab]);
-
-  const handleFiltersChange = useCallback((newFilters: any) => {
-    setFilters(newFilters);
-  }, []);
-
-  const handleFiltersClear = useCallback(() => {
-    setFilters({});
-  }, []);
-
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-  }, []);
-
-  const handleSubmit = useCallback(async (formData: any) => {
-    trackUserAction('schedule_form_submit', editingEvent ? 'edit' : 'create');
-    setIsSubmitting(true);
-    
-    // Enhanced timeout with user notification
-    const timeoutId = setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        title: "Request Timeout",
-        description: "The request is taking longer than expected. Please try again.",
-        variant: "destructive",
-      });
-    }, 45000); // Increased to 45 seconds
-
+  const handleFormSubmit = async (formData: any) => {
     try {
-      // Sanitize and validate input data
       const eventData = {
-        title: InputSanitizer.sanitizeText(formData.title),
+        title: formData.title,
         event_type: formData.eventType,
-        start_time: `${InputSanitizer.sanitizeDate(formData.startDate)}T${InputSanitizer.sanitizeTime(formData.startTime)}:00`,
-        end_time: `${InputSanitizer.sanitizeDate(formData.endDate)}T${InputSanitizer.sanitizeTime(formData.endTime)}:00`,
-        location: InputSanitizer.sanitizeText(formData.location),
-        opponent: formData.opponent ? InputSanitizer.sanitizeText(formData.opponent) : null,
-        description: formData.description ? InputSanitizer.sanitizeText(formData.description) : null,
-        team_ids: formData.teamIds?.filter((id: string) => InputSanitizer.isValidUUID(id)) || [],
+        start_time: `${formData.startDate}T${formData.startTime}:00`,
+        end_time: `${formData.endDate}T${formData.endTime}:00`,
+        location: formData.location,
+        opponent: formData.opponent || null,
+        description: formData.description || null,
+        team_ids: formData.teamIds || [],
         is_recurring: Boolean(formData.isRecurring),
-        recurrence_end_date: formData.isRecurring && formData.recurrenceEndDate ? 
-          InputSanitizer.sanitizeDate(formData.recurrenceEndDate) : null,
         recurrence_pattern: formData.isRecurring ? formData.recurrencePattern : null,
-        recurrence_days_of_week: formData.isRecurring && formData.recurrenceDaysOfWeek ? 
-          formData.recurrenceDaysOfWeek : null,
+        recurrence_end_date: formData.isRecurring ? formData.recurrenceEndDate : null,
+        recurrence_days_of_week: formData.isRecurring ? formData.recurrenceDaysOfWeek : null,
         created_by: user?.id,
       };
 
-      // Additional validation
-      const startTime = new Date(eventData.start_time);
-      const endTime = new Date(eventData.end_time);
-      
-      if (endTime <= startTime) {
-        throw new Error('End time must be after start time');
-      }
-
-      let result;
       if (editingEvent) {
-        const { data, error } = await measureApiCall('update_event', async () => {
-          return await supabase
-            .from('schedules')
-            .update(eventData)
-            .eq('id', editingEvent.id)
-            .select();
-        });
-
-        if (error) throw error;
-        result = data;
-
-        toast({
-          title: "Success",
-          description: "Event updated successfully.",
-        });
-      } else {
-        const { data, error } = await measureApiCall('create_event', async () => {
-          return await supabase
-            .from('schedules')
-            .insert([eventData])
-            .select();
-        });
-
-        if (error) throw error;
-        result = data;
-
-        toast({
-          title: "Success",
-          description: "Event created successfully.",
-        });
-      }
-
-      clearTimeout(timeoutId);
-      setIsFormOpen(false);
-      setEditingEvent(null);
-      
-      // Invalidate cache and refetch with current filters
-      invalidateCache();
-      const currentFilters = {
-        ...filters,
-        ...(activeTab === 'upcoming' 
-          ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
-          : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
-        )
-      };
-      await fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
-
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      
-      await ErrorLogger.logError(error, {
-        component: 'Schedule',
-        action: editingEvent ? 'update_event' : 'create_event',
-        userId: user?.id,
-        userRole,
-        metadata: { eventData: formData, editingEventId: editingEvent?.id }
-      });
-      
-      let errorMessage = "Failed to save event.";
-      if (error?.message?.includes('violates')) {
-        errorMessage = "You don't have permission to perform this action.";
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.code) {
-        errorMessage = `Database error (${error.code}): ${error.details || error.hint || 'Unknown error'}`;
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [editingEvent, user?.id, userRole, trackUserAction, measureApiCall, toast, invalidateCache, fetchEvents]);
-
-  const initiateDelete = useCallback((eventId: string) => {
-    trackUserAction('schedule_delete_attempt', 'event');
-    setEventToDelete(eventId);
-    setDeleteConfirmOpen(true);
-  }, [trackUserAction]);
-
-  const handleConfirmDelete = useCallback(async () => {
-    if (!eventToDelete) return;
-
-    try {
-      trackUserAction('schedule_delete_confirmed', 'event');
-      
-      await measureApiCall('delete_event', async () => {
         const { error } = await supabase
           .from('schedules')
-          .delete()
-          .eq('id', eventToDelete);
-
+          .update(eventData)
+          .eq('id', editingEvent.id);
+        
         if (error) throw error;
-      });
+        
+        toast({
+          title: "Success",
+          description: "Event updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from('schedules')
+          .insert([eventData]);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Event created successfully",
+        });
+      }
 
-      toast({
-        title: "Success",
-        description: "Event deleted successfully.",
-      });
-      
-      // Invalidate cache and refetch with current filters
-      invalidateCache();
-      const currentFilters = {
-        ...filters,
-        ...(activeTab === 'upcoming' 
-          ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
-          : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
-        )
-      };
-      await fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
-      
+      setIsFormOpen(false);
+      setEditingEvent(null);
+      fetchEvents();
     } catch (error) {
-      await ErrorLogger.logError(error, {
-        component: 'Schedule',
-        action: 'delete_event',
-        userId: user?.id,
-        userRole,
-        metadata: { eventId: eventToDelete }
-      });
-
+      console.error('Error saving event:', error);
       toast({
         title: "Error",
-        description: "Failed to delete event.",
+        description: "Failed to save event",
         variant: "destructive",
       });
-    } finally {
-      setDeleteConfirmOpen(false);
-      setEventToDelete(null);
     }
-  }, [eventToDelete, user?.id, userRole, trackUserAction, measureApiCall, toast, invalidateCache, fetchEvents]);
+  };
 
-  const openEditForm = useCallback((event: ScheduleEvent) => {
-    trackUserAction('schedule_edit_open', 'event');
-    setEditingEvent(event);
-    setIsFormOpen(true);
-  }, [trackUserAction]);
-
-  const openAddForm = useCallback(() => {
-    trackUserAction('schedule_add_open', 'form');
-    setEditingEvent(null);
-    setIsFormOpen(true);
-  }, [trackUserAction]);
-
-  const openAttendanceModal = useCallback((event: ScheduleEvent) => {
-    trackUserAction('attendance_modal_open', 'event');
+  const openAttendanceModal = (event: ScheduleEvent) => {
     setAttendanceModal({
       isOpen: true,
       eventId: event.id,
       eventTitle: event.title,
       teamIds: event.team_ids || []
     });
-  }, [trackUserAction]);
+  };
 
-  const closeAttendanceModal = useCallback(() => {
-    setAttendanceModal({
-      isOpen: false,
-      eventId: '',
-      eventTitle: '',
-      teamIds: []
-    });
-  }, []);
-
-  const openEventDetails = useCallback((event: ScheduleEvent) => {
-    trackUserAction('event_details_open', 'event');
-    setEventDetailModal({
-      isOpen: true,
-      event: event
-    });
-  }, [trackUserAction]);
-
-  const closeEventDetails = useCallback(() => {
-    setEventDetailModal({
-      isOpen: false,
-      event: null
-    });
-  }, []);
-
-  const handleRefresh = useCallback(async () => {
-    trackUserAction('schedule_refresh', 'manual');
-    invalidateCache();
-    const currentFilters = {
-      ...filters,
-      ...(activeTab === 'upcoming' 
-        ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
-        : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
-      )
+  const getEventTypeColor = (type: string) => {
+    const colors = {
+      game: 'bg-red-100 text-red-800',
+      practice: 'bg-blue-100 text-blue-800',
+      training: 'bg-green-100 text-green-800',
+      meeting: 'bg-yellow-100 text-yellow-800',
+      scrimmage: 'bg-purple-100 text-purple-800',
+      tournament: 'bg-orange-100 text-orange-800',
     };
-    await fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
-  }, [trackUserAction, invalidateCache, fetchEvents, filters, activeTab, currentPage, pageSize]);
+    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
 
-  const canManageAttendance = useMemo(() => 
-    isSuperAdmin || userRole === 'staff' || userRole === 'coach', 
-    [isSuperAdmin, userRole]
-  );
-
-  const getEventTypeColor = useCallback((type: string) => {
-    switch (type.toLowerCase()) {
-      case 'game': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'practice': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'training': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'meeting': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-    }
-  }, []);
+  const canManageEvents = isSuperAdmin || userRole === 'staff';
+  const canManageAttendance = isSuperAdmin || userRole === 'staff' || userRole === 'coach';
 
   return (
     <Layout currentUser={currentUser}>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="animate-fade-in">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Schedule</h1>
-            <p className="text-gray-600">Manage games and training sessions</p>
+          <div>
+            <h1 className="text-3xl font-bold">Schedule</h1>
+            <p className="text-muted-foreground">Manage games and training sessions</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={handleRefresh}
+              onClick={fetchEvents}
               disabled={loading}
-              className="transition-all duration-200 hover:scale-105"
-              aria-label="Refresh events"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            {(isSuperAdmin || userRole === 'staff') && (
-              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    onClick={openAddForm} 
-                    className="bg-black hover:bg-gray-800 text-white transition-all duration-200 hover:scale-105 w-full sm:w-auto"
-                    aria-label="Add new event"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Event
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingEvent ? 'Edit Event' : 'Add New Event'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingEvent ? 'Modify the event details below.' : 'Fill in the details to create a new event.'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <EnhancedScheduleForm
-                    onSubmit={handleSubmit}
-                    initialData={editingEvent ? {
-                      title: editingEvent.title,
-                      eventType: editingEvent.event_type as 'game' | 'practice' | 'meeting' | 'scrimmage' | 'tournament',
-                      startDate: editingEvent.start_time.split('T')[0],
-                      startTime: editingEvent.start_time.split('T')[1]?.substring(0, 5),
-                      endDate: editingEvent.end_time.split('T')[0],
-                      endTime: editingEvent.end_time.split('T')[1]?.substring(0, 5),
-                      location: editingEvent.location,
-                      opponent: editingEvent.opponent,
-                      description: editingEvent.description,
-                      teamIds: editingEvent.team_ids || [],
-                      isRecurring: editingEvent.is_recurring || false,
-                      recurrenceEndDate: editingEvent.recurrence_end_date || '',
-                      recurrencePattern: editingEvent.recurrence_pattern as 'weekly' | 'monthly' | undefined,
-                      recurrenceDaysOfWeek: editingEvent.recurrence_days_of_week || [],
-                    } : undefined}
-                    isLoading={isSubmitting}
-                    onCancel={() => setIsFormOpen(false)}
-                  />
-                </DialogContent>
-              </Dialog>
+            {canManageEvents && (
+              <Button onClick={() => setIsFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Event
+              </Button>
             )}
           </div>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              {error}
-              <Button variant="link" onClick={handleRefresh} className="ml-2 h-auto p-0">
-                Try again
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Advanced Filters */}
-        <ScheduleFilters 
-          onFiltersChange={handleFiltersChange}
-          onClear={handleFiltersClear}
+        {/* Filters */}
+        <ScheduleFilters
+          onFiltersChange={setFilters}
+          onClear={() => setFilters({})}
         />
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upcoming" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Upcoming ({totalCount})
-            </TabsTrigger>
-            <TabsTrigger value="past" className="flex items-center gap-2">
-              <Archive className="h-4 w-4" />
-              Past Events ({totalCount})
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value={activeTab} className="mt-6">
-            <Card className="animate-scale-in">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
-                  <div className="flex items-center gap-2">
-                    {activeTab === 'upcoming' ? <CalendarDays className="h-5 w-5" /> : <Archive className="h-5 w-5" />}
-                    {activeTab === 'upcoming' ? 'Upcoming Events' : 'Past Events'} ({totalCount})
-                  </div>
-                  <div className="text-sm font-normal text-gray-600">
-                    Page {currentPage} of {totalPages} • Showing {displayEvents.length} of {totalCount}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">Loading events...</p>
-                  </div>
-                ) : displayEvents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">
-                      {activeTab === 'upcoming' ? 'No upcoming events. Add your first event to get started.' : 'No past events found.'}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-4">
-                      {displayEvents.map((event, index) => {
-                        const eventDate = new Date(event.start_time);
-                        const isEventToday = isToday(eventDate);
-                        
-                        return (
-                          <div 
-                            key={event.id} 
-                            className={`border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in cursor-pointer ${
-                              isEventToday ? 'bg-blue-50 border-blue-200' : 'bg-white'
-                            }`}
-                            style={{ animationDelay: `${index * 100}ms` }}
-                            onClick={() => openEventDetails(event)}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                                  <h3 className="text-lg font-semibold">{event.title}</h3>
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    {isEventToday && (
-                                      <Badge className="bg-blue-500 text-white animate-pulse">
-                                        Today
-                                      </Badge>
-                                    )}
-                                    <Badge className={`${getEventTypeColor(event.event_type)} transition-all duration-200 hover:scale-105`}>
-                                      {event.event_type}
-                                    </Badge>
-                                    {event.opponent && (
-                                      <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
-                                        vs {event.opponent}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                            
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-2">
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
-                                    <span>
-                                      {format(new Date(event.start_time), 'MMM dd, yyyy • h:mm a')} - 
-                                      {format(new Date(event.end_time), 'h:mm a')}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>{event.location}</span>
-                                  </div>
-                                </div>
-                                
-                                {event.description && (
-                                  <p className="text-sm text-gray-700">{event.description}</p>
-                                )}
-                              </div>
-                              
-                              <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0 sm:ml-4">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEventDetails(event);
-                                  }}
-                                  title="View Details"
-                                  className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
-                                  aria-label={`View details for ${event.title}`}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                {canManageAttendance && event.team_ids && event.team_ids.length > 0 && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openAttendanceModal(event);
-                                      }}
-                                      title="Track Attendance"
-                                      className="transition-all duration-200 hover:scale-110 hover:bg-blue-50"
-                                      aria-label={`Track attendance for ${event.title}`}
-                                    >
-                                      <Users className="h-4 w-4" />
-                                    </Button>
-                                )}
-                                {(isSuperAdmin || userRole === 'staff') && (
-                                  <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openEditForm(event);
-                                        }}
-                                        className="transition-all duration-200 hover:scale-110 hover:bg-gray-50"
-                                        aria-label={`Edit ${event.title}`}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          initiateDelete(event.id);
-                                        }}
-                                        className="transition-all duration-200 hover:scale-110 hover:bg-red-50"
-                                        aria-label={`Delete ${event.title}`}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                      </Button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="mt-8 flex justify-center">
-                        <Pagination>
-                          <PaginationContent>
-                            {hasPrevPage && (
-                              <PaginationItem>
-                                <PaginationPrevious 
-                                  onClick={() => handlePageChange(currentPage - 1)}
-                                  className="cursor-pointer"
-                                />
-                              </PaginationItem>
-                            )}
-                            
-                            {/* Page numbers */}
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                              let pageNumber;
-                              if (totalPages <= 5) {
-                                pageNumber = i + 1;
-                              } else if (currentPage <= 3) {
-                                pageNumber = i + 1;
-                              } else if (currentPage >= totalPages - 2) {
-                                pageNumber = totalPages - 4 + i;
-                              } else {
-                                pageNumber = currentPage - 2 + i;
-                              }
-                              
-                              return (
-                                <PaginationItem key={pageNumber}>
-                                  <PaginationLink
-                                    onClick={() => handlePageChange(pageNumber)}
-                                    isActive={currentPage === pageNumber}
-                                    className="cursor-pointer"
-                                  >
-                                    {pageNumber}
-                                  </PaginationLink>
-                                </PaginationItem>
-                              );
-                            })}
-                            
-                            {hasNextPage && (
-                              <PaginationItem>
-                                <PaginationNext 
-                                  onClick={() => handlePageChange(currentPage + 1)}
-                                  className="cursor-pointer"
-                                />
-                              </PaginationItem>
-                            )}
-                          </PaginationContent>
-                        </Pagination>
+        {/* Events Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
+            <TabsTrigger value="past">Past Events</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab} className="space-y-4">
+            {loading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-6">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-2/3" />
                       </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : events.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">No events found</h3>
+                  <p className="text-muted-foreground">
+                    {activeTab === 'upcoming' 
+                      ? "No upcoming events scheduled" 
+                      : "No past events found"
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {events.map((event) => (
+                  <Card key={event.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-lg font-semibold">{event.title}</h3>
+                            <Badge className={getEventTypeColor(event.event_type)}>
+                              {event.event_type}
+                            </Badge>
+                            {event.is_recurring && (
+                              <Badge variant="outline">Recurring</Badge>
+                            )}
+                            {isToday(new Date(event.start_time)) && (
+                              <Badge variant="default">Today</Badge>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {format(new Date(event.start_time), 'MMM d, yyyy h:mm a')} - 
+                              {format(new Date(event.end_time), 'h:mm a')}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {event.location}
+                            </div>
+                            {event.team_ids && event.team_ids.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Users className="h-4 w-4" />
+                                {event.team_ids.length} team{event.team_ids.length > 1 ? 's' : ''}
+                              </div>
+                            )}
+                          </div>
+
+                          {event.opponent && (
+                            <p className="text-sm">
+                              <strong>vs {event.opponent}</strong>
+                            </p>
+                          )}
+
+                          {event.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {event.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 ml-4">
+                          {canManageAttendance && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openAttendanceModal(event)}
+                            >
+                              <Users className="h-4 w-4 mr-1" />
+                              Attendance
+                            </Button>
+                          )}
+                          {canManageEvents && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingEvent(event);
+                                setIsFormOpen(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
+        {/* Event Form Dialog */}
+        <Dialog open={isFormOpen} onOpenChange={(open) => {
+          setIsFormOpen(open);
+          if (!open) setEditingEvent(null);
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingEvent ? 'Edit Event' : 'Add New Event'}
+              </DialogTitle>
+            </DialogHeader>
+            <ScheduleForm
+              onSubmit={handleFormSubmit}
+              initialData={editingEvent ? {
+                title: editingEvent.title,
+                eventType: editingEvent.event_type,
+                startDate: editingEvent.start_time.split('T')[0],
+                startTime: editingEvent.start_time.split('T')[1]?.substring(0, 5),
+                endDate: editingEvent.end_time.split('T')[0],
+                endTime: editingEvent.end_time.split('T')[1]?.substring(0, 5),
+                location: editingEvent.location,
+                opponent: editingEvent.opponent,
+                description: editingEvent.description,
+                teamIds: editingEvent.team_ids || [],
+                isRecurring: editingEvent.is_recurring || false,
+                recurrencePattern: editingEvent.recurrence_pattern as 'daily' | 'weekly' | 'monthly',
+              } : undefined}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Attendance Modal */}
         <AttendanceModal
           isOpen={attendanceModal.isOpen}
-          onClose={closeAttendanceModal}
+          onClose={() => setAttendanceModal(prev => ({ ...prev, isOpen: false }))}
           eventId={attendanceModal.eventId}
           eventTitle={attendanceModal.eventTitle}
           teamIds={attendanceModal.teamIds}
         />
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Event</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this event? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleConfirmDelete}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Event Details Modal */}
-        <Dialog open={eventDetailModal.isOpen} onOpenChange={closeEventDetails}>
-          <DialogContent className="max-w-2xl" role="dialog" aria-labelledby="event-details-title">
-            <DialogHeader>
-              <DialogTitle id="event-details-title" className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Event Details
-              </DialogTitle>
-              <DialogDescription>
-                View detailed information about this event
-              </DialogDescription>
-            </DialogHeader>
-            {eventDetailModal.event && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">{eventDetailModal.event.title}</h3>
-                  <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <Badge className={getEventTypeColor(eventDetailModal.event.event_type)}>
-                      {eventDetailModal.event.event_type}
-                    </Badge>
-                    {eventDetailModal.event.opponent && (
-                      <Badge variant="outline">
-                        vs {eventDetailModal.event.opponent}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="font-medium">Start Time</p>
-                        <p className="text-gray-600">
-                          {format(new Date(eventDetailModal.event.start_time), 'EEEE, MMM dd, yyyy • h:mm a')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="font-medium">End Time</p>
-                        <p className="text-gray-600">
-                          {format(new Date(eventDetailModal.event.end_time), 'EEEE, MMM dd, yyyy • h:mm a')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="font-medium">Location</p>
-                        <p className="text-gray-600">{eventDetailModal.event.location}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {eventDetailModal.event.description && (
-                  <div>
-                    <p className="font-medium mb-2">Description</p>
-                    <p className="text-gray-600 bg-gray-50 p-3 rounded">{eventDetailModal.event.description}</p>
-                  </div>
-                )}
-                
-                {eventDetailModal.event.is_recurring && (
-                  <div>
-                    <p className="font-medium mb-2">Recurring Event</p>
-                    <div className="bg-blue-50 p-3 rounded">
-                      <p className="text-sm text-blue-800">
-                        This is a {eventDetailModal.event.recurrence_pattern} recurring event
-                        {eventDetailModal.event.recurrence_end_date && 
-                          ` until ${format(new Date(eventDetailModal.event.recurrence_end_date), 'MMM dd, yyyy')}`
-                        }
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Attendance Actions in Detail Modal */}
-                {canManageAttendance && eventDetailModal.event.team_ids && eventDetailModal.event.team_ids.length > 0 && (
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium mb-3">Event Management</h4>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => {
-                          closeEventDetails();
-                          openAttendanceModal(eventDetailModal.event!);
-                        }}
-                        className="flex items-center gap-2"
-                        aria-label="Track attendance for this event"
-                      >
-                        <Users className="h-4 w-4" />
-                        Track Attendance
-                      </Button>
-                      {(isSuperAdmin || userRole === 'staff') && (
-                        <Button 
-                          variant="outline"
-                          onClick={() => {
-                            closeEventDetails();
-                            openEditForm(eventDetailModal.event!);
-                          }}
-                          className="flex items-center gap-2"
-                          aria-label="Edit this event"
-                        >
-                          <Edit className="h-4 w-4" />
-                          Edit Event
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </Layout>
   );

@@ -26,7 +26,7 @@ const scheduleFormSchema = z.object({
   teamIds: z.array(z.string()).optional(),
   isRecurring: z.boolean().optional(),
   recurrenceEndDate: z.string().optional(),
-  recurrencePattern: z.enum(['weekly', 'monthly']).optional(),
+  recurrencePattern: z.enum(['daily', 'weekly', 'monthly']).optional(),
   recurrenceDaysOfWeek: z.array(z.number()).optional(),
 });
 
@@ -62,7 +62,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
       teamIds: initialData?.teamIds || [],
       isRecurring: initialData?.isRecurring || false,
       recurrenceEndDate: initialData?.recurrenceEndDate || '',
-      recurrencePattern: initialData?.recurrencePattern || 'weekly',
+      recurrencePattern: initialData?.recurrencePattern || 'daily',
       recurrenceDaysOfWeek: initialData?.recurrenceDaysOfWeek || [],
     },
   });
@@ -333,6 +333,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
                             <SelectItem value="weekly">Weekly</SelectItem>
                             <SelectItem value="monthly">Monthly</SelectItem>
                           </SelectContent>
