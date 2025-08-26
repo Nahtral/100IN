@@ -57,7 +57,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const fetchPlayersAndAttendance = async () => {
     setLoading(true);
     try {
-      // Fetch players from selected teams
+      // Fetch players from selected teams (left join with profiles to handle null user_id)
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select(`
@@ -65,7 +65,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           user_id,
           jersey_number,
           position,
-          profiles(full_name)
+          profiles!left(full_name)
         `)
         .in('team_id', teamIds)
         .eq('is_active', true);
