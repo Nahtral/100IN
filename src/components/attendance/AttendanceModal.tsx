@@ -90,6 +90,8 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         throw manualPlayersError;
       }
 
+      console.log('Manual players data:', manualPlayersData);
+
       // Fetch existing attendance records
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('player_attendance')
@@ -117,6 +119,8 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           profiles: { full_name: manualPlayer.name }
         }))
       ];
+
+      console.log('Combined players:', combinedPlayers);
 
       setPlayers(combinedPlayers);
       
