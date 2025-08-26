@@ -2335,6 +2335,7 @@ export type Database = {
           manual_entry_phone: string | null
           medical_notes: string | null
           name: string | null
+          notes: string | null
           position: string | null
           shooting_percentage: number | null
           team_id: string | null
@@ -2362,6 +2363,7 @@ export type Database = {
           manual_entry_phone?: string | null
           medical_notes?: string | null
           name?: string | null
+          notes?: string | null
           position?: string | null
           shooting_percentage?: number | null
           team_id?: string | null
@@ -2389,6 +2391,7 @@ export type Database = {
           manual_entry_phone?: string | null
           medical_notes?: string | null
           name?: string | null
+          notes?: string | null
           position?: string | null
           shooting_percentage?: number | null
           team_id?: string | null

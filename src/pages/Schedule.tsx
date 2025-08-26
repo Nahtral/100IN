@@ -9,6 +9,7 @@ import { Plus, Calendar, Clock, MapPin, Users, Eye, RefreshCw } from 'lucide-rea
 import { Skeleton } from '@/components/ui/skeleton';
 import ScheduleForm from '@/components/forms/ScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
+import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,6 +51,13 @@ const Schedule = () => {
     eventId: '',
     eventTitle: '',
     teamIds: []
+  });
+  const [eventDetailsModal, setEventDetailsModal] = useState<{
+    isOpen: boolean;
+    eventId: string;
+  }>({
+    isOpen: false,
+    eventId: ''
   });
 
   const { user } = useAuth();
@@ -236,6 +244,13 @@ const Schedule = () => {
     });
   };
 
+  const openEventDetailsModal = (event: ScheduleEvent) => {
+    setEventDetailsModal({
+      isOpen: true,
+      eventId: event.id
+    });
+  };
+
   const getEventTypeColor = (type: string) => {
     const colors = {
       game: 'bg-red-100 text-red-800',
@@ -322,7 +337,7 @@ const Schedule = () => {
             ) : (
               <div className="space-y-4">
                 {events.map((event) => (
-                  <Card key={event.id} className="hover:shadow-md transition-shadow">
+                  <Card key={event.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openEventDetailsModal(event)}>
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="space-y-2 flex-1">
@@ -375,7 +390,10 @@ const Schedule = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => openAttendanceModal(event)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openAttendanceModal(event);
+                              }}
                             >
                               <Users className="h-4 w-4 mr-1" />
                               Attendance
@@ -385,7 +403,8 @@ const Schedule = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setEditingEvent(event);
                                 setIsFormOpen(true);
                               }}
@@ -433,6 +452,23 @@ const Schedule = () => {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Event Details Modal */}
+        <EventDetailsModal
+          isOpen={eventDetailsModal.isOpen}
+          onClose={() => setEventDetailsModal(prev => ({ ...prev, isOpen: false }))}
+          eventId={eventDetailsModal.eventId}
+          onEventUpdated={fetchEvents}
+          onEditEvent={(event) => {
+            setEditingEvent(event);
+            setIsFormOpen(true);
+            setEventDetailsModal(prev => ({ ...prev, isOpen: false }));
+          }}
+          onOpenAttendance={(event) => {
+            openAttendanceModal(event);
+            setEventDetailsModal(prev => ({ ...prev, isOpen: false }));
+          }}
+        />
 
         {/* Attendance Modal */}
         <AttendanceModal
