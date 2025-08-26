@@ -378,9 +378,10 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         <div className="flex items-center gap-2">
                           {getStatusIcon(attendance[player.id]?.status || 'present')}
                            <div>
-                             <p className="font-medium">
-                               {player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}
-                             </p>
+                              <p className="font-medium">
+                                {player.profiles?.full_name || 
+                                 (player.jersey_number ? `Player #${player.jersey_number}` : 'Unknown Player')}
+                              </p>
                              <p className="text-xs sm:text-sm text-gray-600">
                                {player.jersey_number ? `#${player.jersey_number}` : 'No Jersey'} • {player.position || 'No Position'}
                              </p>
