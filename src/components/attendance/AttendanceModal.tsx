@@ -70,7 +70,12 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         .in('team_id', teamIds)
         .eq('is_active', true);
 
-      if (playersError) throw playersError;
+      if (playersError) {
+        console.error('Players query error:', playersError);
+        throw playersError;
+      }
+
+      console.log('Fetched players:', playersData);
 
       // Fetch existing attendance records
       const { data: attendanceData, error: attendanceError } = await supabase
@@ -234,12 +239,14 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(attendance[player.id]?.status || 'present')}
-                          <div>
-                            <p className="font-medium">{player.profiles?.full_name || 'Unknown Player'}</p>
-                            <p className="text-xs sm:text-sm text-gray-600">
-                              #{player.jersey_number} • {player.position}
-                            </p>
-                          </div>
+                           <div>
+                             <p className="font-medium">
+                               {player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}
+                             </p>
+                             <p className="text-xs sm:text-sm text-gray-600">
+                               {player.jersey_number ? `#${player.jersey_number}` : 'No Jersey'} • {player.position || 'No Position'}
+                             </p>
+                           </div>
                         </div>
                       </div>
                       
