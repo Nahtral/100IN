@@ -9,8 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import EnhancedScheduleForm from '@/components/forms/EnhancedScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
+import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -49,6 +51,9 @@ const Schedule = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<any>({});
+  const [pageSize] = useState(20);
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
     eventId: string;
@@ -76,7 +81,7 @@ const Schedule = () => {
   const { toast } = useToast();
   
   // Use enhanced caching hook
-  const { events, loading, error, fetchEvents, invalidateCache } = useScheduleCache();
+  const { events, totalCount, loading, error, fetchEvents, invalidateCache } = useScheduleCache();
 
   useEffect(() => {
     trackPageView('Schedule');
@@ -93,45 +98,58 @@ const Schedule = () => {
     }
   }, [error, toast]);
 
-  // Memoized filtered and sorted events for performance
-  const { upcomingEvents, pastEvents } = useMemo(() => {
-    const upcoming = events
-      .filter(event => {
-        try {
-          const eventDate = new Date(event.start_time);
-          return isFuture(eventDate) || isToday(eventDate);
-        } catch {
-          return false;
-        }
-      })
-      .sort((a, b) => {
-        const aDate = new Date(a.start_time);
-        const bDate = new Date(b.start_time);
-        
-        // Prioritize today's events first
+  // Fetch events with current filters and pagination
+  useEffect(() => {
+    const currentFilters = {
+      ...filters,
+      ...(activeTab === 'upcoming' 
+        ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
+        : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
+      )
+    };
+    
+    fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
+  }, [fetchEvents, filters, activeTab, currentPage, pageSize]);
+
+  // Reset page when filters or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, activeTab]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasNextPage = currentPage < totalPages;
+  const hasPrevPage = currentPage > 1;
+
+  // Memoized display events (already filtered by backend)
+  const displayEvents = useMemo(() => {
+    return events.sort((a, b) => {
+      const aDate = new Date(a.start_time);
+      const bDate = new Date(b.start_time);
+      
+      if (activeTab === 'upcoming') {
+        // Prioritize today's events first for upcoming
         if (isToday(aDate) && !isToday(bDate)) return -1;
         if (!isToday(aDate) && isToday(bDate)) return 1;
-        
         return aDate.getTime() - bDate.getTime();
-      });
+      } else {
+        // Most recent first for past events
+        return bDate.getTime() - aDate.getTime();
+      }
+    });
+  }, [events, activeTab]);
 
-    const past = events
-      .filter(event => {
-        try {
-          const eventDate = new Date(event.start_time);
-          return isPast(eventDate) && !isToday(eventDate);
-        } catch {
-          return false;
-        }
-      })
-      .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+  const handleFiltersChange = useCallback((newFilters: any) => {
+    setFilters(newFilters);
+  }, []);
 
-    return { upcomingEvents: upcoming, pastEvents: past };
-  }, [events]);
+  const handleFiltersClear = useCallback(() => {
+    setFilters({});
+  }, []);
 
-  const getDisplayEvents = useCallback(() => {
-    return activeTab === 'upcoming' ? upcomingEvents : pastEvents;
-  }, [activeTab, upcomingEvents, pastEvents]);
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
 
   const handleSubmit = useCallback(async (formData: any) => {
     trackUserAction('schedule_form_submit', editingEvent ? 'edit' : 'create');
@@ -213,9 +231,16 @@ const Schedule = () => {
       setIsFormOpen(false);
       setEditingEvent(null);
       
-      // Invalidate cache and refetch
+      // Invalidate cache and refetch with current filters
       invalidateCache();
-      await fetchEvents();
+      const currentFilters = {
+        ...filters,
+        ...(activeTab === 'upcoming' 
+          ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
+          : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
+        )
+      };
+      await fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
 
     } catch (error: any) {
       clearTimeout(timeoutId);
@@ -273,9 +298,16 @@ const Schedule = () => {
         description: "Event deleted successfully.",
       });
       
-      // Invalidate cache and refetch
+      // Invalidate cache and refetch with current filters
       invalidateCache();
-      await fetchEvents();
+      const currentFilters = {
+        ...filters,
+        ...(activeTab === 'upcoming' 
+          ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
+          : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
+        )
+      };
+      await fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
       
     } catch (error) {
       await ErrorLogger.logError(error, {
@@ -346,8 +378,15 @@ const Schedule = () => {
   const handleRefresh = useCallback(async () => {
     trackUserAction('schedule_refresh', 'manual');
     invalidateCache();
-    await fetchEvents();
-  }, [trackUserAction, invalidateCache, fetchEvents]);
+    const currentFilters = {
+      ...filters,
+      ...(activeTab === 'upcoming' 
+        ? { date_range: { start: new Date().toISOString(), end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() } }
+        : { date_range: { start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(), end: new Date().toISOString() } }
+      )
+    };
+    await fetchEvents(currentFilters, { page: currentPage, limit: pageSize });
+  }, [trackUserAction, invalidateCache, fetchEvents, filters, activeTab, currentPage, pageSize]);
 
   const canManageAttendance = useMemo(() => 
     isSuperAdmin || userRole === 'staff' || userRole === 'coach', 
@@ -443,25 +482,36 @@ const Schedule = () => {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Advanced Filters */}
+        <ScheduleFilters 
+          onFiltersChange={handleFiltersChange}
+          onClear={handleFiltersClear}
+        />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upcoming" className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
-              Upcoming ({upcomingEvents.length})
+              Upcoming ({totalCount})
             </TabsTrigger>
             <TabsTrigger value="past" className="flex items-center gap-2">
               <Archive className="h-4 w-4" />
-              Past Events ({pastEvents.length})
+              Past Events ({totalCount})
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value={activeTab} className="mt-6">
             <Card className="animate-scale-in">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  {activeTab === 'upcoming' ? <CalendarDays className="h-5 w-5" /> : <Archive className="h-5 w-5" />}
-                  {activeTab === 'upcoming' ? 'Upcoming Events' : 'Past Events'} ({getDisplayEvents().length})
+                <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
+                  <div className="flex items-center gap-2">
+                    {activeTab === 'upcoming' ? <CalendarDays className="h-5 w-5" /> : <Archive className="h-5 w-5" />}
+                    {activeTab === 'upcoming' ? 'Upcoming Events' : 'Past Events'} ({totalCount})
+                  </div>
+                  <div className="text-sm font-normal text-gray-600">
+                    Page {currentPage} of {totalPages} • Showing {displayEvents.length} of {totalCount}
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -469,7 +519,7 @@ const Schedule = () => {
                   <div className="text-center py-8">
                     <p className="text-gray-600">Loading events...</p>
                   </div>
-                ) : getDisplayEvents().length === 0 ? (
+                ) : displayEvents.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-600">
                       {activeTab === 'upcoming' ? 'No upcoming events. Add your first event to get started.' : 'No past events found.'}
@@ -477,11 +527,10 @@ const Schedule = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {getDisplayEvents().map((event, index) => {
+                    {displayEvents.map((event, index) => {
                       const eventDate = new Date(event.start_time);
                       const isEventToday = isToday(eventDate);
                       
-                      return (
                       <div 
                         key={event.id} 
                         className={`border rounded-lg p-4 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in cursor-pointer ${
@@ -588,7 +637,6 @@ const Schedule = () => {
                           </>
                           )}
                         </div>
-                      </div>
                       </div>
                     );})}
                 </div>

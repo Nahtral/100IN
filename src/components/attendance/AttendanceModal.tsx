@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserCheck, UserX, Clock, FileText } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Users, UserCheck, UserX, Clock, FileText, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +44,8 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { user } = useAuth();
@@ -118,6 +121,48 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         [field]: value
       }
     }));
+  };
+
+  const togglePlayerSelection = (playerId: string) => {
+    setSelectedPlayers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(playerId)) {
+        newSet.delete(playerId);
+      } else {
+        newSet.add(playerId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllPlayers = () => {
+    setSelectedPlayers(new Set(players.map(p => p.id)));
+  };
+
+  const deselectAllPlayers = () => {
+    setSelectedPlayers(new Set());
+  };
+
+  const applyBulkStatus = () => {
+    if (selectedPlayers.size === 0) {
+      toast({
+        title: "No Players Selected",
+        description: "Please select players to apply bulk status.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    selectedPlayers.forEach(playerId => {
+      updateAttendance(playerId, 'status', bulkStatus);
+    });
+
+    toast({
+      title: "Bulk Status Applied",
+      description: `Applied "${bulkStatus}" status to ${selectedPlayers.size} player(s).`,
+    });
+
+    setSelectedPlayers(new Set());
   };
 
   const saveAttendance = async () => {
@@ -225,6 +270,60 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
               </CardContent>
             </Card>
 
+            {/* Bulk Operations */}
+            <Card className="animate-fade-in">
+              <CardHeader>
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4" />
+                  Bulk Operations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={selectAllPlayers}
+                      className="transition-all duration-200 hover:scale-105"
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={deselectAllPlayers}
+                      className="transition-all duration-200 hover:scale-105"
+                    >
+                      Deselect All
+                    </Button>
+                  </div>
+                  
+                  <div className="flex gap-2 flex-1">
+                    <Select value={bulkStatus} onValueChange={(value: any) => setBulkStatus(value)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="present">Present</SelectItem>
+                        <SelectItem value="late">Late</SelectItem>
+                        <SelectItem value="absent">Absent</SelectItem>
+                        <SelectItem value="excused">Excused</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button
+                      onClick={applyBulkStatus}
+                      disabled={selectedPlayers.size === 0}
+                      className="transition-all duration-200 hover:scale-105"
+                    >
+                      Apply to Selected ({selectedPlayers.size})
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Player List */}
             <div className="space-y-3">
               {players.map((player, index) => (
@@ -236,6 +335,11 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                       <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedPlayers.has(player.id)}
+                          onCheckedChange={() => togglePlayerSelection(player.id)}
+                          aria-label={`Select ${player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}`}
+                        />
                         <div className="flex items-center gap-2">
                           {getStatusIcon(attendance[player.id]?.status || 'present')}
                            <div>

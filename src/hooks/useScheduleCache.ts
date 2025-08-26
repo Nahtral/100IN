@@ -26,29 +26,60 @@ interface ScheduleEvent {
   recurrence_days_of_week?: number[];
 }
 
+interface ScheduleFilters {
+  event_type?: string;
+  team_ids?: string[];
+  location?: string;
+  search?: string;
+  date_range?: {
+    start: string;
+    end: string;
+  };
+}
+
+interface PaginationConfig {
+  page: number;
+  limit: number;
+}
+
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
-const MAX_CACHE_SIZE = 100;
+const MAX_CACHE_SIZE = 500; // Increased for production scale
+const DEFAULT_PAGE_SIZE = 20;
 
 export const useScheduleCache = () => {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const cacheRef = useRef<Map<string, CacheEntry<ScheduleEvent[]>>>(new Map());
+  const cacheRef = useRef<Map<string, CacheEntry<{events: ScheduleEvent[], count: number}>>>(new Map());
   const subscriptionRef = useRef<any>(null);
+  const lastRequestRef = useRef<string>('');
 
   const invalidateCache = useCallback(() => {
     cacheRef.current.clear();
   }, []);
 
-  // Fetch events with caching
-  const fetchEvents = useCallback(async (filters?: any) => {
-    const cacheKey = `events_${JSON.stringify(filters || {})}`;
+  // Enhanced fetch with filters and pagination
+  const fetchEvents = useCallback(async (
+    filters?: ScheduleFilters, 
+    pagination?: PaginationConfig
+  ) => {
+    const requestKey = JSON.stringify({ filters, pagination });
+    
+    // Debounce rapid successive requests
+    if (lastRequestRef.current === requestKey) {
+      return { events, count: totalCount };
+    }
+    lastRequestRef.current = requestKey;
+
+    const cacheKey = `events_${requestKey}`;
     const cache = cacheRef.current;
     const entry = cache.get(cacheKey);
     
     // Check cache first
     if (entry && Date.now() <= entry.expiry) {
-      setEvents(entry.data);
+      setEvents(entry.data.events);
+      setTotalCount(entry.data.count);
       setLoading(false);
       return entry.data;
     }
@@ -57,29 +88,75 @@ export const useScheduleCache = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      // Build query with filters
+      let query = supabase
         .from('schedules')
-        .select('*')
-        .order('start_time', { ascending: true });
+        .select('*', { count: 'exact' });
+
+      // Apply filters
+      if (filters?.event_type) {
+        query = query.eq('event_type', filters.event_type);
+      }
+      
+      if (filters?.team_ids && filters.team_ids.length > 0) {
+        query = query.overlaps('team_ids', filters.team_ids);
+      }
+      
+      if (filters?.location) {
+        query = query.ilike('location', `%${filters.location}%`);
+      }
+      
+      if (filters?.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,opponent.ilike.%${filters.search}%`);
+      }
+      
+      if (filters?.date_range) {
+        query = query
+          .gte('start_time', filters.date_range.start)
+          .lte('start_time', filters.date_range.end);
+      }
+
+      // Apply pagination
+      if (pagination) {
+        const from = (pagination.page - 1) * pagination.limit;
+        const to = from + pagination.limit - 1;
+        query = query.range(from, to);
+      }
+
+      // Order by start time
+      query = query.order('start_time', { ascending: true });
+
+      const { data, error: fetchError, count } = await query;
 
       if (fetchError) throw fetchError;
 
       const eventData = data || [];
+      const totalCount = count || 0;
       
-      // Cache the result
+      // Smart cache management
       if (cache.size >= MAX_CACHE_SIZE) {
-        const oldestKey = cache.keys().next().value;
-        cache.delete(oldestKey);
+        // Remove oldest 20% of entries
+        const keysToRemove = Math.floor(MAX_CACHE_SIZE * 0.2);
+        const sortedKeys = Array.from(cache.keys()).sort((a, b) => {
+          const entryA = cache.get(a);
+          const entryB = cache.get(b);
+          return (entryA?.timestamp || 0) - (entryB?.timestamp || 0);
+        });
+        
+        for (let i = 0; i < keysToRemove && i < sortedKeys.length; i++) {
+          cache.delete(sortedKeys[i]);
+        }
       }
       
       cache.set(cacheKey, {
-        data: eventData,
+        data: { events: eventData, count: totalCount },
         timestamp: Date.now(),
         expiry: Date.now() + CACHE_EXPIRY
       });
       
       setEvents(eventData);
-      return eventData;
+      setTotalCount(totalCount);
+      return { events: eventData, count: totalCount };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch events';
       setError(errorMessage);
@@ -87,7 +164,7 @@ export const useScheduleCache = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [events, totalCount]);
 
   // Real-time subscription
   useEffect(() => {
@@ -131,10 +208,11 @@ export const useScheduleCache = () => {
 
   return {
     events,
+    totalCount,
     loading,
     error,
     fetchEvents,
     invalidateCache,
-    refetch: () => fetchEvents()
+    refetch: (filters?: ScheduleFilters, pagination?: PaginationConfig) => fetchEvents(filters, pagination)
   };
 };
