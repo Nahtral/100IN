@@ -1121,6 +1121,56 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_players: {
+        Row: {
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          jersey_number: number | null
+          name: string
+          notes: string | null
+          phone: string | null
+          position: string | null
+          schedule_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          email?: string | null
+          id?: string
+          jersey_number?: number | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          schedule_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          jersey_number?: number | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          schedule_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_players_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_uploads: {
         Row: {
           created_at: string
