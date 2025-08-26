@@ -68,7 +68,7 @@ export const useScheduleCache = () => {
     
     // Debounce rapid successive requests
     if (lastRequestRef.current === requestKey) {
-      return { events, count: totalCount };
+      return;
     }
     lastRequestRef.current = requestKey;
 
@@ -81,7 +81,7 @@ export const useScheduleCache = () => {
       setEvents(entry.data.events);
       setTotalCount(entry.data.count);
       setLoading(false);
-      return entry.data;
+      return;
     }
 
     try {
@@ -156,7 +156,6 @@ export const useScheduleCache = () => {
       
       setEvents(eventData);
       setTotalCount(totalCount);
-      return { events: eventData, count: totalCount };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch events';
       setError(errorMessage);
@@ -164,7 +163,7 @@ export const useScheduleCache = () => {
     } finally {
       setLoading(false);
     }
-  }, [events, totalCount]);
+  }, []);
 
   // Real-time subscription
   useEffect(() => {
@@ -179,7 +178,27 @@ export const useScheduleCache = () => {
         },
         () => {
           invalidateCache();
-          fetchEvents().catch(console.error);
+          // Use a fresh fetch without circular dependency
+          const refetch = async () => {
+            try {
+              const cacheKey = 'events_{}';
+              const cache = cacheRef.current;
+              cache.delete(cacheKey);
+              
+              const { data, error: fetchError, count } = await supabase
+                .from('schedules')
+                .select('*', { count: 'exact' })
+                .order('start_time', { ascending: true });
+              
+              if (!fetchError) {
+                setEvents(data || []);
+                setTotalCount(count || 0);
+              }
+            } catch (err) {
+              console.error('Error refetching events:', err);
+            }
+          };
+          refetch();
         }
       )
       .subscribe();
@@ -189,12 +208,12 @@ export const useScheduleCache = () => {
         subscriptionRef.current.unsubscribe();
       }
     };
-  }, [fetchEvents, invalidateCache]);
+  }, [invalidateCache]);
 
   // Initial fetch
   useEffect(() => {
-    fetchEvents().catch(console.error);
-  }, [fetchEvents]);
+    fetchEvents();
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
