@@ -61,7 +61,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
       if (eventData.team_ids && eventData.team_ids.length > 0) {
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
-          .select('id, name, division, age_group')
+          .select('id, name, age_group, season')
           .in('id', eventData.team_ids);
 
         if (teamsError) throw teamsError;
@@ -314,7 +314,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                         <Card key={team.id} className="p-4">
                           <h4 className="font-semibold">{team.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {team.division && `${team.division} • `}
+                            {team.season && `${team.season} • `}
                             {team.age_group && `${team.age_group}`}
                           </p>
                         </Card>
