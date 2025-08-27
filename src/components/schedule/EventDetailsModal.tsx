@@ -44,8 +44,6 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   const fetchEventDetails = async () => {
     setLoading(true);
     try {
-      console.log('Fetching event details for eventId:', eventId);
-      
       // Fetch event details
       const { data: eventData, error: eventError } = await supabase
         .from('schedules')
@@ -53,15 +51,13 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         .eq('id', eventId)
         .single();
 
-      console.log('Event data response:', eventData, 'Error:', eventError);
-      
       if (eventError) throw eventError;
 
       // Fetch teams for this event
       if (eventData.team_ids && eventData.team_ids.length > 0) {
         const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
-          .select('id, name, age_group, season')
+          .select('id, name, division, age_group')
           .in('id', eventData.team_ids);
 
         if (teamsError) throw teamsError;
@@ -199,7 +195,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     }
   };
 
-  if (!isOpen) {
+  if (!event) {
     return null;
   }
 
@@ -209,14 +205,12 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {event?.title || 'Event Details'}
+            {event.title}
           </DialogTitle>
         </DialogHeader>
 
         {loading ? (
           <div className="p-8 text-center">Loading event details...</div>
-        ) : !event ? (
-          <div className="p-8 text-center">Event not found</div>
         ) : (
           <Tabs defaultValue="details" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -314,7 +308,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                         <Card key={team.id} className="p-4">
                           <h4 className="font-semibold">{team.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {team.season && `${team.season} • `}
+                            {team.division && `${team.division} • `}
                             {team.age_group && `${team.age_group}`}
                           </p>
                         </Card>
@@ -374,13 +368,12 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             variant="outline"
             onClick={() => onOpenAttendance(event)}
             className="flex items-center gap-2"
-            disabled={!event}
           >
             <UserCheck className="h-4 w-4" />
             Take Attendance
           </Button>
 
-          {isSuperAdmin && event && (
+          {isSuperAdmin && (
             <>
               <Button
                 variant="outline"
