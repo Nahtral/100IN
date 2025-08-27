@@ -95,7 +95,7 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
     },
     {
       title: 'ShotIQ',
-      href: '/shot-iq',
+      href: '/shotiq',
       icon: Target,
       description: 'Shot analysis tool',
       showForAll: true
