@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import PlayerDetailsModal from '@/components/schedule/PlayerDetailsModal';
 import { Users, UserCheck, UserX, Clock, FileText, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,10 +13,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Player {
   id: string;
-  user_id: string | null;
+  user_id: string;
   jersey_number?: number;
   position?: string;
-  name?: string;
   profiles?: {
     full_name: string;
   } | null;
@@ -50,10 +48,6 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [bulkStatus, setBulkStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [playerDetailsModal, setPlayerDetailsModal] = useState<{
-    isOpen: boolean;
-    playerId: string;
-  }>({ isOpen: false, playerId: '' });
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -66,7 +60,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const fetchPlayersAndAttendance = async () => {
     setLoading(true);
     try {
-      // Fetch regular players from selected teams with their profile info
+      // Fetch players from selected teams with their profile info
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select(`
@@ -75,7 +69,6 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           jersey_number,
           position,
           team_id,
-          name,
           profiles(full_name)
         `)
         .in('team_id', teamIds)
@@ -86,19 +79,6 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         throw playersError;
       }
 
-      // Fetch manual players for this specific event
-      const { data: manualPlayersData, error: manualPlayersError } = await supabase
-        .from('manual_players')
-        .select('*')
-        .eq('schedule_id', eventId);
-
-      if (manualPlayersError) {
-        console.error('Manual players query error:', manualPlayersError);
-        throw manualPlayersError;
-      }
-
-      console.log('Manual players data:', manualPlayersData);
-
       // Fetch existing attendance records
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('player_attendance')
@@ -107,34 +87,11 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
       if (attendanceError) throw attendanceError;
 
-      // Combine regular players and manual players into a unified format
-      const combinedPlayers: Player[] = [
-        ...(playersData || []).map(player => ({
-          id: player.id,
-          user_id: player.user_id,
-          jersey_number: player.jersey_number,
-          position: player.position,
-          team_id: player.team_id,
-          name: player.name,
-          profiles: player.profiles
-        })),
-        ...(manualPlayersData || []).map(manualPlayer => ({
-          id: manualPlayer.id,
-          user_id: null,
-          jersey_number: manualPlayer.jersey_number,
-          position: manualPlayer.position,
-          team_id: null,
-          profiles: { full_name: manualPlayer.name }
-        }))
-      ];
-
-      console.log('Combined players:', combinedPlayers);
-
-      setPlayers(combinedPlayers);
+      setPlayers((playersData as unknown as Player[]) || []);
       
-      // Initialize attendance state for all players (regular + manual)
+      // Initialize attendance state
       const attendanceMap: Record<string, AttendanceRecord> = {};
-      combinedPlayers.forEach(player => {
+      playersData?.forEach(player => {
         const existingRecord = attendanceData?.find(a => a.player_id === player.id);
         attendanceMap[player.id] = {
           player_id: player.id,
@@ -377,28 +334,24 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 >
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                       <div className="flex items-center gap-3">
-                         <Checkbox
-                           checked={selectedPlayers.has(player.id)}
-                           onCheckedChange={() => togglePlayerSelection(player.id)}
-                           aria-label={`Select ${player.profiles?.full_name || player.name || `Player #${player.jersey_number || 'N/A'}`}`}
-                         />
-                         <div 
-                           className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-                           onClick={() => setPlayerDetailsModal({ isOpen: true, playerId: player.id })}
-                         >
-                           {getStatusIcon(attendance[player.id]?.status || 'present')}
-                            <div>
-                              <p className="font-medium">
-                                {player.profiles?.full_name || player.name || 
-                                 (player.jersey_number ? `Player #${player.jersey_number}` : 'Unknown Player')}
-                              </p>
-                              <p className="text-xs sm:text-sm text-gray-600">
-                                {player.jersey_number ? `#${player.jersey_number}` : 'No Jersey'} • {player.position || 'No Position'}
-                              </p>
-                            </div>
-                         </div>
-                       </div>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedPlayers.has(player.id)}
+                          onCheckedChange={() => togglePlayerSelection(player.id)}
+                          aria-label={`Select ${player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}`}
+                        />
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(attendance[player.id]?.status || 'present')}
+                           <div>
+                             <p className="font-medium">
+                               {player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}
+                             </p>
+                             <p className="text-xs sm:text-sm text-gray-600">
+                               {player.jersey_number ? `#${player.jersey_number}` : 'No Jersey'} • {player.position || 'No Position'}
+                             </p>
+                           </div>
+                        </div>
+                      </div>
                       
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                         <Select
@@ -442,16 +395,6 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
           </div>
         )}
       </DialogContent>
-
-      {/* Player Details Modal */}
-      <PlayerDetailsModal
-        isOpen={playerDetailsModal.isOpen}
-        onClose={() => setPlayerDetailsModal({ isOpen: false, playerId: '' })}
-        playerId={playerDetailsModal.playerId}
-        onPlayerUpdated={() => {
-          fetchPlayersAndAttendance();
-        }}
-      />
     </Dialog>
   );
 };
