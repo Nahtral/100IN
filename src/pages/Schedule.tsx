@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import ScheduleForm from '@/components/forms/ScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
+import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -50,6 +51,13 @@ const Schedule = () => {
     eventId: '',
     eventTitle: '',
     teamIds: []
+  });
+  const [eventDetailsModal, setEventDetailsModal] = useState<{
+    isOpen: boolean;
+    event: ScheduleEvent | null;
+  }>({
+    isOpen: false,
+    event: null
   });
 
   const { user } = useAuth();
@@ -236,6 +244,39 @@ const Schedule = () => {
     });
   };
 
+  const openEventDetails = (event: ScheduleEvent) => {
+    setEventDetailsModal({
+      isOpen: true,
+      event
+    });
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', eventId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+      
+      setEventDetailsModal({ isOpen: false, event: null });
+      fetchEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete event",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getEventTypeColor = (type: string) => {
     const colors = {
       game: 'bg-red-100 text-red-800',
@@ -321,83 +362,91 @@ const Schedule = () => {
               </Card>
             ) : (
               <div className="space-y-4">
-                {events.map((event) => (
-                  <Card key={event.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-lg font-semibold">{event.title}</h3>
-                            <Badge className={getEventTypeColor(event.event_type)}>
-                              {event.event_type}
-                            </Badge>
-                            {event.is_recurring && (
-                              <Badge variant="outline">Recurring</Badge>
-                            )}
-                            {isToday(new Date(event.start_time)) && (
-                              <Badge variant="default">Today</Badge>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              {format(new Date(event.start_time), 'MMM d, yyyy h:mm a')} - 
-                              {format(new Date(event.end_time), 'h:mm a')}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {event.location}
-                            </div>
-                            {event.team_ids && event.team_ids.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                {event.team_ids.length} team{event.team_ids.length > 1 ? 's' : ''}
-                              </div>
-                            )}
-                          </div>
+                 {events.map((event) => (
+                   <Card 
+                     key={event.id} 
+                     className="hover:shadow-md transition-shadow cursor-pointer"
+                     onClick={() => openEventDetails(event)}
+                   >
+                     <CardContent className="p-6">
+                       <div className="flex items-start justify-between">
+                         <div className="space-y-2 flex-1">
+                           <div className="flex items-center gap-2 flex-wrap">
+                             <h3 className="text-lg font-semibold">{event.title}</h3>
+                             <Badge className={getEventTypeColor(event.event_type)}>
+                               {event.event_type}
+                             </Badge>
+                             {event.is_recurring && (
+                               <Badge variant="outline">Recurring</Badge>
+                             )}
+                             {isToday(new Date(event.start_time)) && (
+                               <Badge variant="default">Today</Badge>
+                             )}
+                           </div>
+                           
+                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                             <div className="flex items-center gap-1">
+                               <Clock className="h-4 w-4" />
+                               {format(new Date(event.start_time), 'MMM d, yyyy h:mm a')} - 
+                               {format(new Date(event.end_time), 'h:mm a')}
+                             </div>
+                             <div className="flex items-center gap-1">
+                               <MapPin className="h-4 w-4" />
+                               {event.location}
+                             </div>
+                             {event.team_ids && event.team_ids.length > 0 && (
+                               <div className="flex items-center gap-1">
+                                 <Users className="h-4 w-4" />
+                                 {event.team_ids.length} team{event.team_ids.length > 1 ? 's' : ''}
+                               </div>
+                             )}
+                           </div>
 
-                          {event.opponent && (
-                            <p className="text-sm">
-                              <strong>vs {event.opponent}</strong>
-                            </p>
-                          )}
+                           {event.opponent && (
+                             <p className="text-sm">
+                               <strong>vs {event.opponent}</strong>
+                             </p>
+                           )}
 
-                          {event.description && (
-                            <p className="text-sm text-muted-foreground">
-                              {event.description}
-                            </p>
-                          )}
-                        </div>
+                           {event.description && (
+                             <p className="text-sm text-muted-foreground">
+                               {event.description}
+                             </p>
+                           )}
+                         </div>
 
-                        <div className="flex items-center gap-2 ml-4">
-                          {canManageAttendance && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openAttendanceModal(event)}
-                            >
-                              <Users className="h-4 w-4 mr-1" />
-                              Attendance
-                            </Button>
-                          )}
-                          {canManageEvents && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingEvent(event);
-                                setIsFormOpen(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                         <div className="flex items-center gap-2 ml-4">
+                           {canManageAttendance && (
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 openAttendanceModal(event);
+                               }}
+                             >
+                               <Users className="h-4 w-4 mr-1" />
+                               Attendance
+                             </Button>
+                           )}
+                           {canManageEvents && (
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setEditingEvent(event);
+                                 setIsFormOpen(true);
+                               }}
+                             >
+                               Edit
+                             </Button>
+                           )}
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 ))}
               </div>
             )}
           </TabsContent>
@@ -441,6 +490,24 @@ const Schedule = () => {
           eventId={attendanceModal.eventId}
           eventTitle={attendanceModal.eventTitle}
           teamIds={attendanceModal.teamIds}
+        />
+
+        {/* Event Details Modal */}
+        <EventDetailsModal
+          isOpen={eventDetailsModal.isOpen}
+          onClose={() => setEventDetailsModal({ isOpen: false, event: null })}
+          event={eventDetailsModal.event}
+          onEdit={(event) => {
+            setEditingEvent(event);
+            setIsFormOpen(true);
+            setEventDetailsModal({ isOpen: false, event: null });
+          }}
+          onDelete={handleDeleteEvent}
+          onAttendance={(event) => {
+            openAttendanceModal(event);
+            setEventDetailsModal({ isOpen: false, event: null });
+          }}
+          onRefresh={fetchEvents}
         />
       </div>
     </Layout>
