@@ -374,12 +374,13 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             variant="outline"
             onClick={() => onOpenAttendance(event)}
             className="flex items-center gap-2"
+            disabled={!event}
           >
             <UserCheck className="h-4 w-4" />
             Take Attendance
           </Button>
 
-          {isSuperAdmin && (
+          {isSuperAdmin && event && (
             <>
               <Button
                 variant="outline"

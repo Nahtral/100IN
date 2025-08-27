@@ -236,6 +236,16 @@ const Schedule = () => {
   };
 
   const openAttendanceModal = (event: ScheduleEvent) => {
+    console.log('Opening attendance modal for event:', event);
+    if (!event || !event.id) {
+      console.error('Cannot open attendance modal - event is null or missing id');
+      toast({
+        title: "Error",
+        description: "Cannot open attendance - event not found",
+        variant: "destructive",
+      });
+      return;
+    }
     setAttendanceModal({
       isOpen: true,
       eventId: event.id,
