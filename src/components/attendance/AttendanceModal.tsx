@@ -10,15 +10,32 @@ import { Users, UserCheck, UserX, Clock, FileText, CheckSquare, Square } from 'l
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import PlayerDetailsModal from '@/components/player-details/PlayerDetailsModal';
 
 interface Player {
   id: string;
   user_id: string;
+  team_id?: string;
   jersey_number?: number;
   position?: string;
+  height?: string;
+  weight?: string;
+  date_of_birth?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  medical_notes?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
   profiles?: {
     full_name: string;
+    email: string;
+    phone?: string;
   } | null;
+  teams?: {
+    name: string;
+    season?: string;
+  };
 }
 
 interface AttendanceRecord {
@@ -48,6 +65,13 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [bulkStatus, setBulkStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [playerDetailsModal, setPlayerDetailsModal] = useState<{
+    isOpen: boolean;
+    player: Player | null;
+  }>({
+    isOpen: false,
+    player: null
+  });
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -60,16 +84,26 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const fetchPlayersAndAttendance = async () => {
     setLoading(true);
     try {
-      // Fetch players from selected teams with their profile info
+      // Fetch players from selected teams with their profile info and team info
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select(`
           id,
           user_id,
+          team_id,
           jersey_number,
           position,
-          team_id,
-          profiles(full_name)
+          height,
+          weight,
+          date_of_birth,
+          emergency_contact_name,
+          emergency_contact_phone,
+          medical_notes,
+          is_active,
+          created_at,
+          updated_at,
+          profiles(full_name, email, phone),
+          teams(name, season)
         `)
         .in('team_id', teamIds)
         .eq('is_active', true);
@@ -202,6 +236,17 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
     }
   };
 
+  const openPlayerDetails = (player: Player) => {
+    setPlayerDetailsModal({
+      isOpen: true,
+      player
+    });
+  };
+
+  const refreshPlayerData = () => {
+    fetchPlayersAndAttendance();
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'present': return <UserCheck className="h-4 w-4 text-green-600" />;
@@ -329,8 +374,9 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
               {players.map((player, index) => (
                 <Card 
                   key={player.id}
-                  className="animate-fade-in transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+                  className="animate-fade-in transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer"
                   style={{ animationDelay: `${index * 50}ms` }}
+                  onClick={() => openPlayerDetails(player)}
                 >
                   <CardContent className="p-3 sm:p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -338,6 +384,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         <Checkbox
                           checked={selectedPlayers.has(player.id)}
                           onCheckedChange={() => togglePlayerSelection(player.id)}
+                          onClick={(e) => e.stopPropagation()}
                           aria-label={`Select ${player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}`}
                         />
                         <div className="flex items-center gap-2">
@@ -358,7 +405,10 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                           value={attendance[player.id]?.status || 'present'}
                           onValueChange={(value) => updateAttendance(player.id, 'status', value)}
                         >
-                          <SelectTrigger className="w-full sm:w-32 transition-all duration-200 hover:scale-105">
+                          <SelectTrigger 
+                            className="w-full sm:w-32 transition-all duration-200 hover:scale-105"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -373,6 +423,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                           placeholder="Notes (optional)"
                           value={attendance[player.id]?.notes || ''}
                           onChange={(e) => updateAttendance(player.id, 'notes', e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
                           className="w-full sm:w-48 min-h-[40px] max-h-[80px] transition-all duration-200 focus:scale-105"
                           rows={1}
                         />
@@ -394,6 +445,14 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* Player Details Modal */}
+        <PlayerDetailsModal
+          isOpen={playerDetailsModal.isOpen}
+          onClose={() => setPlayerDetailsModal({ isOpen: false, player: null })}
+          player={playerDetailsModal.player}
+          onUpdate={refreshPlayerData}
+        />
       </DialogContent>
     </Dialog>
   );
