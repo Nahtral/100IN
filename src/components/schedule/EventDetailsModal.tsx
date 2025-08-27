@@ -44,6 +44,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   const fetchEventDetails = async () => {
     setLoading(true);
     try {
+      console.log('Fetching event details for eventId:', eventId);
+      
       // Fetch event details
       const { data: eventData, error: eventError } = await supabase
         .from('schedules')
@@ -51,6 +53,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         .eq('id', eventId)
         .single();
 
+      console.log('Event data response:', eventData, 'Error:', eventError);
+      
       if (eventError) throw eventError;
 
       // Fetch teams for this event
@@ -195,7 +199,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     }
   };
 
-  if (!event) {
+  if (!isOpen) {
     return null;
   }
 
@@ -205,12 +209,14 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {event.title}
+            {event?.title || 'Event Details'}
           </DialogTitle>
         </DialogHeader>
 
         {loading ? (
           <div className="p-8 text-center">Loading event details...</div>
+        ) : !event ? (
+          <div className="p-8 text-center">Event not found</div>
         ) : (
           <Tabs defaultValue="details" className="w-full">
             <TabsList className="grid w-full grid-cols-3">

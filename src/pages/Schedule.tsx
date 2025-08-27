@@ -245,6 +245,7 @@ const Schedule = () => {
   };
 
   const openEventDetailsModal = (event: ScheduleEvent) => {
+    console.log('Opening event details modal for event:', event);
     setEventDetailsModal({
       isOpen: true,
       eventId: event.id
