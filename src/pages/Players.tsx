@@ -27,6 +27,7 @@ interface Player {
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   medical_notes?: string;
+  is_active: boolean;
   total_shots?: number;
   total_makes?: number;
   shooting_percentage?: number;
@@ -41,6 +42,10 @@ interface Player {
     email?: string;  // Optional since it may not always be accessible
     phone?: string;
   } | null;
+  teams?: {
+    name: string;
+    season?: string;
+  };
 }
 
 const Players = () => {
@@ -385,15 +390,10 @@ const Players = () => {
 
         {/* Player Details Modal */}
         <PlayerDetailsModal
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
           player={selectedPlayer}
-          open={isDetailsOpen}
-          onOpenChange={setIsDetailsOpen}
-          onEdit={(player) => {
-            setEditingPlayer(player);
-            setIsFormOpen(true);
-            setIsDetailsOpen(false);
-          }}
-          onDelete={handleDelete}
+          onUpdate={fetchPlayers}
         />
       </div>
     </Layout>

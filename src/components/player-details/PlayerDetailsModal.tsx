@@ -28,13 +28,20 @@ interface Player {
   emergency_contact_phone?: string;
   medical_notes?: string;
   is_active: boolean;
+  total_shots?: number;
+  total_makes?: number;
+  shooting_percentage?: number;
+  avg_arc_degrees?: number;
+  avg_depth_inches?: number;
+  last_session_date?: string;
+  total_sessions?: number;
   created_at?: string;
   updated_at?: string;
   profiles?: {
     full_name: string;
-    email: string;
+    email?: string;  // Optional since it may not always be accessible
     phone?: string;
-  };
+  } | null;
   teams?: {
     name: string;
     season?: string;
