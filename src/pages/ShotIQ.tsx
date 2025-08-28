@@ -588,9 +588,13 @@ const ShotIQ = () => {
               
               <VideoUploader
                 playerId={selectedPlayer || ''}
-                onVideoAnalyzed={(analysis) => {
-                  console.log('Video analysis:', analysis);
-                  setRealtimeAnalysis(analysis);
+                onVideoUploaded={(videoData) => {
+                  console.log('Video uploaded:', videoData);
+                  // TODO: Trigger video analysis
+                  toast({
+                    title: "Video uploaded",
+                    description: "Video analysis will be available soon",
+                  });
                 }}
               />
             </div>

@@ -1,263 +1,281 @@
 import React, { useState, useRef } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Video, Play, Pause, RotateCcw } from 'lucide-react';
+import { Upload, Video, X, Play, Pause } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface VideoUploaderProps {
   playerId: string;
-  onVideoAnalyzed: (analysisData: any) => void;
+  onVideoUploaded?: (videoData: {
+    url: string;
+    filename: string;
+    duration?: number;
+  }) => void;
 }
 
 export const VideoUploader: React.FC<VideoUploaderProps> = ({
   playerId,
-  onVideoAnalyzed
+  onVideoUploaded,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.type.startsWith('video/')) {
-        setSelectedFile(file);
-        const url = URL.createObjectURL(file);
-        setPreviewUrl(url);
-      } else {
-        toast.error('Please select a valid video file');
-      }
-    }
-  };
+    if (!file) return;
 
-  const uploadVideo = async (file: File): Promise<string> => {
-    const fileName = `${Date.now()}-${file.name}`;
-    const filePath = `${playerId}/${fileName}`;
-
-    const { data, error } = await supabase.storage
-      .from('shot-videos')
-      .upload(filePath, file);
-
-    if (error) throw error;
-
-    // Simulate progress for user feedback
-    setUploadProgress(100);
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('shot-videos')
-      .getPublicUrl(data.path);
-
-    return publicUrl;
-  };
-
-  const analyzeVideo = async (videoUrl: string) => {
-    try {
-      setAnalyzing(true);
-      
-      // Call the video analysis edge function
-      const { data, error } = await supabase.functions.invoke('analyze-video-technique', {
-        body: {
-          videoUrl,
-          playerId
-        }
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select a video file",
+        variant: "destructive",
       });
-
-      if (error) throw error;
-
-      return data;
-    } catch (error) {
-      console.error('Video analysis error:', error);
-      throw error;
-    } finally {
-      setAnalyzing(false);
+      return;
     }
+
+    // Validate file size (max 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select a video file smaller than 100MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
   };
 
-  const handleUploadAndAnalyze = async () => {
-    if (!selectedFile) return;
-
-    try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      // Upload video
-      const videoUrl = await uploadVideo(selectedFile);
-      
-      // Analyze video
-      const analysisData = await analyzeVideo(videoUrl);
-
-      // Save shot data with video information
-      const { error: shotError } = await supabase
-        .from('shots')
-        .insert({
-          player_id: playerId,
-          session_id: null,
-          shot_number: 1,
-          video_url: videoUrl,
-          video_filename: selectedFile.name,
-          video_analysis_status: 'completed',
-          video_analysis_data: analysisData,
-          video_duration_seconds: videoRef.current?.duration || null,
-          made: analysisData?.made || false,
-          arc_degrees: analysisData?.arc_degrees || null,
-          depth_inches: analysisData?.depth_inches || null,
-          lr_deviation_inches: analysisData?.lr_deviation_inches || null,
-          shot_type: analysisData?.shot_type || '2PT',
-          created_at: new Date().toISOString()
-        });
-
-      if (shotError) throw shotError;
-
-      toast.success('Video uploaded and analyzed successfully!');
-      onVideoAnalyzed(analysisData);
-      
-      // Reset form
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      setUploadProgress(0);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-
-    } catch (error) {
-      console.error('Upload and analysis error:', error);
-      toast.error('Failed to upload and analyze video');
-    } finally {
-      setUploading(false);
-      setAnalyzing(false);
+  const handleVideoLoadedMetadata = () => {
+    if (videoRef.current) {
+      setVideoDuration(videoRef.current.duration);
     }
   };
 
   const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+    if (!videoRef.current) return;
+    
+    if (isPlaying) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
     }
+    setIsPlaying(!isPlaying);
   };
 
-  const resetVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
-  };
+  const uploadVideo = async () => {
+    if (!selectedFile || !playerId) return;
 
-  const clearSelection = () => {
-    setSelectedFile(null);
-    setPreviewUrl(null);
+    setUploading(true);
     setUploadProgress(0);
+
+    try {
+      // Create a unique filename
+      const timestamp = new Date().toISOString();
+      const fileName = `${playerId}/${timestamp}-${selectedFile.name}`;
+
+      // Upload to Supabase Storage with progress simulation
+      const { data, error } = await supabase.storage
+        .from('shot-videos')
+        .upload(fileName, selectedFile);
+      
+      // Simulate progress for user feedback
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      if (error) {
+        throw error;
+      }
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('shot-videos')
+        .getPublicUrl(data.path);
+
+      const videoData = {
+        url: urlData.publicUrl,
+        filename: selectedFile.name,
+        duration: videoDuration || undefined,
+      };
+
+      onVideoUploaded?.(videoData);
+
+      toast({
+        title: "Video uploaded successfully",
+        description: "Your video is ready for analysis",
+      });
+
+      // Reset state
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setIsPlaying(false);
+      setVideoDuration(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload video. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
     setIsPlaying(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setVideoDuration(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
           <Video className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Upload & Analyze Video</h3>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="video-upload">Select Video File</Label>
-            <Input
-              id="video-upload"
+          Upload Shot Video
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!selectedFile ? (
+          <div className="space-y-4">
+            <div
+              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-lg font-medium mb-2">Upload your shot video</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Select a video file to analyze your basketball shot technique
+              </p>
+              <Button variant="outline">
+                Choose Video File
+              </Button>
+            </div>
+            
+            <input
+              ref={fileInputRef}
               type="file"
               accept="video/*"
               onChange={handleFileSelect}
-              ref={fileInputRef}
-              disabled={uploading || analyzing}
+              className="hidden"
             />
+            
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• Supported formats: MP4, MOV, AVI, WebM</p>
+              <p>• Maximum file size: 100MB</p>
+              <p>• For best results, record shots from the side view</p>
+            </div>
           </div>
-
-          {previewUrl && (
-            <div className="space-y-3">
-              <div className="relative bg-black rounded-lg overflow-hidden">
-                <video
-                  ref={videoRef}
-                  src={previewUrl}
-                  className="w-full max-h-64 object-contain"
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onEnded={() => setIsPlaying(false)}
-                />
-                <div className="absolute bottom-2 left-2 flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={togglePlayPause}
-                    className="bg-black/50 hover:bg-black/70"
-                  >
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={resetVideo}
-                    className="bg-black/50 hover:bg-black/70"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="relative rounded-lg overflow-hidden bg-black">
+              <video
+                ref={videoRef}
+                src={previewUrl || undefined}
+                className="w-full h-64 object-contain"
+                onLoadedMetadata={handleVideoLoadedMetadata}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+              />
+              
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  onClick={togglePlayPause}
+                  className="bg-black/50 hover:bg-black/70"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
+                </Button>
               </div>
               
-              <div className="text-sm text-muted-foreground">
-                File: {selectedFile?.name} ({(selectedFile?.size || 0 / 1024 / 1024).toFixed(2)} MB)
-              </div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={removeSelectedFile}
+                className="absolute top-2 right-2"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          )}
-
-          {uploadProgress > 0 && uploadProgress < 100 && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Uploading...</span>
-                <span>{Math.round(uploadProgress)}%</span>
-              </div>
-              <Progress value={uploadProgress} />
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              onClick={handleUploadAndAnalyze}
-              disabled={!selectedFile || uploading || analyzing}
-              className="flex-1"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {uploading ? 'Uploading...' : analyzing ? 'Analyzing...' : 'Upload & Analyze'}
-            </Button>
             
-            {selectedFile && (
+            <div className="flex justify-between items-center text-sm text-muted-foreground">
+              <span>{selectedFile.name}</span>
+              <span>{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</span>
+            </div>
+            
+            {videoDuration && (
+              <div className="text-sm text-muted-foreground">
+                Duration: {Math.round(videoDuration)}s
+              </div>
+            )}
+            
+            {uploading && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Uploading...</span>
+                  <span>{Math.round(uploadProgress)}%</span>
+                </div>
+                <Progress value={uploadProgress} />
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={uploadVideo}
+                disabled={uploading}
+                className="flex-1"
+              >
+                {uploading ? 'Uploading...' : 'Upload & Analyze'}
+              </Button>
               <Button
                 variant="outline"
-                onClick={clearSelection}
-                disabled={uploading || analyzing}
+                onClick={removeSelectedFile}
+                disabled={uploading}
               >
-                Clear
+                Cancel
               </Button>
-            )}
-          </div>
-
-          {analyzing && (
-            <div className="text-center text-sm text-muted-foreground">
-              AI is analyzing your shot technique... This may take a moment.
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };
