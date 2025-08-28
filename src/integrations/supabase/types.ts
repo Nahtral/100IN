@@ -2317,6 +2317,42 @@ export type Database = {
           },
         ]
       }
+      player_teams: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          created_at: string
+          id: string
+          is_active: boolean
+          player_id: string
+          role_on_team: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          player_id: string
+          role_on_team?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          player_id?: string
+          role_on_team?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           avg_arc_degrees: number | null

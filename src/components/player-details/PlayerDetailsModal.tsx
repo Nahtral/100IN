@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { User, Edit, Archive, Trash2, Save, X, Phone, Mail, Calendar, MapPin, Users, Activity } from 'lucide-react';
+import { TeamManagementModal } from '@/components/player-teams/TeamManagementModal';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -63,6 +64,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showTeamManagement, setShowTeamManagement] = useState(false);
   const [editedPlayer, setEditedPlayer] = useState<Partial<Player>>({});
   const { toast } = useToast();
   const { isSuperAdmin } = useUserRole();
@@ -262,23 +264,31 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                       </>
                     ) : (
                       <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsEditing(true)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleArchive}
-                          disabled={loading}
-                        >
-                          <Archive className="h-4 w-4 mr-1" />
-                          Archive
-                        </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => setIsEditing(true)}
+                         >
+                           <Edit className="h-4 w-4 mr-1" />
+                           Edit
+                         </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => setShowTeamManagement(true)}
+                         >
+                           <Users className="h-4 w-4 mr-1" />
+                           Teams
+                         </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={handleArchive}
+                           disabled={loading}
+                         >
+                           <Archive className="h-4 w-4 mr-1" />
+                           Archive
+                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -505,6 +515,14 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
           </Card>
         </div>
       </DialogContent>
+      
+      <TeamManagementModal
+        isOpen={showTeamManagement}
+        onClose={() => setShowTeamManagement(false)}
+        playerId={player.id}
+        playerName={player.profiles?.full_name || 'Unknown Player'}
+        onUpdate={onUpdate}
+      />
     </Dialog>
   );
 };
