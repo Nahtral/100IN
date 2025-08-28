@@ -7,6 +7,7 @@ import InteractiveCourtHeatmap from '@/components/shotiq/analytics/InteractiveCo
 import AdvancedCharts from '@/components/shotiq/analytics/AdvancedCharts';
 import ShotTracker from '@/components/shotiq/ShotTracker';
 import VideoLogger from '@/components/shotiq/VideoLogger';
+import { VideoUploader } from '@/components/shotiq/VideoUploader';
 import ShotSessionModal from '@/components/shotiq/ShotSessionModal';
 import SessionCard from '@/components/shotiq/SessionCard';
 import { Button } from '@/components/ui/button';
@@ -566,7 +567,7 @@ const ShotIQ = () => {
         <TabsContent value="live-tracking" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Shot Tracker Component */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
               <ShotTracker
                 playerId={selectedPlayer || ''}
                 onShotTracked={(shot) => {
@@ -582,6 +583,14 @@ const ShotIQ = () => {
                   });
                   setShotCount(prev => prev + 1);
                   if (shot.made) setMakes(prev => prev + 1);
+                }}
+              />
+              
+              <VideoUploader
+                playerId={selectedPlayer || ''}
+                onVideoAnalyzed={(analysis) => {
+                  console.log('Video analysis:', analysis);
+                  setRealtimeAnalysis(analysis);
                 }}
               />
             </div>

@@ -3027,7 +3027,11 @@ export type Database = {
           shot_number: number
           shot_type: string | null
           timestamp_in_session: number | null
+          video_analysis_data: Json | null
+          video_analysis_status: string | null
+          video_duration_seconds: number | null
           video_filename: string | null
+          video_upload_date: string | null
           video_url: string | null
         }
         Insert: {
@@ -3046,7 +3050,11 @@ export type Database = {
           shot_number: number
           shot_type?: string | null
           timestamp_in_session?: number | null
+          video_analysis_data?: Json | null
+          video_analysis_status?: string | null
+          video_duration_seconds?: number | null
           video_filename?: string | null
+          video_upload_date?: string | null
           video_url?: string | null
         }
         Update: {
@@ -3065,7 +3073,11 @@ export type Database = {
           shot_number?: number
           shot_type?: string | null
           timestamp_in_session?: number | null
+          video_analysis_data?: Json | null
+          video_analysis_status?: string | null
+          video_duration_seconds?: number | null
           video_filename?: string | null
+          video_upload_date?: string | null
           video_url?: string | null
         }
         Relationships: [
@@ -3564,6 +3576,48 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           team_id?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      video_analysis_jobs: {
+        Row: {
+          analysis_data: Json | null
+          analysis_status: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          error_message: string | null
+          id: string
+          shot_id: string | null
+          started_at: string | null
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          analysis_data?: Json | null
+          analysis_status?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          id?: string
+          shot_id?: string | null
+          started_at?: string | null
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          analysis_data?: Json | null
+          analysis_status?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          id?: string
+          shot_id?: string | null
+          started_at?: string | null
+          updated_at?: string
+          video_url?: string
         }
         Relationships: []
       }
