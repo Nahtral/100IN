@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Header from './Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -21,10 +21,14 @@ const Layout = ({ children, currentUser }: LayoutProps) => {
   const isMobile = useIsMobile();
   const { trackUserAction } = useAnalytics();
   const { reportError } = useErrorBoundary('Layout');
+  const hasTrackedMount = useRef(false);
 
   useEffect(() => {
-    // Track layout mount
-    trackUserAction('layout_mounted', 'app');
+    // Track layout mount only once per session
+    if (!hasTrackedMount.current) {
+      trackUserAction('layout_mounted', 'app');
+      hasTrackedMount.current = true;
+    }
 
     // Add global error handling
     const handleGlobalError = (event: ErrorEvent) => {
@@ -36,7 +40,9 @@ const Layout = ({ children, currentUser }: LayoutProps) => {
     };
 
     window.addEventListener('error', handleGlobalError);
-    return () => window.removeEventListener('error', handleGlobalError);
+    return () => {
+      window.removeEventListener('error', handleGlobalError);
+    };
   }, [trackUserAction, reportError]);
 
   // Use mobile layout for mobile devices, desktop sidebar layout for larger screens

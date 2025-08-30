@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import CoachHRView from '@/components/hr/CoachHRView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EmployeeForm from '@/components/hr/EmployeeForm';
 import { Download, Edit, X } from 'lucide-react';
+import { useRequestCache } from '@/hooks/useRequestCache';
 const TeamGrid = () => {
   const {
     toast
@@ -36,6 +37,7 @@ const TeamGrid = () => {
   const {
     currentUser
   } = useCurrentUser();
+  const { batchFetch, invalidate } = useRequestCache();
   const [stats, setStats] = useState({
     totalEmployees: 0,
     activeTimeOff: 0,
@@ -48,19 +50,8 @@ const TeamGrid = () => {
   const [showAddEmployeeForm, setShowAddEmployeeForm] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
   const [isEmployee, setIsEmployee] = useState(false);
-  useEffect(() => {
-    if (user) {
-      fetchStats();
-      checkEmployeeStatus();
-      // Set appropriate default tab for non-super admins
-      if (!isSuperAdmin && activeTab === 'dashboard') {
-        setActiveTab('timetracking');
-      }
-    } else {
-      setLoading(false);
-    }
-  }, [user, isSuperAdmin, hasRole]);
-  const checkEmployeeStatus = async () => {
+  
+  const checkEmployeeStatus = useCallback(async () => {
     if (!isSuperAdmin && !hasRole('staff') && !hasRole('coach') && user) {
       try {
         const {
@@ -71,43 +62,52 @@ const TeamGrid = () => {
         setIsEmployee(false);
       }
     }
-  };
-  const fetchStats = async () => {
+  }, [isSuperAdmin, hasRole, user]);
+  
+  const fetchStats = useCallback(async () => {
     try {
-      // Fetch total employees
-      const {
-        data: employees,
-        error: empError
-      } = await supabase.from('employees').select('*').eq('employment_status', 'active');
-      if (empError) throw empError;
-      setEmployees(employees || []);
-
-      // Fetch active time off requests
-      const {
-        data: timeOff,
-        error: timeError
-      } = await supabase.from('time_off_requests').select('id').eq('status', 'approved').gte('end_date', new Date().toISOString().split('T')[0]);
-      if (timeError) throw timeError;
-
-      // Fetch pending payslips
-      const {
-        data: payslips,
-        error: payError
-      } = await supabase.from('payslips').select('id').eq('status', 'draft');
-      if (payError) throw payError;
-
-      // Fetch today's time entries
       const today = new Date().toISOString().split('T')[0];
-      const {
-        data: timeEntries,
-        error: timeEntryError
-      } = await supabase.from('time_entries').select('total_hours').gte('clock_in', `${today}T00:00:00`).lt('clock_in', `${today}T23:59:59`);
-      if (timeEntryError) throw timeEntryError;
-      const todaysHours = timeEntries?.reduce((sum, entry) => sum + (entry.total_hours || 0), 0) || 0;
+      
+      // Use cached batch requests for better performance
+      const [employees, timeOff, payslips, timeEntries] = await batchFetch([
+        {
+          table: 'employees',
+          select: '*',
+          filters: { employment_status: 'active' },
+          cacheKey: 'employees_active',
+          ttl: 5 * 60 * 1000
+        },
+        {
+          table: 'time_off_requests',
+          select: 'id',
+          filters: { status: 'approved', [`gte.end_date`]: today },
+          cacheKey: 'time_off_active',
+          ttl: 5 * 60 * 1000
+        },
+        {
+          table: 'payslips',
+          select: 'id',
+          filters: { status: 'draft' },
+          cacheKey: 'payslips_draft',
+          ttl: 2 * 60 * 1000
+        },
+        {
+          table: 'time_entries',
+          select: 'total_hours',
+          filters: { [`gte.clock_in`]: `${today}T00:00:00`, [`lt.clock_in`]: `${today}T23:59:59` },
+          cacheKey: `time_entries_${today}`,
+          ttl: 60 * 1000
+        }
+      ]);
+
+      setEmployees(employees || []);
+      
+      const todaysHours = (timeEntries || []).reduce((sum: number, entry: any) => sum + (entry.total_hours || 0), 0);
+      
       setStats({
-        totalEmployees: employees?.length || 0,
-        activeTimeOff: timeOff?.length || 0,
-        pendingPayslips: payslips?.length || 0,
+        totalEmployees: (employees || []).length,
+        activeTimeOff: (timeOff || []).length,
+        pendingPayslips: (payslips || []).length,
         todaysHours: Math.round(todaysHours * 100) / 100
       });
     } catch (error) {
@@ -120,8 +120,21 @@ const TeamGrid = () => {
     } finally {
       setLoading(false);
     }
-  };
-  const StatCard = ({
+  }, [batchFetch, toast]);
+  
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+      checkEmployeeStatus();
+      // Set appropriate default tab for non-super admins
+      if (!isSuperAdmin && activeTab === 'dashboard') {
+        setActiveTab('timetracking');
+      }
+    } else {
+      setLoading(false);
+    }
+  }, [user, isSuperAdmin, hasRole, fetchStats, checkEmployeeStatus]);
+  const StatCard = useMemo(() => React.memo(({
     title,
     value,
     icon: Icon,
@@ -137,7 +150,7 @@ const TeamGrid = () => {
           <Icon className={`h-8 w-8 ${color}`} />
         </div>
       </CardContent>
-    </Card>;
+    </Card>), []);
   const handleCardClick = (section: string) => {
     // Only super admins can navigate to different sections
     if (isSuperAdmin) {
@@ -148,7 +161,7 @@ const TeamGrid = () => {
       }
     }
   };
-  const exportEmployeeList = () => {
+  const exportEmployeeList = useCallback(() => {
     const csvContent = [['Employee ID', 'Name', 'Email', 'Position', 'Department', 'Hire Date', 'Status'], ...employees.map(emp => [emp.employee_id, `${emp.first_name} ${emp.last_name}`, emp.email, emp.position, emp.department || 'N/A', new Date(emp.hire_date).toLocaleDateString(), emp.employment_status])];
     const csvString = csvContent.map(row => row.join(',')).join('\n');
     const blob = new Blob([csvString], {
@@ -164,7 +177,7 @@ const TeamGrid = () => {
       title: "Success",
       description: "Employee list exported successfully."
     });
-  };
+  }, [employees, toast]);
   const renderHRView = () => {
     // Only super admins have access to full TeamGrid dashboard
     if (isSuperAdmin) {
@@ -377,6 +390,7 @@ const TeamGrid = () => {
           </DialogHeader>
           <EmployeeForm onSuccess={() => {
           setShowAddEmployeeForm(false);
+          invalidate('employees');
           fetchStats();
           toast({
             title: "Success",
