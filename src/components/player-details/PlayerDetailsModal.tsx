@@ -596,8 +596,17 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
         playerName={player.profiles?.full_name || 'Unknown Player'}
         onUpdate={onUpdate}
       />
+
+      <MembershipAssignmentModal
+        open={showMembershipAssignment}
+        onClose={() => setShowMembershipAssignment(false)}
+        playerId={player.id}
+        onSuccess={() => {
+          refetchMembership();
+          onUpdate();
+        }}
+      />
     </>
-  );
 };
 
 export default PlayerDetailsModal;
