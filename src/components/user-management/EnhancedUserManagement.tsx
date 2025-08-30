@@ -474,9 +474,13 @@ const EnhancedUserManagement = () => {
             <CardContent>
               <div className="space-y-4">
                 {users.map((user) => (
-                  <div key={user.id} className="border rounded-lg p-4">
+                  <div 
+                    key={user.id} 
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer group"
+                    onClick={() => viewUserDetails(user)}
+                  >
                     <div className="flex items-center justify-between">
-                      <div className="space-y-2">
+                      <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2">
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                             <span className="text-sm font-medium">
@@ -484,7 +488,7 @@ const EnhancedUserManagement = () => {
                             </span>
                           </div>
                           <div>
-                            <h3 className="font-semibold">{user.full_name}</h3>
+                            <h3 className="font-semibold group-hover:text-primary transition-colors">{user.full_name}</h3>
                             <p className="text-sm text-muted-foreground">{user.email}</p>
                             <p className="text-xs text-muted-foreground">
                               Joined: {new Date(user.created_at).toLocaleDateString()}
@@ -527,8 +531,12 @@ const EnhancedUserManagement = () => {
                         </div>
                       </div>
                       
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => viewUserDetails(user)}
+                        >
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </Button>
