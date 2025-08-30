@@ -46,9 +46,11 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, currentUse
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-black">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-black backdrop-blur sticky top-0 z-40 safe-area-inset md:bg-black lg:bg-black">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-black backdrop-blur sticky top-0 z-40 safe-area-inset-top" style={{
+        paddingTop: `max(12px, env(safe-area-inset-top))`
+      }}>
         <div className="flex items-center gap-2">
           <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-2">
             <img 
@@ -65,7 +67,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, currentUse
       </header>
 
       {/* Main content with bottom padding for tab nav */}
-      <main className="flex-1 pb-20">
+      <main className="flex-1 pb-20 bg-background">
         <div className="mobile-container animate-fade-in">
           <div className="mobile-section" style={{ animationDelay: '100ms' }}>
             {children}

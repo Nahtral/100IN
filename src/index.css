@@ -148,6 +148,27 @@ All colors MUST be HSL.
     min-height: 100dvh; /* Dynamic viewport height for modern browsers */
   }
 
+  /* Mobile status bar and safe area styling */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS specific styling */
+    body {
+      /* Black status bar background for iOS */
+      background-color: black;
+    }
+    
+    /* Ensure status bar area is black */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: env(safe-area-inset-top);
+      background-color: black;
+      z-index: 9999;
+    }
+  }
+
   /* Bold Typography Hierarchy */
   h1 {
     @apply text-4xl font-bold tracking-tight;

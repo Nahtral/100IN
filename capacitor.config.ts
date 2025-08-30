@@ -11,6 +11,11 @@ const config: CapacitorConfig = {
   plugins: {
     Camera: {
       permissions: ['camera', 'photos']
+    },
+    StatusBar: {
+      style: 'Dark',
+      backgroundColor: '#000000',
+      overlaysWebView: false
     }
   }
 };
