@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,11 +11,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUserRole } from '@/hooks/useUserRole';
+import { NewsCard } from '@/components/news/NewsCard';
+import { NewsModal } from '@/components/news/NewsModal';
 
 const Home = () => {
   const { user } = useAuth();
   const { currentUser } = useCurrentUser();
   const { isSuperAdmin } = useUserRole();
+  const [selectedNews, setSelectedNews] = useState<any>(null);
   
   // Fetch recent news (limited for home page)
   const { data: recentNews } = useQuery({
@@ -169,35 +172,36 @@ const Home = () => {
 
         {/* Important News */}
         {recentNews && recentNews.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Important Updates
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Important Updates</h2>
+            </div>
+            
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {recentNews.map((item) => (
-                <div key={item.id} className="border-l-4 border-primary pl-4 py-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold">{item.title}</h3>
-                    <Badge variant="destructive">
-                      {item.category}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">{item.content}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(item.published_at), 'MMM d, yyyy')}
-                  </p>
-                </div>
+                <NewsCard 
+                  key={item.id} 
+                  news={item} 
+                  onClick={() => setSelectedNews(item)}
+                />
               ))}
-              <Button asChild variant="outline" className="w-full">
+            </div>
+            
+            <div className="flex justify-center">
+              <Button asChild variant="outline" className="w-full max-w-sm">
                 <Link to="/news">
                   View All Updates <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+            
+            <NewsModal 
+              news={selectedNews}
+              open={!!selectedNews}
+              onOpenChange={(open) => !open && setSelectedNews(null)}
+            />
+          </div>
         )}
 
         {/* Quick Actions */}
