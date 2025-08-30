@@ -68,7 +68,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin, hasRole } = useUserRole();
 
   useEffect(() => {
     if (event && event.team_ids && event.team_ids.length > 0) {
@@ -198,6 +198,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  // Check if user can manage events (super admin, staff, or coach only)
+  const canManageEvents = isSuperAdmin || hasRole('staff') || hasRole('coach');
+
   if (!event) return null;
 
   return (
@@ -245,7 +248,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                   </div>
                 </div>
 
-                {isSuperAdmin && (
+                {canManageEvents && (
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -337,14 +340,16 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     <Users className="h-5 w-5" />
                     Teams & Players ({players.length} players)
                   </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onAttendance(event)}
-                  >
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    Manage Attendance
-                  </Button>
+                  {canManageEvents && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onAttendance(event)}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Manage Attendance
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
