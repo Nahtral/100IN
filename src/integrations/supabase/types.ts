@@ -2858,6 +2858,7 @@ export type Database = {
           created_by: string
           days_of_week: number[]
           department: string | null
+          description: string | null
           end_time: string
           id: string
           is_active: boolean | null
@@ -2873,6 +2874,7 @@ export type Database = {
           created_by: string
           days_of_week: number[]
           department?: string | null
+          description?: string | null
           end_time: string
           id?: string
           is_active?: boolean | null
@@ -2888,6 +2890,7 @@ export type Database = {
           created_by?: string
           days_of_week?: number[]
           department?: string | null
+          description?: string | null
           end_time?: string
           id?: string
           is_active?: boolean | null

@@ -48,11 +48,13 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
   const [showTotalSchedulesModal, setShowTotalSchedulesModal] = useState(false);
   const [showPendingRequestsModal, setShowPendingRequestsModal] = useState(false);
   const [showTodayShiftsModal, setShowTodayShiftsModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
   // Form states
   const [scheduleForm, setScheduleForm] = useState({
@@ -63,6 +65,18 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     break_duration_minutes: 0,
     location: '',
     notes: ''
+  });
+
+  const [templateForm, setTemplateForm] = useState({
+    template_name: '',
+    description: '',
+    department: '',
+    position: '',
+    start_time: '',
+    end_time: '',
+    break_duration_minutes: 30,
+    days_of_week: [] as number[],
+    location: ''
   });
 
   const [requestForm, setRequestForm] = useState({
@@ -392,6 +406,130 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       });
     }
     setShowScheduleModal(true);
+  };
+
+  const handleTemplateSubmit = async () => {
+    try {
+      if (selectedTemplate) {
+        const { error } = await supabase
+          .from('shift_templates')
+          .update({
+            ...templateForm,
+            break_duration_minutes: Number(templateForm.break_duration_minutes)
+          })
+          .eq('id', selectedTemplate.id);
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Template updated successfully.",
+        });
+      } else {
+        const { error } = await supabase
+          .from('shift_templates')
+          .insert({
+            ...templateForm,
+            break_duration_minutes: Number(templateForm.break_duration_minutes),
+            created_by: (await supabase.auth.getUser()).data.user?.id
+          });
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Template created successfully.",
+        });
+      }
+
+      setShowCreateTemplateModal(false);
+      setSelectedTemplate(null);
+      setTemplateForm({
+        template_name: '',
+        description: '',
+        department: '',
+        position: '',
+        start_time: '',
+        end_time: '',
+        break_duration_minutes: 30,
+        days_of_week: [],
+        location: ''
+      });
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save template.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('shift_templates')
+        .update({ is_active: false })
+        .eq('id', templateId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Template deleted successfully.",
+      });
+      
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete template.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openTemplateModal = (template?: any) => {
+    if (template) {
+      setSelectedTemplate(template);
+      setTemplateForm({
+        template_name: template.template_name,
+        description: template.description || '',
+        department: template.department || '',
+        position: template.position || '',
+        start_time: template.start_time,
+        end_time: template.end_time,
+        break_duration_minutes: template.break_duration_minutes || 30,
+        days_of_week: template.days_of_week || [],
+        location: template.location || ''
+      });
+    } else {
+      setSelectedTemplate(null);
+      setTemplateForm({
+        template_name: '',
+        description: '',
+        department: '',
+        position: '',
+        start_time: '09:00',
+        end_time: '17:00',
+        break_duration_minutes: 30,
+        days_of_week: [1, 2, 3, 4, 5], // Monday to Friday
+        location: ''
+      });
+    }
+    setShowCreateTemplateModal(true);
+  };
+
+  const getDayName = (dayNumber: number) => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[dayNumber];
+  };
+
+  const toggleDay = (day: number) => {
+    const newDays = templateForm.days_of_week.includes(day)
+      ? templateForm.days_of_week.filter(d => d !== day)
+      : [...templateForm.days_of_week, day].sort();
+    setTemplateForm({...templateForm, days_of_week: newDays});
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -1039,7 +1177,10 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                 Manage reusable schedule templates for common shift patterns
               </p>
               {isSuperAdmin && (
-                <Button className="btn-panthers">
+                <Button 
+                  className="btn-panthers"
+                  onClick={() => openTemplateModal()}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Template
                 </Button>
@@ -1083,6 +1224,20 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                             variant="ghost" 
                             size="sm"
                             title="Use Template"
+                            onClick={() => {
+                              // Pre-fill schedule form with template data
+                              setScheduleForm({
+                                employee_id: '',
+                                shift_date: format(new Date(), 'yyyy-MM-dd'),
+                                start_time: template.start_time,
+                                end_time: template.end_time,
+                                break_duration_minutes: template.break_duration_minutes || 30,
+                                location: template.location || '',
+                                notes: `Using template: ${template.template_name}`
+                              });
+                              setShowTemplateModal(false);
+                              setShowScheduleModal(true);
+                            }}
                           >
                             <User className="h-4 w-4" />
                           </Button>
@@ -1090,6 +1245,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                             variant="ghost" 
                             size="sm"
                             title="Edit Template"
+                            onClick={() => openTemplateModal(template)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -1097,6 +1253,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                             variant="ghost" 
                             size="sm"
                             title="Delete Template"
+                            onClick={() => handleDeleteTemplate(template.id)}
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>
@@ -1107,6 +1264,118 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                 ))
               )}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit Template Modal */}
+      <Dialog open={showCreateTemplateModal} onOpenChange={setShowCreateTemplateModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedTemplate ? 'Edit Template' : 'Create New Template'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="template_name">Template Name</Label>
+                <Input
+                  value={templateForm.template_name}
+                  onChange={(e) => setTemplateForm({...templateForm, template_name: e.target.value})}
+                  placeholder="e.g., Morning Shift"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  value={templateForm.department}
+                  onChange={(e) => setTemplateForm({...templateForm, department: e.target.value})}
+                  placeholder="e.g., General, Sports, Medical"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="position">Position</Label>
+                <Input
+                  value={templateForm.position}
+                  onChange={(e) => setTemplateForm({...templateForm, position: e.target.value})}
+                  placeholder="e.g., Staff, Coach, Medical Staff"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  value={templateForm.location}
+                  onChange={(e) => setTemplateForm({...templateForm, location: e.target.value})}
+                  placeholder="e.g., Main Office, Training Facility"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="start_time">Start Time</Label>
+                <Input
+                  type="time"
+                  value={templateForm.start_time}
+                  onChange={(e) => setTemplateForm({...templateForm, start_time: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="end_time">End Time</Label>
+                <Input
+                  type="time"
+                  value={templateForm.end_time}
+                  onChange={(e) => setTemplateForm({...templateForm, end_time: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="break_duration">Break Duration (minutes)</Label>
+                <Input
+                  type="number"
+                  value={templateForm.break_duration_minutes}
+                  onChange={(e) => setTemplateForm({...templateForm, break_duration_minutes: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Days of Week</Label>
+              <div className="flex gap-2">
+                {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+                  <Button
+                    key={day}
+                    type="button"
+                    variant={templateForm.days_of_week.includes(day) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleDay(day)}
+                  >
+                    {getDayName(day)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                value={templateForm.description}
+                onChange={(e) => setTemplateForm({...templateForm, description: e.target.value})}
+                placeholder="Brief description of this template..."
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowCreateTemplateModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleTemplateSubmit} className="btn-panthers">
+              {selectedTemplate ? 'Update' : 'Create'} Template
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
