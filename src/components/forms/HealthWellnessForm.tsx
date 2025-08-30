@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Heart, Save } from 'lucide-react';
+import { useSecurityMonitoring } from '@/hooks/useSecurityMonitoring';
 
 const healthWellnessFormSchema = z.object({
   date: z.string().min(1, 'Date is required'),
@@ -30,6 +31,8 @@ interface HealthWellnessFormProps {
 }
 
 const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initialData, isLoading = false }) => {
+  const { validateSensitiveInput, checkSQLInjection, logSecurityEvent } = useSecurityMonitoring();
+  
   const form = useForm<HealthWellnessFormData>({
     resolver: zodResolver(healthWellnessFormSchema),
     defaultValues: {
@@ -43,6 +46,36 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
     },
   });
 
+  const handleSecureSubmit = (data: HealthWellnessFormData) => {
+    // Validate and sanitize medical data
+    const sanitizedData = {
+      ...data,
+      injuryDescription: data.injuryDescription ? validateSensitiveInput(data.injuryDescription, 'medical') : '',
+      medicalNotes: data.medicalNotes ? validateSensitiveInput(data.medicalNotes, 'medical') : '',
+    };
+
+    // Check for SQL injection attempts
+    const inputs = [data.injuryDescription, data.medicalNotes].filter(Boolean);
+    for (const input of inputs) {
+      if (checkSQLInjection(input)) {
+        logSecurityEvent('sql_injection_attempt', { 
+          form: 'health_wellness',
+          blocked_input: input.substring(0, 100) 
+        }, 'critical');
+        return; // Block submission
+      }
+    }
+
+    // Log medical data submission for audit
+    logSecurityEvent('medical_data_submission', {
+      form: 'health_wellness',
+      has_injury_data: !!data.injuryDescription,
+      has_medical_notes: !!data.medicalNotes
+    }, 'low');
+
+    onSubmit(sanitizedData);
+  };
+
   const injuryStatuses = ['Healthy', 'Minor Injury', 'Recovering', 'Injured', 'Out'];
 
   return (
@@ -55,7 +88,7 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSecureSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
