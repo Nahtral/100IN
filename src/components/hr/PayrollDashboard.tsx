@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Yen, 
+  DollarSign, 
   FileText, 
   Calendar, 
   Plus,
@@ -22,9 +22,21 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import PayrollSettings from './PayrollSettings';
 
 interface PayrollDashboardProps {
   onStatsUpdate: () => void;
+}
+
+interface PayrollPeriod {
+  id: string;
+  period_name: string;
+  start_date: string;
+  end_date: string;
+  pay_date: string;
+  status: string;
+  total_gross_pay: number;
+  total_net_pay: number;
 }
 
 const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) => {
@@ -35,6 +47,15 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
+  const [newPeriod, setNewPeriod] = useState({
+    period_name: '',
+    start_date: '',
+    end_date: '',
+    pay_date: '',
+    status: 'draft'
+  });
   const [payrollStats, setPayrollStats] = useState({
     totalPayroll: 0,
     pendingPayslips: 0,
@@ -44,6 +65,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
 
   useEffect(() => {
     fetchPayrollData();
+    fetchPayrollPeriods();
   }, []);
 
   const fetchPayrollData = async () => {
@@ -104,6 +126,103 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
     }
   };
 
+  const fetchPayrollPeriods = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payroll_periods')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPayrollPeriods(data || []);
+    } catch (error) {
+      console.error('Error fetching payroll periods:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch payroll periods.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createPayrollPeriod = async () => {
+    if (!newPeriod.period_name || !newPeriod.start_date || !newPeriod.end_date || !newPeriod.pay_date) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('payroll_periods')
+        .insert([{
+          ...newPeriod,
+          created_by: userData.user?.id
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Payroll period created successfully.",
+      });
+
+      setNewPeriod({
+        period_name: '',
+        start_date: '',
+        end_date: '',
+        pay_date: '',
+        status: 'draft'
+      });
+      setAddModalOpen(false);
+      fetchPayrollPeriods();
+    } catch (error) {
+      console.error('Error creating payroll period:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create payroll period.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generatePayslipsForPeriod = async (periodId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('generate_payslips_for_period', {
+        period_id: periodId
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; payslips_created?: number; period_name?: string; error?: string };
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: `Generated ${result.payslips_created} payslips for ${result.period_name}.`,
+        });
+        fetchPayrollData();
+        fetchPayrollPeriods();
+      } else {
+        throw new Error(result.error || 'Failed to generate payslips');
+      }
+    } catch (error) {
+      console.error('Error generating payslips:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate payslips.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const openDetailsModal = (cardType: string) => {
     if (!isSuperAdmin) return;
     setSelectedCard(cardType);
@@ -113,6 +232,10 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
   const openAddModal = () => {
     if (!isSuperAdmin) return;
     setAddModalOpen(true);
+  };
+
+  const openSettingsModal = () => {
+    setSettingsModalOpen(true);
   };
 
   return (
@@ -134,12 +257,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
             <Button 
               variant="outline" 
               className="btn-secondary-panthers"
-              onClick={() => {
-                toast({
-                  title: "Feature Coming Soon",
-                  description: "Payroll settings will be available soon.",
-                });
-              }}
+              onClick={openSettingsModal}
             >
               <Settings className="h-4 w-4 mr-2" />
               Payroll Settings
@@ -168,7 +286,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                     <p className="text-sm font-medium text-muted-foreground">Total Payroll</p>
                     <p className="text-2xl font-bold text-primary">¥{payrollStats.totalPayroll}</p>
                   </div>
-                  <Yen className="h-8 w-8 text-primary" />
+                  <DollarSign className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
@@ -256,12 +374,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                 {(isSuperAdmin || hasRole('staff')) && (
                   <Button 
                     className="btn-panthers"
-                    onClick={() => {
-                      toast({
-                        title: "Feature Coming Soon",
-                        description: "Payroll period creation will be available soon.",
-                      });
-                    }}
+                    onClick={openAddModal}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Period
@@ -269,13 +382,42 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+          <CardContent>
+            {payrollPeriods.length === 0 ? (
               <div className="text-center py-12">
                 <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No payroll periods found</h3>
                 <p className="text-muted-foreground">Create your first payroll period to get started</p>
               </div>
-            </CardContent>
+            ) : (
+              <div className="space-y-4">
+                {payrollPeriods.map((period) => (
+                  <div key={period.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h4 className="font-semibold">{period.period_name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(period.start_date).toLocaleDateString()} - {new Date(period.end_date).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm">Pay Date: {new Date(period.pay_date).toLocaleDateString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={period.status === 'active' ? 'default' : 'secondary'}>
+                        {period.status}
+                      </Badge>
+                      {(isSuperAdmin || hasRole('staff')) && period.status === 'draft' && (
+                        <Button
+                          size="sm"
+                          onClick={() => generatePayslipsForPeriod(period.id)}
+                        >
+                          Generate Payslips
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
           </Card>
         </TabsContent>
 
@@ -301,10 +443,18 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                     <Button 
                       className="btn-panthers"
                       onClick={() => {
-                        toast({
-                          title: "Feature Coming Soon",
-                          description: "Payslip generation will be available soon.",
-                        });
+                        if (payrollPeriods.some(p => p.status === 'active')) {
+                          const activePeriod = payrollPeriods.find(p => p.status === 'active');
+                          if (activePeriod) {
+                            generatePayslipsForPeriod(activePeriod.id);
+                          }
+                        } else {
+                          toast({
+                            title: "No Active Period",
+                            description: "Create and activate a payroll period first.",
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     >
                       <Plus className="h-4 w-4 mr-2" />
@@ -487,25 +637,48 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
           <div className="space-y-4">
             <div>
               <Label htmlFor="period_name">Period Name</Label>
-              <Input id="period_name" placeholder="e.g., January 2024" />
+              <Input 
+                id="period_name" 
+                placeholder="e.g., January 2024"
+                value={newPeriod.period_name}
+                onChange={(e) => setNewPeriod({ ...newPeriod, period_name: e.target.value })}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="start_date">Start Date</Label>
-                <Input id="start_date" type="date" />
+                <Input 
+                  id="start_date" 
+                  type="date"
+                  value={newPeriod.start_date}
+                  onChange={(e) => setNewPeriod({ ...newPeriod, start_date: e.target.value })}
+                />
               </div>
               <div>
                 <Label htmlFor="end_date">End Date</Label>
-                <Input id="end_date" type="date" />
+                <Input 
+                  id="end_date" 
+                  type="date"
+                  value={newPeriod.end_date}
+                  onChange={(e) => setNewPeriod({ ...newPeriod, end_date: e.target.value })}
+                />
               </div>
             </div>
             <div>
               <Label htmlFor="pay_date">Pay Date</Label>
-              <Input id="pay_date" type="date" />
+              <Input 
+                id="pay_date" 
+                type="date"
+                value={newPeriod.pay_date}
+                onChange={(e) => setNewPeriod({ ...newPeriod, pay_date: e.target.value })}
+              />
             </div>
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select defaultValue="draft">
+              <Select 
+                value={newPeriod.status}
+                onValueChange={(value) => setNewPeriod({ ...newPeriod, status: value })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -520,17 +693,21 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
               <Button variant="outline" onClick={() => setAddModalOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast({
-                  title: "Success",
-                  description: "Payroll period created successfully.",
-                });
-                setAddModalOpen(false);
-              }}>
+              <Button onClick={createPayrollPeriod}>
                 Create Period
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payroll Settings Modal */}
+      <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Payroll Settings</DialogTitle>
+          </DialogHeader>
+          <PayrollSettings />
         </DialogContent>
       </Dialog>
     </div>

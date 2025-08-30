@@ -2040,6 +2040,45 @@ export type Database = {
           },
         ]
       }
+      payroll_deduction_types: {
+        Row: {
+          calculation_type: string
+          created_at: string | null
+          default_rate: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          is_tax: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          calculation_type?: string
+          created_at?: string | null
+          default_rate?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          is_tax?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          calculation_type?: string
+          created_at?: string | null
+          default_rate?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          is_tax?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payroll_periods: {
         Row: {
           created_at: string
@@ -2082,6 +2121,81 @@ export type Database = {
         }
         Relationships: []
       }
+      payroll_settings: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      payslip_deductions: {
+        Row: {
+          amount: number
+          calculation_base: number | null
+          created_at: string | null
+          deduction_type_id: string | null
+          id: string
+          payslip_id: string | null
+          rate: number | null
+        }
+        Insert: {
+          amount: number
+          calculation_base?: number | null
+          created_at?: string | null
+          deduction_type_id?: string | null
+          id?: string
+          payslip_id?: string | null
+          rate?: number | null
+        }
+        Update: {
+          amount?: number
+          calculation_base?: number | null
+          created_at?: string | null
+          deduction_type_id?: string | null
+          id?: string
+          payslip_id?: string | null
+          rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslip_deductions_deduction_type_id_fkey"
+            columns: ["deduction_type_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_deduction_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslip_deductions_payslip_id_fkey"
+            columns: ["payslip_id"]
+            isOneToOne: false
+            referencedRelation: "payslips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payslips: {
         Row: {
           benefit_deductions: number | null
@@ -2090,15 +2204,19 @@ export type Database = {
           employee_id: string
           generated_at: string
           gross_pay: number
+          hourly_rate: number | null
+          hours_worked: number | null
           id: string
           net_pay: number
           other_deductions: number | null
           overtime_hours: number | null
+          pay_date: string | null
           payroll_period_id: string
           regular_hours: number | null
           sent_at: string | null
           status: string
           tax_deductions: number | null
+          total_deductions: number | null
         }
         Insert: {
           benefit_deductions?: number | null
@@ -2107,15 +2225,19 @@ export type Database = {
           employee_id: string
           generated_at?: string
           gross_pay: number
+          hourly_rate?: number | null
+          hours_worked?: number | null
           id?: string
           net_pay: number
           other_deductions?: number | null
           overtime_hours?: number | null
+          pay_date?: string | null
           payroll_period_id: string
           regular_hours?: number | null
           sent_at?: string | null
           status?: string
           tax_deductions?: number | null
+          total_deductions?: number | null
         }
         Update: {
           benefit_deductions?: number | null
@@ -2124,15 +2246,19 @@ export type Database = {
           employee_id?: string
           generated_at?: string
           gross_pay?: number
+          hourly_rate?: number | null
+          hours_worked?: number | null
           id?: string
           net_pay?: number
           other_deductions?: number | null
           overtime_hours?: number | null
+          pay_date?: string | null
           payroll_period_id?: string
           regular_hours?: number | null
           sent_at?: string | null
           status?: string
           tax_deductions?: number | null
+          total_deductions?: number | null
         }
         Relationships: [
           {
@@ -3743,6 +3869,10 @@ export type Database = {
       determine_shot_region: {
         Args: { _x: number; _y: number }
         Returns: string
+      }
+      generate_payslips_for_period: {
+        Args: { period_id: string }
+        Returns: Json
       }
       get_benefit_cost_analysis: {
         Args: { report_end_date?: string; report_start_date?: string }
