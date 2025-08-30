@@ -408,6 +408,144 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     setShowScheduleModal(true);
   };
 
+  const openTemplateModal = (template?: any) => {
+    if (template) {
+      setSelectedTemplate(template);
+      setTemplateForm({
+        template_name: template.template_name,
+        description: template.description || '',
+        department: template.department || '',
+        position: template.position || '',
+        start_time: template.start_time,
+        end_time: template.end_time,
+        break_duration_minutes: template.break_duration_minutes || 30,
+        days_of_week: template.days_of_week || [],
+        location: template.location || ''
+      });
+    } else {
+      setSelectedTemplate(null);
+      setTemplateForm({
+        template_name: '',
+        description: '',
+        department: '',
+        position: '',
+        start_time: '09:00',
+        end_time: '17:00',
+        break_duration_minutes: 30,
+        days_of_week: [],
+        location: ''
+      });
+    }
+    setShowCreateTemplateModal(true);
+  };
+
+  const handleTemplateSubmit = async () => {
+    try {
+      if (selectedTemplate) {
+        const { error } = await supabase
+          .from('shift_templates')
+          .update({
+            ...templateForm,
+            break_duration_minutes: Number(templateForm.break_duration_minutes)
+          })
+          .eq('id', selectedTemplate.id);
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Template updated successfully.",
+        });
+      } else {
+        const { error } = await supabase
+          .from('shift_templates')
+          .insert({
+            ...templateForm,
+            break_duration_minutes: Number(templateForm.break_duration_minutes),
+            created_by: (await supabase.auth.getUser()).data.user?.id
+          });
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Template created successfully.",
+        });
+      }
+
+      setShowCreateTemplateModal(false);
+      setSelectedTemplate(null);
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save template.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('shift_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Template deleted successfully.",
+      });
+      
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete template.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const applyTemplate = (template: any) => {
+    setTemplateForm({
+      template_name: template.template_name,
+      description: template.description || '',
+      department: template.department || '',
+      position: template.position || '',
+      start_time: template.start_time,
+      end_time: template.end_time,
+      break_duration_minutes: template.break_duration_minutes || 30,
+      days_of_week: template.days_of_week || [],
+      location: template.location || ''
+    });
+    
+    setScheduleForm({
+      employee_id: '',
+      shift_date: format(currentDate, 'yyyy-MM-dd'),
+      start_time: template.start_time,
+      end_time: template.end_time,
+      break_duration_minutes: template.break_duration_minutes || 30,
+      location: template.location || '',
+      notes: `Applied from template: ${template.template_name}`
+    });
+
+    setShowTemplateModal(false);
+    setShowScheduleModal(true);
+
+    toast({
+      title: "Template Applied",
+      description: `Applied "${template.template_name}" template to new schedule.`,
+    });
+  };
+
+  const getDayName = (dayNumber: number) => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[dayNumber] || dayNumber.toString();
+  };
+
   const handleTemplateSubmit = async () => {
     try {
       if (selectedTemplate) {
