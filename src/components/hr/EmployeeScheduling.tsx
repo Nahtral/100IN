@@ -469,7 +469,11 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
               <Plus className="h-4 w-4 mr-2" />
               Add Schedule
             </Button>
-            <Button variant="outline" className="btn-secondary-panthers">
+            <Button 
+              variant="outline" 
+              className="btn-secondary-panthers"
+              onClick={() => setShowTemplateModal(true)}
+            >
               <Timer className="h-4 w-4 mr-2" />
               Templates
             </Button>
@@ -1014,6 +1018,93 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
               ))}
               {schedules.filter(s => s.shift_date === format(new Date(), 'yyyy-MM-dd')).length === 0 && (
                 <p className="text-center text-muted-foreground py-8">No shifts scheduled for today</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Templates Modal */}
+      <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Timer className="h-5 w-5" />
+              Schedule Templates
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-muted-foreground">
+                Manage reusable schedule templates for common shift patterns
+              </p>
+              {isSuperAdmin && (
+                <Button className="btn-panthers">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Template
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {templates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Timer className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No templates found</p>
+                  <p className="text-sm">Create templates to quickly schedule common shift patterns</p>
+                </div>
+              ) : (
+                templates.map((template) => (
+                  <div key={template.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="font-medium">{template.template_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {template.description || 'No description'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {template.start_time} - {template.end_time}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Break: {template.break_duration_minutes || 0} min
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {template.department || 'All Departments'}
+                      </Badge>
+                      {isSuperAdmin && (
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="Use Template"
+                          >
+                            <User className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="Edit Template"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="Delete Template"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
