@@ -1454,6 +1454,120 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_adjustments: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          delta: number
+          id: string
+          player_membership_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          delta: number
+          id?: string
+          player_membership_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          delta?: number
+          id?: string
+          player_membership_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_adjustments_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "player_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_adjustments_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_membership_usage"
+            referencedColumns: ["membership_id"]
+          },
+        ]
+      }
+      membership_alerts_sent: {
+        Row: {
+          alert_code: string
+          id: string
+          player_membership_id: string
+          sent_at: string | null
+        }
+        Insert: {
+          alert_code: string
+          id?: string
+          player_membership_id: string
+          sent_at?: string | null
+        }
+        Update: {
+          alert_code?: string
+          id?: string
+          player_membership_id?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_alerts_sent_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "player_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_alerts_sent_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_membership_usage"
+            referencedColumns: ["membership_id"]
+          },
+        ]
+      }
+      membership_types: {
+        Row: {
+          allocated_classes: number | null
+          allocation_type: string
+          created_at: string | null
+          end_date_required: boolean | null
+          id: string
+          is_active: boolean | null
+          name: string
+          start_date_required: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          allocated_classes?: number | null
+          allocation_type: string
+          created_at?: string | null
+          end_date_required?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_date_required?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          allocated_classes?: number | null
+          allocation_type?: string
+          created_at?: string | null
+          end_date_required?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_date_required?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -2467,6 +2581,66 @@ export type Database = {
           },
         ]
       }
+      player_memberships: {
+        Row: {
+          allocated_classes_override: number | null
+          auto_deactivate_when_used_up: boolean | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          manual_override_active: boolean | null
+          membership_type_id: string
+          notes: string | null
+          player_id: string
+          start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          allocated_classes_override?: number | null
+          auto_deactivate_when_used_up?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          manual_override_active?: boolean | null
+          membership_type_id: string
+          notes?: string | null
+          player_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          allocated_classes_override?: number | null
+          auto_deactivate_when_used_up?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          manual_override_active?: boolean | null
+          membership_type_id?: string
+          notes?: string | null
+          player_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_memberships_membership_type_id_fkey"
+            columns: ["membership_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_memberships_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_performance: {
         Row: {
           assists: number | null
@@ -2577,6 +2751,7 @@ export type Database = {
           avg_depth_inches: number | null
           created_at: string | null
           date_of_birth: string | null
+          deactivation_reason: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           height: string | null
@@ -2605,6 +2780,7 @@ export type Database = {
           avg_depth_inches?: number | null
           created_at?: string | null
           date_of_birth?: string | null
+          deactivation_reason?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           height?: string | null
@@ -2633,6 +2809,7 @@ export type Database = {
           avg_depth_inches?: number | null
           created_at?: string | null
           date_of_birth?: string | null
+          deactivation_reason?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           height?: string | null
@@ -3844,7 +4021,35 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_player_membership_usage: {
+        Row: {
+          allocated_classes: number | null
+          allocation_type: string | null
+          auto_deactivate_when_used_up: boolean | null
+          days_left: number | null
+          end_date: string | null
+          is_expired: boolean | null
+          manual_override_active: boolean | null
+          membership_id: string | null
+          membership_type_name: string | null
+          player_id: string | null
+          player_name: string | null
+          remaining_classes: number | null
+          should_deactivate: boolean | null
+          start_date: string | null
+          status: string | null
+          used_classes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_memberships_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       cleanup_old_notifications: {
@@ -3869,6 +4074,14 @@ export type Database = {
       determine_shot_region: {
         Args: { _x: number; _y: number }
         Returns: string
+      }
+      fn_auto_deactivate_players: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      fn_get_membership_summary: {
+        Args: { target_player_id: string }
+        Returns: Json
       }
       generate_payslips_for_period: {
         Args: { period_id: string }
