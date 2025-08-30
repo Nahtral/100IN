@@ -24,6 +24,7 @@ const PlayerDashboard = () => {
   const { userRole } = useUserRole();
   const [playerData, setPlayerData] = useState<any>(null);
   const [playerStats, setPlayerStats] = useState<any>(null);
+  const [developmentGoals, setDevelopmentGoals] = useState<any[]>([]);
   const { performance, loading: performanceLoading } = usePlayerPerformance(playerData?.id);
   const { schedule } = useUpcomingSchedule(playerData?.team_id);
 
@@ -58,6 +59,19 @@ const PlayerDashboard = () => {
             fitnessScore: 85, // This would come from health_wellness table
             teamRank: 3 // This would be calculated based on team performance
           });
+        }
+
+        // Fetch development goals
+        const { data: goalsData } = await supabase
+          .from('development_goals')
+          .select('*')
+          .eq('player_id', player.id)
+          .eq('is_active', true)
+          .order('priority', { ascending: true })
+          .limit(3);
+
+        if (goalsData) {
+          setDevelopmentGoals(goalsData);
         }
       }
     };
@@ -188,33 +202,29 @@ const PlayerDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Free Throw %</span>
-                    <span className="font-medium">72% → 85%</span>
+                {developmentGoals.length > 0 ? developmentGoals.map((goal) => (
+                  <div key={goal.id} className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>{goal.metric_name}</span>
+                      <span className="font-medium">
+                        {goal.current_display} → {goal.target_display}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          goal.color === 'orange' ? 'bg-orange-500' :
+                          goal.color === 'blue' ? 'bg-blue-500' :
+                          goal.color === 'green' ? 'bg-green-500' :
+                          'bg-gray-500'
+                        }`}
+                        style={{width: `${goal.progress_percentage}%`}}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-orange-500 h-2 rounded-full" style={{width: '72%'}}></div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Defense Rating</span>
-                    <span className="font-medium">B → A</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{width: '75%'}}></div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Assist Average</span>
-                    <span className="font-medium">4.2 → 6.0</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: '70%'}}></div>
-                  </div>
-                </div>
+                )) : (
+                  <p className="text-center text-muted-foreground py-4">No development goals set</p>
+                )}
               </div>
             </CardContent>
           </Card>

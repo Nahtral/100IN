@@ -347,6 +347,63 @@ export type Database = {
         }
         Relationships: []
       }
+      development_goals: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          current_display: string | null
+          current_value: number
+          goal_type: string
+          id: string
+          is_active: boolean | null
+          metric_name: string
+          notes: string | null
+          player_id: string
+          priority: number | null
+          progress_percentage: number | null
+          target_display: string | null
+          target_value: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          current_display?: string | null
+          current_value: number
+          goal_type: string
+          id?: string
+          is_active?: boolean | null
+          metric_name: string
+          notes?: string | null
+          player_id: string
+          priority?: number | null
+          progress_percentage?: number | null
+          target_display?: string | null
+          target_value: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          current_display?: string | null
+          current_value?: number
+          goal_type?: string
+          id?: string
+          is_active?: boolean | null
+          metric_name?: string
+          notes?: string | null
+          player_id?: string
+          priority?: number | null
+          progress_percentage?: number | null
+          target_display?: string | null
+          target_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       drill_messages: {
         Row: {
           created_at: string
