@@ -607,6 +607,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
         }}
       />
     </>
+  );
 };
 
 export default PlayerDetailsModal;
