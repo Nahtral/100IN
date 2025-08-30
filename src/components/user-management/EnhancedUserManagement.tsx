@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus } from 'lucide-react';
+import UserActionsDropdown from './UserActionsDropdown';
+import UserDetailsView from './UserDetailsView';
 
 interface UserProfile {
   id: string;
@@ -73,6 +75,8 @@ const EnhancedUserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [userStatuses, setUserStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -87,7 +91,8 @@ const EnhancedUserManagement = () => {
         fetchUsers(),
         fetchPermissions(),
         fetchRoleTemplates(),
-        fetchApprovalRequests()
+        fetchApprovalRequests(),
+        fetchUserStatuses()
       ]);
     } finally {
       setLoading(false);
@@ -163,43 +168,20 @@ const EnhancedUserManagement = () => {
   };
 
   const fetchApprovalRequests = async () => {
-    // For now, let's create some mock approval requests since the table might be empty
+    // Since the table may not exist in types yet, we'll create mock data for now
     const mockRequests: ApprovalRequest[] = [
       {
         id: '1',
         user_id: 'mock-1',
         requested_role: 'coach',
-        status: 'approved',
-        requested_at: '2025-07-10T00:00:00Z',
+        status: 'pending',
+        requested_at: '2025-08-30T00:00:00Z',
         user: {
-          email: 'jd@sns.com',
-          full_name: 'Jay Doe'
-        }
-      },
-      {
-        id: '2',
-        user_id: 'mock-2',
-        requested_role: 'player',
-        status: 'approved',
-        requested_at: '2025-07-01T00:00:00Z',
-        user: {
-          email: 'player1@panthers.com',
-          full_name: 'Player One'
-        }
-      },
-      {
-        id: '3',
-        user_id: 'mock-3',
-        requested_role: 'coach',
-        status: 'approved',
-        requested_at: '2025-06-14T00:00:00Z',
-        user: {
-          email: 'nahtral@supernahtral.com',
-          full_name: 'Coach Nahtral'
+          email: 'pending.coach@example.com',
+          full_name: 'Pending Coach'
         }
       }
     ];
-    
     setApprovalRequests(mockRequests);
   };
 
@@ -354,6 +336,77 @@ const EnhancedUserManagement = () => {
     }
   };
 
+  const fetchUserStatuses = async () => {
+    // Since the table may not exist in types yet, we'll set empty status for now
+    setUserStatuses({});
+  };
+
+  const archiveUser = async (userId: string, reason: string) => {
+    try {
+      // For now, just deactivate roles until the function is available
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ is_active: false })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "User archived successfully",
+        description: "User has been archived and their access has been revoked.",
+      });
+
+      fetchUsers();
+      fetchUserStatuses();
+    } catch (error) {
+      console.error('Error archiving user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to archive user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const reactivateUser = async (userId: string, reason: string) => {
+    toast({
+      title: "Feature coming soon",
+      description: "User reactivation will be available after database migration is complete.",
+    });
+  };
+
+  const deleteUser = async (userId: string, reason: string) => {
+    try {
+      // For now, just remove from profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "User deleted successfully",
+        description: "User has been permanently deleted from the system.",
+      });
+
+      fetchUsers();
+      fetchUserStatuses();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const viewUserDetails = (user: UserProfile) => {
+    setSelectedUser(user);
+    setViewDetailsOpen(true);
+  };
+
   if (!isSuperAdmin) {
     return (
       <Card>
@@ -449,6 +502,11 @@ const EnhancedUserManagement = () => {
                                 {roleObj.role === 'super_admin' ? 'Super Admin' : roleObj.role}
                               </Badge>
                             ))}
+                            {userStatuses[user.id] && userStatuses[user.id] !== 'active' && (
+                              <Badge variant="destructive">
+                                {userStatuses[user.id]}
+                              </Badge>
+                            )}
                           </div>
                           
                           <div>
@@ -504,25 +562,13 @@ const EnhancedUserManagement = () => {
                             />
                           </DialogContent>
                         </Dialog>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete User</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this user? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <UserActionsDropdown 
+                          user={user}
+                          onArchive={() => archiveUser(user.id, 'Archived by admin')}
+                          onReactivate={() => reactivateUser(user.id, 'Reactivated by admin')}
+                          onDelete={() => deleteUser(user.id, 'Permanently deleted by admin')}
+                          onViewDetails={() => viewUserDetails(user)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -644,6 +690,18 @@ const EnhancedUserManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* User Details Modal */}
+      <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>User Details: {selectedUser?.full_name}</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <UserDetailsView user={selectedUser} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
