@@ -38,7 +38,7 @@ const CoachDashboard = () => {
           .eq('coach_id', user.id);
 
         if (!teams || teams.length === 0) {
-          setCoachData({ teams: [], activePlayers: 0, wins: 0, avgScore: 0, nextGame: 0 });
+          setCoachData({ teams: [], activePlayers: 0, wins: 0, avgScore: 0, nextGame: 0, winRate: 0, teamChemistry: 0, fitnessLevel: 0 });
           setLoading(false);
           return;
         }
@@ -60,8 +60,33 @@ const CoachDashboard = () => {
 
         // Calculate stats
         const wins = gameData?.filter(g => g.result === 'W').length || 0;
+        const totalGames = gameData?.length || 0;
         const totalPoints = gameData?.reduce((sum, g) => sum + (g.points || 0), 0) || 0;
         const avgScore = gameData?.length ? (totalPoints / gameData.length).toFixed(1) : '0.0';
+        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+        // Get attendance data for team chemistry
+        const { data: attendanceData } = await supabase
+          .from('player_attendance')
+          .select('status, schedule_id')
+          .in('player_id', (players || []).map(p => p.id));
+
+        const totalAttendanceRecords = attendanceData?.length || 0;
+        const presentRecords = attendanceData?.filter(a => a.status === 'present').length || 0;
+        const teamChemistry = totalAttendanceRecords > 0 ? Math.round((presentRecords / totalAttendanceRecords) * 100) : 0;
+
+        // Get health check-ins for fitness level
+        const { data: healthData } = await supabase
+          .from('daily_health_checkins')
+          .select('training_readiness, energy_level, player_id')
+          .in('player_id', (players || []).map(p => p.id))
+          .gte('check_in_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // Last 30 days
+
+        const avgTrainingReadiness = healthData?.length > 0 ? 
+          healthData.reduce((sum, h) => sum + (h.training_readiness || 0), 0) / healthData.length : 0;
+        const avgEnergyLevel = healthData?.length > 0 ?
+          healthData.reduce((sum, h) => sum + (h.energy_level || 0), 0) / healthData.length : 0;
+        const fitnessLevel = Math.round(((avgTrainingReadiness + avgEnergyLevel) / 2) * 10); // Convert to percentage
 
         // Get upcoming games from schedule
         const nextGameDays = schedule.length > 0 ? 
@@ -81,7 +106,10 @@ const CoachDashboard = () => {
           wins,
           avgScore,
           nextGame: Math.max(0, nextGameDays),
-          topPerformers: playerStats
+          topPerformers: playerStats,
+          winRate,
+          teamChemistry,
+          fitnessLevel
         });
       } catch (error) {
         console.error('Error fetching coach data:', error);
@@ -185,28 +213,28 @@ const CoachDashboard = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Win Rate</span>
-                <span className="text-lg font-bold text-green-600">75%</span>
+                <span className="text-lg font-bold text-green-600">{coachData.winRate || 0}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{width: '75%'}}></div>
+                <div className="bg-green-500 h-2 rounded-full" style={{width: `${coachData.winRate || 0}%`}}></div>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Team Chemistry</span>
-                <span className="text-lg font-bold text-blue-600">88%</span>
+                <span className="text-lg font-bold text-blue-600">{coachData.teamChemistry || 0}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{width: '88%'}}></div>
+                <div className="bg-blue-500 h-2 rounded-full" style={{width: `${coachData.teamChemistry || 0}%`}}></div>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Fitness Level</span>
-                <span className="text-lg font-bold text-orange-600">82%</span>
+                <span className="text-lg font-bold text-orange-600">{coachData.fitnessLevel || 0}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-orange-500 h-2 rounded-full" style={{width: '82%'}}></div>
+                <div className="bg-orange-500 h-2 rounded-full" style={{width: `${coachData.fitnessLevel || 0}%`}}></div>
               </div>
             </div>
           </CardContent>
