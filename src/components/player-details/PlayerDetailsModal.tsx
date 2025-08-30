@@ -13,6 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Edit, Archive, Trash2, Save, X, Phone, Mail, Calendar, MapPin, Users, Activity, Shield } from 'lucide-react';
 import { TeamManagementModal } from '@/components/player-teams/TeamManagementModal';
 import MedicalInsuranceTab from './MedicalInsuranceTab';
+import { MembershipCard } from '@/components/membership/MembershipCard';
+import { MembershipAssignmentModal } from '@/components/membership/MembershipAssignmentModal';
+import { useMembershipSummary, useToggleOverride, useActivatePlayer, useSendMembershipReminder } from '@/hooks/useMembership';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -67,9 +70,13 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showTeamManagement, setShowTeamManagement] = useState(false);
+  const [showMembershipAssignment, setShowMembershipAssignment] = useState(false);
   const [editedPlayer, setEditedPlayer] = useState<Partial<Player>>({});
   const { toast } = useToast();
   const { isSuperAdmin } = useUserRole();
+  const { summary: membershipSummary, loading: membershipLoading, refetch: refetchMembership } = useMembershipSummary(player?.id || '');
+  const { toggleOverride } = useToggleOverride();
+  const { sendReminder } = useSendMembershipReminder();
 
   useEffect(() => {
     if (player) {
@@ -331,10 +338,14 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
 
             {/* Tabbed Content */}
             <Tabs defaultValue="details" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="details" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Details
+                </TabsTrigger>
+                <TabsTrigger value="membership" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Membership
                 </TabsTrigger>
                 <TabsTrigger value="medical" className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
@@ -545,6 +556,29 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                     <p className="text-muted-foreground">Medical records and health information will be displayed here.</p>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="membership" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  {isSuperAdmin && (
+                    <Button 
+                      onClick={() => setShowMembershipAssignment(true)}
+                      className="w-full"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Assign New Membership
+                    </Button>
+                  )}
+                  
+                  <MembershipCard
+                    summary={membershipSummary}
+                    loading={membershipLoading}
+                    showAdminControls={isSuperAdmin}
+                    onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
+                    onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
+                    onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="insurance" className="space-y-6 mt-6">

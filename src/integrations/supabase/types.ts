@@ -1491,7 +1491,7 @@ export type Database = {
             foreignKeyName: "membership_adjustments_player_membership_id_fkey"
             columns: ["player_membership_id"]
             isOneToOne: false
-            referencedRelation: "vw_player_membership_usage"
+            referencedRelation: "vw_player_membership_usage_secure"
             referencedColumns: ["membership_id"]
           },
         ]
@@ -1527,7 +1527,7 @@ export type Database = {
             foreignKeyName: "membership_alerts_sent_player_membership_id_fkey"
             columns: ["player_membership_id"]
             isOneToOne: false
-            referencedRelation: "vw_player_membership_usage"
+            referencedRelation: "vw_player_membership_usage_secure"
             referencedColumns: ["membership_id"]
           },
         ]
@@ -4021,7 +4021,7 @@ export type Database = {
       }
     }
     Views: {
-      vw_player_membership_usage: {
+      vw_player_membership_usage_secure: {
         Row: {
           allocated_classes: number | null
           allocation_type: string | null
