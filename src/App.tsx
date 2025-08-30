@@ -17,7 +17,7 @@ import Medical from "./pages/Medical";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
 import Chat from "./pages/Chat";
-import HRManagement from "./pages/HRManagement";
+import TeamGrid from "./pages/TeamGrid";
 import UserManagement from "./pages/UserManagement";
 import Evaluations from "./pages/Evaluations";
 import Dashboard from "./pages/Dashboard";
@@ -116,9 +116,9 @@ const App = () => (
                 <Chat />
               </RoleProtectedRoute>
             } />
-            <Route path="/hr-management" element={
+            <Route path="/teamgrid" element={
               <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
-                <HRManagement />
+                <TeamGrid />
               </RoleProtectedRoute>
             } />
             <Route path="/shotiq" element={

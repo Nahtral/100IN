@@ -34,7 +34,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import EmployeeForm from '@/components/hr/EmployeeForm';
 import { Download, Edit, X } from 'lucide-react';
 
-const HRManagement = () => {
+const TeamGrid = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { isSuperAdmin, hasRole } = useUserRole();
@@ -194,7 +194,7 @@ const HRManagement = () => {
   };
 
   const renderHRView = () => {
-    // Only super admins have access to full HR management dashboard
+    // Only super admins have access to full TeamGrid dashboard
     if (isSuperAdmin) {
       return renderFullHRManagement();
     } else if (hasRole('coach') || hasRole('staff') || isEmployee) {
@@ -205,7 +205,7 @@ const HRManagement = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-            <p className="text-muted-foreground">You don't have permission to access HR Management.</p>
+            <p className="text-muted-foreground">You don't have permission to access TeamGrid.</p>
           </div>
         </div>
       );
@@ -216,8 +216,8 @@ const HRManagement = () => {
     <>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold gradient-text">HR Management</h1>
-          <p className="text-muted-foreground">Employee, payroll & HR management system</p>
+          <h1 className="text-3xl font-bold gradient-text">TeamGrid</h1>
+          <p className="text-muted-foreground">Employee, payroll & team management system</p>
         </div>
         {isSuperAdmin && (
           <div className="flex gap-2">
@@ -227,7 +227,7 @@ const HRManagement = () => {
             </Button>
             <Button variant="outline" className="btn-secondary-panthers">
               <Settings className="h-4 w-4 mr-2" />
-              HR Settings
+              TeamGrid Settings
             </Button>
           </div>
         )}
@@ -482,4 +482,4 @@ const HRManagement = () => {
   );
 };
 
-export default HRManagement;
+export default TeamGrid;

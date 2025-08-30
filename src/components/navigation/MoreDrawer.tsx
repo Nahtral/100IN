@@ -87,10 +87,10 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
       showForAll: true
     },
     {
-      title: 'HR Management',
-      href: '/hr-management',
+      title: 'TeamGrid',
+      href: '/teamgrid',
       icon: Briefcase,
-      description: 'Employee management',
+      description: 'Team management',
       showCondition: () => actualCanAccessHR
     },
     {

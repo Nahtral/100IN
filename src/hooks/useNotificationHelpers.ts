@@ -224,7 +224,7 @@ export const useNotificationHelpers = () => {
       `Your time-off from ${startDate} to ${endDate} has been approved`,
       { startDate, endDate },
       'normal',
-      '/hr-management'
+      '/teamgrid'
     );
   };
 
@@ -241,7 +241,7 @@ export const useNotificationHelpers = () => {
       `Your time-off from ${startDate} to ${endDate} was denied${reason ? `: ${reason}` : ''}`,
       { startDate, endDate, reason },
       'high',
-      '/hr-management'
+      '/teamgrid'
     );
   };
 

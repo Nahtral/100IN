@@ -123,8 +123,8 @@ export function AppSidebar() {
 
   const internalToolsItems = [
     {
-      title: 'HR Management',
-      href: '/hr-management',
+      title: 'TeamGrid',
+      href: '/teamgrid',
       icon: Users,
       showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach'),
     },

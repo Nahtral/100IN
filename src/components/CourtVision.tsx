@@ -26,7 +26,7 @@ const quickActionItems = [
   { icon: Calendar, label: 'Schedule', id: 'schedule', color: 'text-panthers-red' },
   { icon: Target, label: 'ShotIQ', id: 'shotiq', color: 'text-panthers-red' },
   { icon: Heart, label: 'Health', id: 'health', color: 'text-panthers-red' },
-  { icon: Briefcase, label: 'HR Management', id: 'hr', color: 'text-panthers-red' },
+  { icon: Briefcase, label: 'TeamGrid', id: 'hr', color: 'text-panthers-red' },
   { icon: BarChart3, label: 'Analytics', id: 'analytics', color: 'text-panthers-red' },
   { icon: MessageCircle, label: 'Chat', id: 'chat', color: 'text-panthers-red' },
 ];
