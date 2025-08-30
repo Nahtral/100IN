@@ -1,0 +1,1 @@
+UPDATE news_updates SET priority = 'high' WHERE content LIKE '%Welcome to the new season%';
