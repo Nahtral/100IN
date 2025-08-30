@@ -546,129 +546,13 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     return days[dayNumber] || dayNumber.toString();
   };
 
-  const handleTemplateSubmit = async () => {
-    try {
-      if (selectedTemplate) {
-        const { error } = await supabase
-          .from('shift_templates')
-          .update({
-            ...templateForm,
-            break_duration_minutes: Number(templateForm.break_duration_minutes)
-          })
-          .eq('id', selectedTemplate.id);
-
-        if (error) throw error;
-        toast({
-          title: "Success",
-          description: "Template updated successfully.",
-        });
-      } else {
-        const { error } = await supabase
-          .from('shift_templates')
-          .insert({
-            ...templateForm,
-            break_duration_minutes: Number(templateForm.break_duration_minutes),
-            created_by: (await supabase.auth.getUser()).data.user?.id
-          });
-
-        if (error) throw error;
-        toast({
-          title: "Success",
-          description: "Template created successfully.",
-        });
-      }
-
-      setShowCreateTemplateModal(false);
-      setSelectedTemplate(null);
-      setTemplateForm({
-        template_name: '',
-        description: '',
-        department: '',
-        position: '',
-        start_time: '',
-        end_time: '',
-        break_duration_minutes: 30,
-        days_of_week: [],
-        location: ''
-      });
-      fetchTemplates();
-    } catch (error) {
-      console.error('Error saving template:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save template.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteTemplate = async (templateId: string) => {
-    try {
-      const { error } = await supabase
-        .from('shift_templates')
-        .update({ is_active: false })
-        .eq('id', templateId);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Template deleted successfully.",
-      });
-      
-      fetchTemplates();
-    } catch (error) {
-      console.error('Error deleting template:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete template.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const openTemplateModal = (template?: any) => {
-    if (template) {
-      setSelectedTemplate(template);
-      setTemplateForm({
-        template_name: template.template_name,
-        description: template.description || '',
-        department: template.department || '',
-        position: template.position || '',
-        start_time: template.start_time,
-        end_time: template.end_time,
-        break_duration_minutes: template.break_duration_minutes || 30,
-        days_of_week: template.days_of_week || [],
-        location: template.location || ''
-      });
-    } else {
-      setSelectedTemplate(null);
-      setTemplateForm({
-        template_name: '',
-        description: '',
-        department: '',
-        position: '',
-        start_time: '09:00',
-        end_time: '17:00',
-        break_duration_minutes: 30,
-        days_of_week: [1, 2, 3, 4, 5], // Monday to Friday
-        location: ''
-      });
-    }
-    setShowCreateTemplateModal(true);
-  };
-
-  const getDayName = (dayNumber: number) => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return days[dayNumber];
-  };
-
   const toggleDay = (day: number) => {
     const newDays = templateForm.days_of_week.includes(day)
       ? templateForm.days_of_week.filter(d => d !== day)
       : [...templateForm.days_of_week, day].sort();
     setTemplateForm({...templateForm, days_of_week: newDays});
   };
+
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
