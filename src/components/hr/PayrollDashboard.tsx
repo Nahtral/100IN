@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  DollarSign, 
+  Yen, 
   FileText, 
   Calendar, 
   Plus,
@@ -168,7 +168,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) =>
                     <p className="text-sm font-medium text-muted-foreground">Total Payroll</p>
                     <p className="text-2xl font-bold text-primary">¥{payrollStats.totalPayroll}</p>
                   </div>
-                  <DollarSign className="h-8 w-8 text-primary" />
+                  <Yen className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
