@@ -75,8 +75,10 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, currentUse
         </div>
       </main>
 
-      {/* Bottom Tab Navigation */}
-      <BottomTabNav onMoreClick={handleMoreClick} />
+      {/* Bottom Tab Navigation - Fixed positioning */}
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        <BottomTabNav onMoreClick={handleMoreClick} />
+      </div>
 
       {/* More Drawer */}
       <MoreDrawer 
