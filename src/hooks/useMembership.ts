@@ -27,6 +27,7 @@ export interface PlayerMembership {
 }
 
 export interface MembershipSummary {
+  membership_id: string;
   allocated_classes: number | null;
   used_classes: number;
   remaining_classes: number | null;
