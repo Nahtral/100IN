@@ -76,7 +76,10 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const { toast } = useToast();
   const { isSuperAdmin, hasRole } = useUserRole();
   const { user } = useAuth();
-  const { summary: membershipSummary, loading: membershipLoading, refetch: refetchMembership } = useMembershipSummary(player?.id || '');
+  
+  // Only fetch membership data if user has permission to view it
+  const shouldFetchMembership = isSuperAdmin || hasRole('staff') || hasRole('coach') || user?.id === player?.user_id;
+  const { summary: membershipSummary, loading: membershipLoading, refetch: refetchMembership } = useMembershipSummary(shouldFetchMembership ? (player?.id || '') : '');
   const { toggleOverride } = useToggleOverride();
   const { sendReminder } = useSendMembershipReminder();
 
@@ -217,6 +220,18 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   // Check if player is on same team (for teammate visibility)
   const [isTeammate, setIsTeammate] = useState(false);
   
+  // Add debugging logs
+  console.log('PlayerDetailsModal Debug:', {
+    userId: user?.id,
+    playerUserId: player.user_id,
+    canManagePlayer,
+    isOwnProfile,
+    canViewSensitiveData,
+    isSuperAdmin,
+    hasStaffRole: hasRole('staff'),
+    hasCoachRole: hasRole('coach')
+  });
+  
   useEffect(() => {
     const checkTeammate = async () => {
       if (!user?.id || !player.team_id || canManagePlayer || isOwnProfile) {
@@ -232,6 +247,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
           .single();
         
         setIsTeammate(data?.team_id === player.team_id);
+        console.log('Teammate check result:', { isTeammate: data?.team_id === player.team_id });
       } catch (error) {
         console.error('Error checking teammate status:', error);
       }
@@ -577,6 +593,37 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
 
               {canViewSensitiveData && (
                 <>
+                  <TabsContent value="membership" className="space-y-6 mt-6">
+                    <div className="space-y-4">
+                      {isSuperAdmin && (
+                        <Button 
+                          onClick={() => setShowMembershipAssignment(true)}
+                          className="w-full"
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          Assign New Membership
+                        </Button>
+                      )}
+                      
+                      {membershipSummary ? (
+                        <MembershipCard
+                          summary={membershipSummary}
+                          loading={membershipLoading}
+                          showAdminControls={isSuperAdmin}
+                          onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
+                          onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
+                          onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
+                        />
+                      ) : membershipLoading ? (
+                        <div className="text-center py-4">Loading membership data...</div>
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground">
+                          No membership data found
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
                   <TabsContent value="medical" className="space-y-6 mt-6">
                     {/* Medical Notes */}
                     {(isSuperAdmin || player.medical_notes) && (
@@ -607,29 +654,6 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                         <p className="text-muted-foreground">Medical records and health information will be displayed here.</p>
                       </CardContent>
                     </Card>
-                  </TabsContent>
-
-                  <TabsContent value="membership" className="space-y-6 mt-6">
-                    <div className="space-y-4">
-                      {isSuperAdmin && (
-                        <Button 
-                          onClick={() => setShowMembershipAssignment(true)}
-                          className="w-full"
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          Assign New Membership
-                        </Button>
-                      )}
-                      
-                      <MembershipCard
-                        summary={membershipSummary}
-                        loading={membershipLoading}
-                        showAdminControls={isSuperAdmin}
-                        onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
-                        onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
-                        onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
-                      />
-                    </div>
                   </TabsContent>
 
                   <TabsContent value="insurance" className="space-y-6 mt-6">
