@@ -3,18 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Users, 
-  Clock, 
-  Calendar, 
-  FileText, 
-  DollarSign, 
-  Plus,
-  Settings,
-  BarChart3,
-  UserPlus,
-  UserMinus
-} from 'lucide-react';
+import { Users, Clock, Calendar, FileText, DollarSign, Plus, Settings, BarChart3, UserPlus, UserMinus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -33,12 +22,20 @@ import CoachHRView from '@/components/hr/CoachHRView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EmployeeForm from '@/components/hr/EmployeeForm';
 import { Download, Edit, X } from 'lucide-react';
-
 const TeamGrid = () => {
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const { isSuperAdmin, hasRole } = useUserRole();
-  const { currentUser } = useCurrentUser();
+  const {
+    toast
+  } = useToast();
+  const {
+    user
+  } = useAuth();
+  const {
+    isSuperAdmin,
+    hasRole
+  } = useUserRole();
+  const {
+    currentUser
+  } = useCurrentUser();
   const [stats, setStats] = useState({
     totalEmployees: 0,
     activeTimeOff: 0,
@@ -51,7 +48,6 @@ const TeamGrid = () => {
   const [showAddEmployeeForm, setShowAddEmployeeForm] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
   const [isEmployee, setIsEmployee] = useState(false);
-
   useEffect(() => {
     if (user) {
       fetchStats();
@@ -64,63 +60,50 @@ const TeamGrid = () => {
       setLoading(false);
     }
   }, [user, isSuperAdmin, hasRole]);
-
   const checkEmployeeStatus = async () => {
     if (!isSuperAdmin && !hasRole('staff') && !hasRole('coach') && user) {
       try {
-        const { data } = await supabase
-          .from('employees')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-        
+        const {
+          data
+        } = await supabase.from('employees').select('id').eq('user_id', user.id).single();
         setIsEmployee(!!data);
       } catch (error) {
         setIsEmployee(false);
       }
     }
   };
-
   const fetchStats = async () => {
     try {
       // Fetch total employees
-      const { data: employees, error: empError } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('employment_status', 'active');
-
+      const {
+        data: employees,
+        error: empError
+      } = await supabase.from('employees').select('*').eq('employment_status', 'active');
       if (empError) throw empError;
       setEmployees(employees || []);
 
       // Fetch active time off requests
-      const { data: timeOff, error: timeError } = await supabase
-        .from('time_off_requests')
-        .select('id')
-        .eq('status', 'approved')
-        .gte('end_date', new Date().toISOString().split('T')[0]);
-
+      const {
+        data: timeOff,
+        error: timeError
+      } = await supabase.from('time_off_requests').select('id').eq('status', 'approved').gte('end_date', new Date().toISOString().split('T')[0]);
       if (timeError) throw timeError;
 
       // Fetch pending payslips
-      const { data: payslips, error: payError } = await supabase
-        .from('payslips')
-        .select('id')
-        .eq('status', 'draft');
-
+      const {
+        data: payslips,
+        error: payError
+      } = await supabase.from('payslips').select('id').eq('status', 'draft');
       if (payError) throw payError;
 
       // Fetch today's time entries
       const today = new Date().toISOString().split('T')[0];
-      const { data: timeEntries, error: timeEntryError } = await supabase
-        .from('time_entries')
-        .select('total_hours')
-        .gte('clock_in', `${today}T00:00:00`)
-        .lt('clock_in', `${today}T23:59:59`);
-
+      const {
+        data: timeEntries,
+        error: timeEntryError
+      } = await supabase.from('time_entries').select('total_hours').gte('clock_in', `${today}T00:00:00`).lt('clock_in', `${today}T23:59:59`);
       if (timeEntryError) throw timeEntryError;
-
       const todaysHours = timeEntries?.reduce((sum, entry) => sum + (entry.total_hours || 0), 0) || 0;
-
       setStats({
         totalEmployees: employees?.length || 0,
         activeTimeOff: timeOff?.length || 0,
@@ -132,15 +115,19 @@ const TeamGrid = () => {
       toast({
         title: "Error",
         description: "Failed to fetch HR statistics.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
-  const StatCard = ({ title, value, icon: Icon, color, onClick }: any) => (
-    <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200" onClick={onClick}>
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    color,
+    onClick
+  }: any) => <Card className="card-enhanced cursor-pointer hover:shadow-lg transition-all duration-200" onClick={onClick}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -150,9 +137,7 @@ const TeamGrid = () => {
           <Icon className={`h-8 w-8 ${color}`} />
         </div>
       </CardContent>
-    </Card>
-  );
-
+    </Card>;
   const handleCardClick = (section: string) => {
     // Only super admins can navigate to different sections
     if (isSuperAdmin) {
@@ -163,36 +148,23 @@ const TeamGrid = () => {
       }
     }
   };
-
   const exportEmployeeList = () => {
-    const csvContent = [
-      ['Employee ID', 'Name', 'Email', 'Position', 'Department', 'Hire Date', 'Status'],
-      ...employees.map(emp => [
-        emp.employee_id,
-        `${emp.first_name} ${emp.last_name}`,
-        emp.email,
-        emp.position,
-        emp.department || 'N/A',
-        new Date(emp.hire_date).toLocaleDateString(),
-        emp.employment_status
-      ])
-    ];
-    
+    const csvContent = [['Employee ID', 'Name', 'Email', 'Position', 'Department', 'Hire Date', 'Status'], ...employees.map(emp => [emp.employee_id, `${emp.first_name} ${emp.last_name}`, emp.email, emp.position, emp.department || 'N/A', new Date(emp.hire_date).toLocaleDateString(), emp.employment_status])];
     const csvString = csvContent.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv' });
+    const blob = new Blob([csvString], {
+      type: 'text/csv'
+    });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    
     toast({
       title: "Success",
-      description: "Employee list exported successfully.",
+      description: "Employee list exported successfully."
     });
   };
-
   const renderHRView = () => {
     // Only super admins have access to full TeamGrid dashboard
     if (isSuperAdmin) {
@@ -201,26 +173,22 @@ const TeamGrid = () => {
       // Coaches, staff, and employees only get self-service features
       return <EmployeeSelfService />;
     } else {
-      return (
-        <div className="flex items-center justify-center h-64">
+      return <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
             <p className="text-muted-foreground">You don't have permission to access TeamGrid.</p>
           </div>
-        </div>
-      );
+        </div>;
     }
   };
-
-  const renderFullHRManagement = () => (
-    <>
+  const renderFullHRManagement = () => <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold gradient-text">TeamGrid</h1>
-          <p className="text-muted-foreground">Employee, payroll & team management system</p>
+          <p className="text-muted-foreground">Employee management system
+        </p>
         </div>
-        {isSuperAdmin && (
-          <div className="flex gap-2">
+        {isSuperAdmin && <div className="flex gap-2">
             <Button onClick={() => setActiveTab('employees')} className="btn-panthers">
               <UserPlus className="h-4 w-4 mr-2" />
               Add Employee
@@ -229,8 +197,7 @@ const TeamGrid = () => {
               <Settings className="h-4 w-4 mr-2" />
               TeamGrid Settings
             </Button>
-          </div>
-        )}
+          </div>}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -246,48 +213,18 @@ const TeamGrid = () => {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
+          {loading ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => <Card key={i} className="animate-pulse">
                   <CardContent className="p-6">
                     <div className="h-16 bg-muted rounded"></div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard
-                title="Total Employees"
-                value={stats.totalEmployees}
-                icon={Users}
-                color="text-primary"
-                onClick={() => handleCardClick('employees-detail')}
-              />
-              <StatCard
-                title="Active Time Off"
-                value={stats.activeTimeOff}
-                icon={Calendar}
-                color="text-secondary"
-                onClick={() => handleCardClick('timeoff')}
-              />
-              <StatCard
-                title="Pending Payslips"
-                value={stats.pendingPayslips}
-                icon={FileText}
-                color="text-orange-500"
-                onClick={() => handleCardClick('payroll')}
-              />
-              <StatCard
-                title="Today's Hours"
-                value={stats.todaysHours}
-                icon={Clock}
-                color="text-green-500"
-                onClick={() => handleCardClick('timetracking')}
-              />
-            </div>
-          )}
+                </Card>)}
+            </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard title="Total Employees" value={stats.totalEmployees} icon={Users} color="text-primary" onClick={() => handleCardClick('employees-detail')} />
+              <StatCard title="Active Time Off" value={stats.activeTimeOff} icon={Calendar} color="text-secondary" onClick={() => handleCardClick('timeoff')} />
+              <StatCard title="Pending Payslips" value={stats.pendingPayslips} icon={FileText} color="text-orange-500" onClick={() => handleCardClick('payroll')} />
+              <StatCard title="Today's Hours" value={stats.todaysHours} icon={Clock} color="text-green-500" onClick={() => handleCardClick('timetracking')} />
+            </div>}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="card-enhanced">
@@ -383,11 +320,7 @@ const TeamGrid = () => {
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Total Employees Details</DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowEmployeeModal(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowEmployeeModal(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -398,32 +331,21 @@ const TeamGrid = () => {
             </p>
             
             <div className="flex flex-wrap gap-4">
-              <Button
-                onClick={() => {
-                  setShowAddEmployeeForm(true);
-                  setShowEmployeeModal(false);
-                }}
-                className="btn-panthers"
-              >
+              <Button onClick={() => {
+              setShowAddEmployeeForm(true);
+              setShowEmployeeModal(false);
+            }} className="btn-panthers">
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add Employee
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setActiveTab('employees');
-                  setShowEmployeeModal(false);
-                }}
-                className="btn-secondary-panthers"
-              >
+              <Button variant="outline" onClick={() => {
+              setActiveTab('employees');
+              setShowEmployeeModal(false);
+            }} className="btn-secondary-panthers">
                 <Edit className="h-4 w-4 mr-2" />
                 Manage Employees
               </Button>
-              <Button
-                variant="outline"
-                onClick={exportEmployeeList}
-                className="btn-secondary-panthers"
-              >
+              <Button variant="outline" onClick={exportEmployeeList} className="btn-secondary-panthers">
                 <Download className="h-4 w-4 mr-2" />
                 Export List
               </Button>
@@ -433,18 +355,14 @@ const TeamGrid = () => {
             <div className="border-t pt-4">
               <h4 className="font-semibold mb-3">Recent Employees</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {employees.slice(0, 5).map((employee) => (
-                  <div key={employee.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                {employees.slice(0, 5).map(employee => <div key={employee.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div>
                       <p className="font-medium">{employee.first_name} {employee.last_name}</p>
                       <p className="text-sm text-muted-foreground">{employee.position} • {employee.department}</p>
                     </div>
                     <Badge variant="secondary">{employee.employment_status}</Badge>
-                  </div>
-                ))}
-                {employees.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">No employees found</p>
-                )}
+                  </div>)}
+                {employees.length === 0 && <p className="text-center text-muted-foreground py-8">No employees found</p>}
               </div>
             </div>
           </div>
@@ -457,29 +375,21 @@ const TeamGrid = () => {
           <DialogHeader>
             <DialogTitle>Add New Employee</DialogTitle>
           </DialogHeader>
-          <EmployeeForm 
-            onSuccess={() => {
-              setShowAddEmployeeForm(false);
-              fetchStats();
-              toast({
-                title: "Success",
-                description: "Employee added successfully.",
-              });
-            }}
-            onCancel={() => setShowAddEmployeeForm(false)}
-          />
+          <EmployeeForm onSuccess={() => {
+          setShowAddEmployeeForm(false);
+          fetchStats();
+          toast({
+            title: "Success",
+            description: "Employee added successfully."
+          });
+        }} onCancel={() => setShowAddEmployeeForm(false)} />
         </DialogContent>
       </Dialog>
-    </>
-  );
-
-  return (
-    <Layout currentUser={currentUser}>
+    </>;
+  return <Layout currentUser={currentUser}>
       <div className="container mx-auto p-6 space-y-6">
         {renderHRView()}
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default TeamGrid;
