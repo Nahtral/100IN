@@ -72,7 +72,7 @@ const StaffDashboard = () => {
             <DollarSign className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${Math.floor((stats?.revenue || 0) * 0.15).toLocaleString()}</div>
+            <div className="text-2xl font-bold">¥{Math.floor((stats?.revenue || 0) * 0.15).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               This month
             </p>

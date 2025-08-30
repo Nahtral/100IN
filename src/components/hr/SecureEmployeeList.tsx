@@ -386,13 +386,13 @@ const SecureEmployeeList: React.FC<SecureEmployeeListProps> = ({ onStatsUpdate }
                                 {compensationData[employee.id].hourly_rate && (
                                   <div>
                                     <span className="font-medium">Hourly Rate:</span>
-                                    <p>${compensationData[employee.id].hourly_rate}/hr</p>
+                                    <p>¥{compensationData[employee.id].hourly_rate}/hr</p>
                                   </div>
                                 )}
                                 {compensationData[employee.id].salary && (
                                   <div>
                                     <span className="font-medium">Annual Salary:</span>
-                                    <p>${compensationData[employee.id].salary.toLocaleString()}</p>
+                                    <p>¥{compensationData[employee.id].salary.toLocaleString()}</p>
                                   </div>
                                 )}
                                 {compensationData[employee.id].emergency_contact_name && (
