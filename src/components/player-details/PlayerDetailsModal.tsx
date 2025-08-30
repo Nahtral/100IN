@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Player {
   id: string;
@@ -73,7 +74,8 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const [showMembershipAssignment, setShowMembershipAssignment] = useState(false);
   const [editedPlayer, setEditedPlayer] = useState<Partial<Player>>({});
   const { toast } = useToast();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin, hasRole } = useUserRole();
+  const { user } = useAuth();
   const { summary: membershipSummary, loading: membershipLoading, refetch: refetchMembership } = useMembershipSummary(player?.id || '');
   const { toggleOverride } = useToggleOverride();
   const { sendReminder } = useSendMembershipReminder();
@@ -203,6 +205,41 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
 
   if (!player) return null;
 
+  // Check if current user can manage players (super admin, staff, or coach)
+  const canManagePlayer = isSuperAdmin || hasRole('staff') || hasRole('coach');
+  
+  // Check if current user is viewing their own profile
+  const isOwnProfile = user?.id === player.user_id;
+  
+  // Players can only see their own sensitive data or basic teammate info
+  const canViewSensitiveData = canManagePlayer || isOwnProfile;
+  
+  // Check if player is on same team (for teammate visibility)
+  const [isTeammate, setIsTeammate] = useState(false);
+  
+  useEffect(() => {
+    const checkTeammate = async () => {
+      if (!user?.id || !player.team_id || canManagePlayer || isOwnProfile) {
+        return;
+      }
+      
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('team_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        
+        setIsTeammate(data?.team_id === player.team_id);
+      } catch (error) {
+        console.error('Error checking teammate status:', error);
+      }
+    };
+    
+    checkTeammate();
+  }, [user?.id, player.team_id, canManagePlayer, isOwnProfile]);
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -250,7 +287,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                     </div>
                   </div>
 
-                  {isSuperAdmin && (
+                  {canManagePlayer && (
                     <div className="flex items-center gap-2">
                       {isEditing ? (
                         <>
@@ -338,23 +375,27 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
 
             {/* Tabbed Content */}
             <Tabs defaultValue="details" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${canViewSensitiveData ? 'grid-cols-4' : 'grid-cols-1'}`}>
                 <TabsTrigger value="details" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Details
                 </TabsTrigger>
-                <TabsTrigger value="membership" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Membership
-                </TabsTrigger>
-                <TabsTrigger value="medical" className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Medical
-                </TabsTrigger>
-                <TabsTrigger value="insurance" className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Insurance
-                </TabsTrigger>
+                {canViewSensitiveData && (
+                  <>
+                    <TabsTrigger value="membership" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Membership
+                    </TabsTrigger>
+                    <TabsTrigger value="medical" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Medical
+                    </TabsTrigger>
+                    <TabsTrigger value="insurance" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Insurance
+                    </TabsTrigger>
+                  </>
+                )}
               </TabsList>
 
               <TabsContent value="details" className="space-y-6 mt-6">
@@ -369,20 +410,24 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                         <Label>Full Name</Label>
                         <p className="text-sm mt-1">{player.profiles?.full_name || 'N/A'}</p>
                       </div>
-                      <div>
-                        <Label>Email</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm">{player.profiles?.email || 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <Label>Phone</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm">{player.profiles?.phone || 'N/A'}</p>
-                        </div>
-                      </div>
+                       {canViewSensitiveData && (
+                         <>
+                           <div>
+                             <Label>Email</Label>
+                             <div className="flex items-center gap-2 mt-1">
+                               <Mail className="h-4 w-4 text-muted-foreground" />
+                               <p className="text-sm">{player.profiles?.email || 'N/A'}</p>
+                             </div>
+                           </div>
+                           <div>
+                             <Label>Phone</Label>
+                             <div className="flex items-center gap-2 mt-1">
+                               <Phone className="h-4 w-4 text-muted-foreground" />
+                               <p className="text-sm">{player.profiles?.phone || 'N/A'}</p>
+                             </div>
+                           </div>
+                         </>
+                       )}
                       <div>
                         <Label>Date of Birth</Label>
                         {isEditing ? (
@@ -473,117 +518,125 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                   </CardContent>
                 </Card>
 
-                {/* Emergency Contact */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Emergency Contact</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Contact Name</Label>
-                        {isEditing ? (
-                          <Input
-                            value={editedPlayer.emergency_contact_name || ''}
-                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
-                          />
-                        ) : (
-                          <p className="text-sm mt-1">{player.emergency_contact_name || 'N/A'}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label>Contact Phone</Label>
-                        {isEditing ? (
-                          <Input
-                            value={editedPlayer.emergency_contact_phone || ''}
-                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                          />
-                        ) : (
-                          <p className="text-sm mt-1">{player.emergency_contact_phone || 'N/A'}</p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Metadata */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Metadata</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                      <div>
-                        <Label className="text-xs">Created</Label>
-                        <p>{player.created_at ? format(new Date(player.created_at), 'MMM d, yyyy h:mm a') : 'N/A'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Last Updated</Label>
-                        <p>{player.updated_at ? format(new Date(player.updated_at), 'MMM d, yyyy h:mm a') : 'N/A'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="medical" className="space-y-6 mt-6">
-                {/* Medical Notes */}
-                {(isSuperAdmin || player.medical_notes) && (
+                {/* Emergency Contact - Only for own profile or authorized users */}
+                {canViewSensitiveData && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Medical Notes</CardTitle>
+                      <CardTitle>Emergency Contact</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      {isEditing ? (
-                        <Textarea
-                          value={editedPlayer.medical_notes || ''}
-                          onChange={(e) => setEditedPlayer(prev => ({ ...prev, medical_notes: e.target.value }))}
-                          placeholder="Add medical notes..."
-                          rows={4}
-                        />
-                      ) : (
-                        <p className="text-sm">{player.medical_notes || 'No medical notes'}</p>
-                      )}
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Contact Name</Label>
+                          {isEditing ? (
+                            <Input
+                              value={editedPlayer.emergency_contact_name || ''}
+                              onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                            />
+                          ) : (
+                            <p className="text-sm mt-1">{player.emergency_contact_name || 'N/A'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Contact Phone</Label>
+                          {isEditing ? (
+                            <Input
+                              value={editedPlayer.emergency_contact_phone || ''}
+                              onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                            />
+                          ) : (
+                            <p className="text-sm mt-1">{player.emergency_contact_phone || 'N/A'}</p>
+                          )}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Medical Records</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">Medical records and health information will be displayed here.</p>
-                  </CardContent>
-                </Card>
+
+                {/* Metadata - Only for own profile or authorized users */}
+                {canViewSensitiveData && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Metadata</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                        <div>
+                          <Label className="text-xs">Created</Label>
+                          <p>{player.created_at ? format(new Date(player.created_at), 'MMM d, yyyy h:mm a') : 'N/A'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Last Updated</Label>
+                          <p>{player.updated_at ? format(new Date(player.updated_at), 'MMM d, yyyy h:mm a') : 'N/A'}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
-              <TabsContent value="membership" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  {isSuperAdmin && (
-                    <Button 
-                      onClick={() => setShowMembershipAssignment(true)}
-                      className="w-full"
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Assign New Membership
-                    </Button>
-                  )}
-                  
-                  <MembershipCard
-                    summary={membershipSummary}
-                    loading={membershipLoading}
-                    showAdminControls={isSuperAdmin}
-                    onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
-                    onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
-                    onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
-                  />
-                </div>
-              </TabsContent>
+              {canViewSensitiveData && (
+                <>
+                  <TabsContent value="medical" className="space-y-6 mt-6">
+                    {/* Medical Notes */}
+                    {(isSuperAdmin || player.medical_notes) && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Medical Notes</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {isEditing ? (
+                            <Textarea
+                              value={editedPlayer.medical_notes || ''}
+                              onChange={(e) => setEditedPlayer(prev => ({ ...prev, medical_notes: e.target.value }))}
+                              placeholder="Add medical notes..."
+                              rows={4}
+                            />
+                          ) : (
+                            <p className="text-sm">{player.medical_notes || 'No medical notes'}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Medical Records</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground">Medical records and health information will be displayed here.</p>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
 
-              <TabsContent value="insurance" className="space-y-6 mt-6">
-                <MedicalInsuranceTab playerId={player.id} />
-              </TabsContent>
+                  <TabsContent value="membership" className="space-y-6 mt-6">
+                    <div className="space-y-4">
+                      {isSuperAdmin && (
+                        <Button 
+                          onClick={() => setShowMembershipAssignment(true)}
+                          className="w-full"
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          Assign New Membership
+                        </Button>
+                      )}
+                      
+                      <MembershipCard
+                        summary={membershipSummary}
+                        loading={membershipLoading}
+                        showAdminControls={isSuperAdmin}
+                        onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
+                        onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
+                        onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="insurance" className="space-y-6 mt-6">
+                    <MedicalInsuranceTab playerId={player.id} />
+                  </TabsContent>
+                </>
+              )}
             </Tabs>
           </div>
         </DialogContent>
