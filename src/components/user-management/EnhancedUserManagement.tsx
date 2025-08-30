@@ -58,7 +58,8 @@ interface ApprovalRequest {
   reviewed_by?: string;
   reviewed_at?: string;
   notes?: string;
-  user?: {
+  reason?: string;
+  user: {
     email: string;
     full_name: string;
   } | null;
@@ -77,6 +78,8 @@ const EnhancedUserManagement = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [userStatuses, setUserStatuses] = useState<Record<string, string>>({});
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -168,24 +171,51 @@ const EnhancedUserManagement = () => {
   };
 
   const fetchApprovalRequests = async () => {
-    // Since the table may not exist in types yet, we'll create mock data for now
-    const mockRequests: ApprovalRequest[] = [
-      {
-        id: '1',
-        user_id: 'mock-1',
-        requested_role: 'coach',
-        status: 'pending',
-        requested_at: '2025-08-30T00:00:00Z',
-        user: {
-          email: 'pending.coach@example.com',
-          full_name: 'Pending Coach'
-        }
+    try {
+      const { data, error } = await supabase
+        .from('user_approval_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('requested_at', { ascending: false });
+
+      if (!error && data) {
+        // Fetch user profiles separately
+        const userIds = data.map(req => req.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', userIds);
+
+        // Combine the data
+        const combinedData = data.map(request => ({
+          ...request,
+          user: profiles?.find(p => p.id === request.user_id) || null
+        }));
+
+        setApprovalRequests(combinedData);
       }
-    ];
-    setApprovalRequests(mockRequests);
+
+      if (error) {
+        console.error('Error fetching approval requests:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load approval requests",
+          variant: "destructive",
+        });
+        return;
+      }
+
+    } catch (error) {
+      console.error('Error fetching approval requests:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to load approval requests",
+        variant: "destructive",
+      });
+    }
   };
 
-  const assignRole = async (userId: string, role: string, reason: string) => {
+  const handleAssignRole = async (userId: string, role: string, reason: string) => {
     try {
       const { error } = await supabase
         .from('user_roles')
@@ -279,31 +309,95 @@ const EnhancedUserManagement = () => {
     }
   };
 
-  const approveUser = async (requestId: string, approved: boolean, notes?: string) => {
+  const handleApprovalAction = async (requestId: string, approved: boolean) => {
     try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('user_approval_requests')
         .update({
           status: approved ? 'approved' : 'rejected',
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
-          reviewed_at: new Date().toISOString(),
-          notes
+          reviewed_by: currentUser?.id,
+          reviewed_at: new Date().toISOString()
         })
         .eq('id', requestId);
 
       if (error) throw error;
 
+      // If approved, assign the requested role to the user
+      if (approved) {
+        const request = approvalRequests.find(r => r.id === requestId);
+        if (request) {
+          await handleAssignRole(request.user_id, request.requested_role, `Auto-assigned after approval of request ${requestId}`);
+        }
+      }
+
       toast({
-        title: approved ? "User approved" : "User rejected",
-        description: approved ? "User has been approved and can now access the system." : "User request has been rejected.",
+        title: approved ? "Request Approved" : "Request Rejected",
+        description: `User request has been ${approved ? 'approved' : 'rejected'} successfully.`,
       });
 
       fetchApprovalRequests();
+      fetchUsers(); // Refresh user list to show role changes
     } catch (error) {
       console.error('Error processing approval:', error);
       toast({
         title: "Error",
-        description: "Failed to process approval. Please try again.",
+        description: "Failed to process approval request",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const viewApprovalDetails = (request: ApprovalRequest) => {
+    // Create a temporary user object for the approval request
+    const tempUser: UserProfile = {
+      id: request.user_id,
+      email: request.user?.email || '',
+      full_name: request.user?.full_name || '',
+      created_at: request.requested_at,
+      roles: [],
+      permissions: []
+    };
+    setSelectedUser(tempUser);
+    setViewDetailsOpen(true);
+  };
+
+  const editApprovalRequest = (request: ApprovalRequest) => {
+    // For approval requests, we can edit the notes/reason
+    const tempUser: UserProfile = {
+      id: request.user_id,
+      email: request.user?.email || '',
+      full_name: request.user?.full_name || '',
+      created_at: request.requested_at,
+      roles: [],
+      permissions: []
+    };
+    setSelectedUser(tempUser);
+    setEditMode(true);
+    setShowEditModal(true);
+  };
+
+  const deleteApprovalRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_approval_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Request Deleted",
+        description: "Approval request has been deleted successfully.",
+      });
+
+      fetchApprovalRequests();
+    } catch (error) {
+      console.error('Error deleting approval request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete approval request",
         variant: "destructive",
       });
     }
@@ -315,7 +409,7 @@ const EnhancedUserManagement = () => {
       if (!template) return;
 
       // Assign the role
-      await assignRole(userId, template.role, `Applied ${template.name} template`);
+      await handleAssignRole(userId, template.role, `Applied ${template.name} template`);
 
       // Grant template permissions
       for (const permission of template.permissions) {
@@ -563,7 +657,7 @@ const EnhancedUserManagement = () => {
                                 fetchUsers();
                                 setEditDialogOpen(false);
                               }}
-                              onAssignRole={assignRole}
+                              onAssignRole={handleAssignRole}
                               onRevokeRole={revokeRole}
                               onGrantPermission={grantPermission}
                               onApplyTemplate={applyTemplate}
@@ -659,31 +753,61 @@ const EnhancedUserManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold">{request.user.full_name || 'Unknown User'}</h4>
+                            <h4 className="font-semibold">{request.user?.full_name || 'Unknown User'}</h4>
                             <Badge 
                               variant={request.status === 'approved' ? 'default' : 'secondary'}
                             >
                               {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{request.user.email}</p>
+                          <p className="text-sm text-muted-foreground">{request.user?.email}</p>
                           <p className="text-xs text-muted-foreground">
                             Requested: {new Date(request.requested_at).toLocaleDateString()}
                           </p>
                         </div>
                         
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                          <Button variant="outline" size="sm">
+                         <div className="flex gap-2">
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => viewApprovalDetails(request)}
+                           >
+                             <Eye className="w-4 h-4 mr-1" />
+                             View
+                           </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => editApprovalRequest(request)}
+                          >
                             <Edit className="w-4 h-4 mr-1" />
                             Edit
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => deleteApprovalRequest(request.id)}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
+                          <div className="flex gap-1 ml-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleApprovalAction(request.id, true)}
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleApprovalAction(request.id, false)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
