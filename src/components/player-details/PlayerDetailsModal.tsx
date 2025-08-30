@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { User, Edit, Archive, Trash2, Save, X, Phone, Mail, Calendar, MapPin, Users, Activity } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { User, Edit, Archive, Trash2, Save, X, Phone, Mail, Calendar, MapPin, Users, Activity, Shield } from 'lucide-react';
 import { TeamManagementModal } from '@/components/player-teams/TeamManagementModal';
+import MedicalInsuranceTab from './MedicalInsuranceTab';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -195,327 +197,364 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   if (!player) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Player Details
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Player Details
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Header with Actions */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold">
-                      {player.profiles?.full_name || 'Unknown Player'}
-                    </h2>
-                    {player.jersey_number && (
-                      <Badge variant="outline" className="text-lg px-3 py-1">
-                        #{player.jersey_number}
+          <div className="space-y-6">
+            {/* Header with Actions */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold">
+                        {player.profiles?.full_name || 'Unknown Player'}
+                      </h2>
+                      {player.jersey_number && (
+                        <Badge variant="outline" className="text-lg px-3 py-1">
+                          #{player.jersey_number}
+                        </Badge>
+                      )}
+                      <Badge variant={player.is_active ? "default" : "secondary"}>
+                        {player.is_active ? "Active" : "Inactive"}
                       </Badge>
-                    )}
-                    <Badge variant={player.is_active ? "default" : "secondary"}>
-                      {player.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      {player.position && (
+                        <div className="flex items-center gap-1">
+                          <Activity className="h-4 w-4" />
+                          {player.position}
+                        </div>
+                      )}
+                      {player.teams?.name && (
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          {player.teams.name}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    {player.position && (
-                      <div className="flex items-center gap-1">
-                        <Activity className="h-4 w-4" />
-                        {player.position}
-                      </div>
-                    )}
-                    {player.teams?.name && (
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {player.teams.name}
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {isSuperAdmin && (
-                  <div className="flex items-center gap-2">
-                    {isEditing ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsEditing(false)}
-                          disabled={loading}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={handleSave}
-                          disabled={loading}
-                        >
-                          <Save className="h-4 w-4 mr-1" />
-                          Save
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => setIsEditing(true)}
-                         >
-                           <Edit className="h-4 w-4 mr-1" />
-                           Edit
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => setShowTeamManagement(true)}
-                         >
-                           <Users className="h-4 w-4 mr-1" />
-                           Teams
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={handleArchive}
-                           disabled={loading}
-                         >
-                           <Archive className="h-4 w-4 mr-1" />
-                           Archive
-                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={loading}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Player</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this player? This action cannot be undone and will remove all associated data.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={handleDelete}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  {isSuperAdmin && (
+                    <div className="flex items-center gap-2">
+                      {isEditing ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsEditing(false)}
+                            disabled={loading}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleSave}
+                            disabled={loading}
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => setIsEditing(true)}
+                           >
+                             <Edit className="h-4 w-4 mr-1" />
+                             Edit
+                           </Button>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => setShowTeamManagement(true)}
+                           >
+                             <Users className="h-4 w-4 mr-1" />
+                             Teams
+                           </Button>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={handleArchive}
+                             disabled={loading}
+                           >
+                             <Archive className="h-4 w-4 mr-1" />
+                             Archive
+                           </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={loading}
                               >
+                                <Trash2 className="h-4 w-4 mr-1" />
                                 Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Full Name</Label>
-                  <p className="text-sm mt-1">{player.profiles?.full_name || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm">{player.profiles?.email || 'N/A'}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm">{player.profiles?.phone || 'N/A'}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label>Date of Birth</Label>
-                  {isEditing ? (
-                    <Input
-                      type="date"
-                      value={editedPlayer.date_of_birth || ''}
-                      onChange={(e) => setEditedPlayer(prev => ({ ...prev, date_of_birth: e.target.value }))}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm">
-                        {player.date_of_birth ? format(new Date(player.date_of_birth), 'MMM d, yyyy') : 'N/A'}
-                      </p>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Player</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this player? This action cannot be undone and will remove all associated data.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleDelete}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Player Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Player Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label>Jersey Number</Label>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={editedPlayer.jersey_number || ''}
-                      onChange={(e) => setEditedPlayer(prev => ({ ...prev, jersey_number: parseInt(e.target.value) || undefined }))}
-                    />
-                  ) : (
-                    <p className="text-sm mt-1">{player.jersey_number || 'N/A'}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>Position</Label>
-                  {isEditing ? (
-                    <Select
-                      value={editedPlayer.position || ''}
-                      onValueChange={(value) => setEditedPlayer(prev => ({ ...prev, position: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select position" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Point Guard">Point Guard</SelectItem>
-                        <SelectItem value="Shooting Guard">Shooting Guard</SelectItem>
-                        <SelectItem value="Small Forward">Small Forward</SelectItem>
-                        <SelectItem value="Power Forward">Power Forward</SelectItem>
-                        <SelectItem value="Center">Center</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm mt-1">{player.position || 'N/A'}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>Height</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedPlayer.height || ''}
-                      onChange={(e) => setEditedPlayer(prev => ({ ...prev, height: e.target.value }))}
-                      placeholder="e.g., 6'2&quot;"
-                    />
-                  ) : (
-                    <p className="text-sm mt-1">{player.height || 'N/A'}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>Weight</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedPlayer.weight || ''}
-                      onChange={(e) => setEditedPlayer(prev => ({ ...prev, weight: e.target.value }))}
-                      placeholder="e.g., 180 lbs"
-                    />
-                  ) : (
-                    <p className="text-sm mt-1">{player.weight || 'N/A'}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Emergency Contact */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Emergency Contact</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Contact Name</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedPlayer.emergency_contact_name || ''}
-                      onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
-                    />
-                  ) : (
-                    <p className="text-sm mt-1">{player.emergency_contact_name || 'N/A'}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>Contact Phone</Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedPlayer.emergency_contact_phone || ''}
-                      onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                    />
-                  ) : (
-                    <p className="text-sm mt-1">{player.emergency_contact_phone || 'N/A'}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Medical Notes */}
-          {(isSuperAdmin || player.medical_notes) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Medical Notes</CardTitle>
               </CardHeader>
-              <CardContent>
-                {isEditing ? (
-                  <Textarea
-                    value={editedPlayer.medical_notes || ''}
-                    onChange={(e) => setEditedPlayer(prev => ({ ...prev, medical_notes: e.target.value }))}
-                    placeholder="Add medical notes..."
-                    rows={4}
-                  />
-                ) : (
-                  <p className="text-sm">{player.medical_notes || 'No medical notes'}</p>
-                )}
-              </CardContent>
             </Card>
-          )}
 
-          {/* Metadata */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Player Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="font-medium text-muted-foreground">Joined</p>
-                  <p>{player.created_at ? format(new Date(player.created_at), 'MMM d, yyyy') : 'Unknown'}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-muted-foreground">Last Updated</p>
-                  <p>{player.updated_at ? format(new Date(player.updated_at), 'MMM d, yyyy') : 'Unknown'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </DialogContent>
-      
+            {/* Tabbed Content */}
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="details" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Details
+                </TabsTrigger>
+                <TabsTrigger value="medical" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Medical
+                </TabsTrigger>
+                <TabsTrigger value="insurance" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Insurance
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="space-y-6 mt-6">
+                {/* Personal Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Personal Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Full Name</Label>
+                        <p className="text-sm mt-1">{player.profiles?.full_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <Label>Email</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm">{player.profiles?.email || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Phone</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm">{player.profiles?.phone || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Date of Birth</Label>
+                        {isEditing ? (
+                          <Input
+                            type="date"
+                            value={editedPlayer.date_of_birth || ''}
+                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, date_of_birth: e.target.value }))}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-sm">
+                              {player.date_of_birth ? format(new Date(player.date_of_birth), 'MMM d, yyyy') : 'N/A'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Player Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Player Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <Label>Jersey Number</Label>
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            value={editedPlayer.jersey_number || ''}
+                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, jersey_number: parseInt(e.target.value) || undefined }))}
+                          />
+                        ) : (
+                          <p className="text-sm mt-1">{player.jersey_number || 'N/A'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Position</Label>
+                        {isEditing ? (
+                          <Select
+                            value={editedPlayer.position || ''}
+                            onValueChange={(value) => setEditedPlayer(prev => ({ ...prev, position: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select position" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Point Guard">Point Guard</SelectItem>
+                              <SelectItem value="Shooting Guard">Shooting Guard</SelectItem>
+                              <SelectItem value="Small Forward">Small Forward</SelectItem>
+                              <SelectItem value="Power Forward">Power Forward</SelectItem>
+                              <SelectItem value="Center">Center</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="text-sm mt-1">{player.position || 'N/A'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Height</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedPlayer.height || ''}
+                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, height: e.target.value }))}
+                            placeholder="e.g., 6'2&quot;"
+                          />
+                        ) : (
+                          <p className="text-sm mt-1">{player.height || 'N/A'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Weight</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedPlayer.weight || ''}
+                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, weight: e.target.value }))}
+                            placeholder="e.g., 180 lbs"
+                          />
+                        ) : (
+                          <p className="text-sm mt-1">{player.weight || 'N/A'}</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Emergency Contact */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Emergency Contact</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Contact Name</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedPlayer.emergency_contact_name || ''}
+                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                          />
+                        ) : (
+                          <p className="text-sm mt-1">{player.emergency_contact_name || 'N/A'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Contact Phone</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedPlayer.emergency_contact_phone || ''}
+                            onChange={(e) => setEditedPlayer(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                          />
+                        ) : (
+                          <p className="text-sm mt-1">{player.emergency_contact_phone || 'N/A'}</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Metadata */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Metadata</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                      <div>
+                        <Label className="text-xs">Created</Label>
+                        <p>{player.created_at ? format(new Date(player.created_at), 'MMM d, yyyy h:mm a') : 'N/A'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Last Updated</Label>
+                        <p>{player.updated_at ? format(new Date(player.updated_at), 'MMM d, yyyy h:mm a') : 'N/A'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="medical" className="space-y-6 mt-6">
+                {/* Medical Notes */}
+                {(isSuperAdmin || player.medical_notes) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Medical Notes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isEditing ? (
+                        <Textarea
+                          value={editedPlayer.medical_notes || ''}
+                          onChange={(e) => setEditedPlayer(prev => ({ ...prev, medical_notes: e.target.value }))}
+                          placeholder="Add medical notes..."
+                          rows={4}
+                        />
+                      ) : (
+                        <p className="text-sm">{player.medical_notes || 'No medical notes'}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Medical Records</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">Medical records and health information will be displayed here.</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="insurance" className="space-y-6 mt-6">
+                <MedicalInsuranceTab playerId={player.id} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <TeamManagementModal
         isOpen={showTeamManagement}
         onClose={() => setShowTeamManagement(false)}
@@ -523,7 +562,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
         playerName={player.profiles?.full_name || 'Unknown Player'}
         onUpdate={onUpdate}
       />
-    </Dialog>
+    </>
   );
 };
 

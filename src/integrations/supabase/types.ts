@@ -2249,6 +2249,98 @@ export type Database = {
           },
         ]
       }
+      player_medical_insurance: {
+        Row: {
+          copay_amount: number | null
+          coverage_details: string | null
+          created_at: string
+          created_by: string
+          deductible_amount: number | null
+          dental_coverage: boolean | null
+          effective_date: string
+          emergency_coverage: boolean | null
+          expiration_date: string | null
+          group_number: string | null
+          id: string
+          insurance_provider: string
+          is_primary: boolean | null
+          notes: string | null
+          out_of_pocket_max: number | null
+          player_id: string
+          policy_holder_name: string
+          policy_holder_relationship: string
+          policy_number: string
+          pre_authorization_required: boolean | null
+          prescription_coverage: boolean | null
+          provider_address: string | null
+          provider_phone: string | null
+          updated_at: string
+          vision_coverage: boolean | null
+        }
+        Insert: {
+          copay_amount?: number | null
+          coverage_details?: string | null
+          created_at?: string
+          created_by: string
+          deductible_amount?: number | null
+          dental_coverage?: boolean | null
+          effective_date: string
+          emergency_coverage?: boolean | null
+          expiration_date?: string | null
+          group_number?: string | null
+          id?: string
+          insurance_provider: string
+          is_primary?: boolean | null
+          notes?: string | null
+          out_of_pocket_max?: number | null
+          player_id: string
+          policy_holder_name: string
+          policy_holder_relationship: string
+          policy_number: string
+          pre_authorization_required?: boolean | null
+          prescription_coverage?: boolean | null
+          provider_address?: string | null
+          provider_phone?: string | null
+          updated_at?: string
+          vision_coverage?: boolean | null
+        }
+        Update: {
+          copay_amount?: number | null
+          coverage_details?: string | null
+          created_at?: string
+          created_by?: string
+          deductible_amount?: number | null
+          dental_coverage?: boolean | null
+          effective_date?: string
+          emergency_coverage?: boolean | null
+          expiration_date?: string | null
+          group_number?: string | null
+          id?: string
+          insurance_provider?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          out_of_pocket_max?: number | null
+          player_id?: string
+          policy_holder_name?: string
+          policy_holder_relationship?: string
+          policy_number?: string
+          pre_authorization_required?: boolean | null
+          prescription_coverage?: boolean | null
+          provider_address?: string | null
+          provider_phone?: string | null
+          updated_at?: string
+          vision_coverage?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_medical_insurance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_performance: {
         Row: {
           assists: number | null
