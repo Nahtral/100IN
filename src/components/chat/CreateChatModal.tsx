@@ -47,29 +47,62 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
   }, [open]);
 
   const fetchAvailableUsers = async () => {
-    // Get all users with their profiles
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name');
-
-    // Get user roles separately
-    const { data: userRoles } = await supabase
-      .from('user_roles')
-      .select('user_id, role')
-      .eq('is_active', true);
-
-    if (profiles) {
-      const profilesWithRoles = profiles.map(profile => ({
-        ...profile,
-        user_roles: userRoles?.filter(ur => ur.user_id === profile.id) || []
-      }));
-
-      const filteredUsers = profilesWithRoles.filter(profile => {
-        if (profile.id === user?.id) return false; // Exclude current user
-        return true;
-      });
+    try {
+      console.log('Fetching available users for chat...');
       
-      setAvailableUsers(filteredUsers);
+      // Get all users with their profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email');
+
+      console.log('Profiles query result:', { data: profiles, error: profilesError });
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        toast({
+          title: "Error",
+          description: "Failed to load users. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get user roles separately
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('is_active', true);
+
+      console.log('User roles query result:', { data: userRoles, error: rolesError });
+
+      if (rolesError) {
+        console.warn('Could not fetch user roles:', rolesError);
+      }
+
+      if (profiles && profiles.length > 0) {
+        const profilesWithRoles = profiles.map(profile => ({
+          ...profile,
+          user_roles: userRoles?.filter(ur => ur.user_id === profile.id) || []
+        }));
+
+        const filteredUsers = profilesWithRoles.filter(profile => {
+          if (profile.id === user?.id) return false; // Exclude current user
+          return true;
+        });
+        
+        console.log('Available users after filtering:', filteredUsers);
+        setAvailableUsers(filteredUsers);
+      } else {
+        console.log('No profiles found or empty result');
+        setAvailableUsers([]);
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load users. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
