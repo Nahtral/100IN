@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ChatSettings } from '@/types/chat';
@@ -18,11 +19,17 @@ import { ChatSettings } from '@/types/chat';
 interface ChatSettingsModalProps {
   open: boolean;
   onClose: () => void;
+  currentChatId?: string | null;
+  currentChatName?: string;
+  onRenameChat?: (chatId: string, newName: string) => void;
 }
 
 export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
   open,
-  onClose
+  onClose,
+  currentChatId,
+  currentChatName,
+  onRenameChat
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -36,12 +43,16 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
     auto_archive_days: 30,
     theme: 'auto'
   });
+  const [chatName, setChatName] = useState('');
 
   useEffect(() => {
     if (open && user) {
       loadSettings();
     }
-  }, [open, user]);
+    if (open && currentChatName) {
+      setChatName(currentChatName);
+    }
+  }, [open, user, currentChatName]);
 
   const loadSettings = async () => {
     // For now, we'll use default settings
@@ -90,6 +101,25 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleRenameChat = async () => {
+    if (!currentChatId || !onRenameChat || !chatName.trim()) return;
+
+    try {
+      await onRenameChat(currentChatId, chatName.trim());
+      toast({
+        title: "Success",
+        description: "Chat renamed successfully"
+      });
+    } catch (error) {
+      console.error('Error renaming chat:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to rename chat"
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -98,6 +128,38 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Chat Name Rename */}
+          {currentChatId && (
+            <>
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Chat Details</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="chatName" className="text-sm">
+                    Chat Name
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="chatName"
+                      value={chatName}
+                      onChange={(e) => setChatName(e.target.value)}
+                      placeholder="Enter chat name..."
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={handleRenameChat}
+                      disabled={!chatName.trim() || chatName === currentChatName}
+                    >
+                      Rename
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+            </>
+          )}
+
           {/* Notifications */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Notifications</h3>

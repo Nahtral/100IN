@@ -11,6 +11,7 @@ import {
   Hash,
   Lock
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
   onClick,
   onArchive
 }) => {
+  const { user } = useAuth();
   const getChatDisplayName = () => {
     if (chat.chat_type === 'group') {
       return chat.name || 'Group Chat';
@@ -40,9 +42,11 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
     if (chat.chat_type === 'team') {
       return chat.name || 'Team Chat';
     }
-    // For private chats, show the other participant's name
-    const otherParticipant = chat.chat_participants.find(p => p.profiles);
-    return otherParticipant?.profiles?.full_name || 'Private Chat';
+    // For private chats, show the other participant's name (not current user)
+    const otherParticipant = chat.chat_participants.find(p => 
+      p.profiles && p.user_id !== user?.id
+    );
+    return otherParticipant?.profiles?.full_name || chat.name || 'Private Chat';
   };
 
   const getChatAvatar = () => {

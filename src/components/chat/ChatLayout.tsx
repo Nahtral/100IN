@@ -33,13 +33,23 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     removeReaction,
     loadMoreMessages,
     refreshChats,
-    refreshMessages
+    refreshMessages,
+    updateChat
   } = useChat();
 
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [showArchivedModal, setShowArchivedModal] = React.useState(false);
   const [showSearch, setShowSearch] = React.useState(false);
+
+  const renameChat = async (chatId: string, newName: string) => {
+    try {
+      await updateChat(chatId, { name: newName });
+    } catch (error) {
+      console.error('Error renaming chat:', error);
+      throw error;
+    }
+  };
 
   // Mobile: show chat window when chat is selected
   const showChatWindow = selectedChat && (isMobile ? true : true);
@@ -127,6 +137,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
       <ChatSettingsModal
         open={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
+        currentChatId={selectedChat?.id}
+        currentChatName={selectedChat?.name}
+        onRenameChat={renameChat}
       />
 
       <ArchivedChatsModal

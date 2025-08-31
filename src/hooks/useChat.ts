@@ -23,6 +23,7 @@ interface UseChatReturn {
   loadMoreMessages: () => Promise<void>;
   refreshChats: () => Promise<void>;
   refreshMessages: () => Promise<void>;
+  updateChat: (chatId: string, updates: Partial<Chat>) => Promise<void>;
 }
 
 interface CreateChatData {
@@ -473,6 +474,34 @@ export const useChat = (): UseChatReturn => {
     }
   }, [toast]);
 
+  // Update chat
+  const updateChat = useCallback(async (chatId: string, updates: Partial<Chat>) => {
+    try {
+      const { error } = await supabase
+        .from('chats')
+        .update(updates)
+        .eq('id', chatId);
+
+      if (error) throw error;
+
+      // Update local state
+      setChats(prev => prev.map(chat =>
+        chat.id === chatId ? { ...chat, ...updates } : chat
+      ));
+
+      // Update selected chat if it's the one being updated
+      if (selectedChat?.id === chatId) {
+        setSelectedChat(prev => prev ? { ...prev, ...updates } : null);
+      }
+
+      // Refresh chats to get the latest data
+      await fetchChats();
+    } catch (error) {
+      console.error('Error updating chat:', error);
+      throw error;
+    }
+  }, [selectedChat, fetchChats]);
+
   // Load more messages
   const loadMoreMessages = useCallback(async () => {
     if (!selectedChat || messagesLoading || !hasMore) return;
@@ -562,6 +591,7 @@ export const useChat = (): UseChatReturn => {
     removeReaction,
     loadMoreMessages,
     refreshChats,
-    refreshMessages
+    refreshMessages,
+    updateChat
   };
 };
