@@ -26,6 +26,21 @@ export const useUserRole = () => {
       setInitialized(false);
 
       try {
+        console.log('Fetching user role for user:', user.id);
+        
+        // Test basic connectivity first
+        const { data: testData, error: testError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+          
+        if (testError) {
+          console.error('Basic connectivity test failed:', testError);
+        } else {
+          console.log('Basic connectivity test passed:', testData);
+        }
+
         // Fetch both super admin status and roles in parallel
         const [superAdminResponse, rolesResponse] = await Promise.all([
           supabase.rpc('is_super_admin', { _user_id: user.id }),
@@ -43,6 +58,7 @@ export const useUserRole = () => {
           console.error('Error checking super admin status:', superAdminError);
           setIsSuperAdmin(false);
         } else {
+          console.log('Super admin check result:', superAdminResult);
           setIsSuperAdmin(superAdminResult || false);
         }
 

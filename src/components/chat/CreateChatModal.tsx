@@ -71,6 +71,8 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
   const fetchAvailableUsers = async () => {
     setUsersLoading(true);
     try {
+      console.log('Fetching available users...');
+      
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -79,6 +81,8 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
           email
         `)
         .neq('id', user?.id);
+
+      console.log('Users fetch result:', { data, error });
 
       if (error) throw error;
 
@@ -146,6 +150,13 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
 
     setLoading(true);
     try {
+      console.log('Creating chat with data:', {
+        chatType,
+        chatName,
+        selectedUsers,
+        user: user?.id
+      });
+      
       const chatData = {
         name: chatName.trim() || (chatType === 'private' ? 'Private Chat' : 'New Chat'),
         chat_type: chatType,
@@ -153,11 +164,15 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
         team_id: chatType === 'team' ? selectedTeam : null
       };
 
+      console.log('Chat data to insert:', chatData);
+
       const { data: newChat, error: chatError } = await supabase
         .from('chats')
         .insert(chatData)
         .select()
         .single();
+
+      console.log('Chat creation result:', { newChat, chatError });
 
       if (chatError) throw chatError;
 
