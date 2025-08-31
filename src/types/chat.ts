@@ -1,8 +1,8 @@
 export interface ChatParticipant {
   id: string;
   user_id: string;
-  chat_id: string;
-  role: 'admin' | 'member' | 'moderator';
+  chat_id?: string;
+  role: string;
   joined_at: string;
   profiles?: {
     id: string;
@@ -14,7 +14,7 @@ export interface ChatParticipant {
 export interface Chat {
   id: string;
   name: string;
-  chat_type: 'private' | 'group' | 'team';
+  chat_type: string;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -31,19 +31,17 @@ export interface Message {
   chat_id: string;
   sender_id: string;
   content: string;
-  message_type: 'text' | 'image' | 'video' | 'file' | 'location' | 'link';
+  message_type: string;
   media_url?: string;
   media_type?: string;
   media_size?: number;
   reply_to_id?: string;
   is_edited: boolean;
-  is_deleted: boolean;
   is_recalled: boolean;
   is_archived: boolean;
   created_at: string;
   edited_at?: string;
-  read_by: Record<string, string>;
-  delivery_status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  edit_history?: any;
   sender_profile?: {
     id: string;
     full_name: string;
@@ -53,11 +51,12 @@ export interface Message {
   _optimistic?: boolean;
   _pending?: boolean;
   _failed?: boolean;
+  delivery_status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 }
 
 export interface MessageReaction {
   id: string;
-  message_id: string;
+  message_id?: string;
   user_id: string;
   emoji: string;
   created_at: string;

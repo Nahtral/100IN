@@ -59,12 +59,7 @@ export const useChat = (): UseChatReturn => {
             id,
             user_id,
             role,
-            joined_at,
-            profiles (
-              id,
-              full_name,
-              email
-            )
+            joined_at
           )
         `)
         .eq('chat_participants.user_id', user.id)
@@ -72,12 +67,7 @@ export const useChat = (): UseChatReturn => {
 
       if (error) throw error;
 
-      const transformedChats = data.map(chat => ({
-        ...chat,
-        participants: chat.chat_participants || []
-      }));
-
-      setChats(transformedChats);
+      setChats(data || []);
     } catch (error) {
       console.error('Error fetching chats:', error);
       toast({
@@ -99,12 +89,7 @@ export const useChat = (): UseChatReturn => {
         .from('messages')
         .select(`
           *,
-          sender_profile:profiles!messages_sender_id_fkey (
-            id,
-            full_name,
-            email
-          ),
-          reactions:message_reactions (
+          message_reactions (
             id,
             emoji,
             user_id,
@@ -117,14 +102,21 @@ export const useChat = (): UseChatReturn => {
 
       if (error) throw error;
 
-      const newMessages = data.reverse(); // Reverse to show oldest first
+      const processedMessages = data.map(msg => ({
+        ...msg,
+        reactions: (msg.message_reactions || []).map(reaction => ({
+          ...reaction,
+          message_id: msg.id
+        })),
+        delivery_status: 'sent' as const
+      })).reverse(); // Reverse to show oldest first
       
       if (offset === 0) {
-        setMessages(newMessages);
-        messagesCache.current.set(chatId, newMessages);
+        setMessages(processedMessages);
+        messagesCache.current.set(chatId, processedMessages);
       } else {
         const existing = messagesCache.current.get(chatId) || [];
-        const combined = [...newMessages, ...existing];
+        const combined = [...processedMessages, ...existing];
         setMessages(combined);
         messagesCache.current.set(chatId, combined);
       }
@@ -226,14 +218,12 @@ export const useChat = (): UseChatReturn => {
       chat_id: selectedChat.id,
       sender_id: user.id,
       content,
-      message_type: type as any,
+      message_type: type,
       media_url: mediaUrl,
       is_edited: false,
-      is_deleted: false,
       is_recalled: false,
       is_archived: false,
-      sent_at: new Date().toISOString(),
-      read_by: {},
+      created_at: new Date().toISOString(),
       delivery_status: 'sending',
       sender_profile: {
         id: user.id,
@@ -260,12 +250,7 @@ export const useChat = (): UseChatReturn => {
         })
         .select(`
           *,
-          sender_profile:profiles!messages_sender_id_fkey (
-            id,
-            full_name,
-            email
-          ),
-          reactions:message_reactions (
+          message_reactions (
             id,
             emoji,
             user_id,
@@ -278,7 +263,14 @@ export const useChat = (): UseChatReturn => {
 
       // Replace optimistic message with real one
       setMessages(prev => prev.map(msg => 
-        msg.id === tempId ? { ...data, delivery_status: 'sent' } : msg
+        msg.id === tempId ? { 
+          ...data, 
+          reactions: (data.message_reactions || []).map(reaction => ({
+            ...reaction,
+            message_id: data.id
+          })),
+          delivery_status: 'sent' as const 
+        } : msg
       ));
 
     } catch (error) {
@@ -336,14 +328,12 @@ export const useChat = (): UseChatReturn => {
     try {
       const { error } = await supabase
         .from('messages')
-        .update({ is_deleted: true })
+        .delete()
         .eq('id', messageId);
 
       if (error) throw error;
 
-      setMessages(prev => prev.map(msg =>
-        msg.id === messageId ? { ...msg, is_deleted: true } : msg
-      ));
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
 
       toast({
         title: "Success",
@@ -492,11 +482,11 @@ export const useChat = (): UseChatReturn => {
   }, [selectedChat, messagesLoading, hasMore, fetchMessages]);
 
   // Refresh functions
-  const refreshChats = useCallback(() => fetchChats(), [fetchChats]);
-  const refreshMessages = useCallback(() => {
+  const refreshChats = useCallback(async () => await fetchChats(), [fetchChats]);
+  const refreshMessages = useCallback(async () => {
     if (selectedChat) {
       messagesCache.current.delete(selectedChat.id);
-      fetchMessages(selectedChat.id, 0);
+      await fetchMessages(selectedChat.id, 0);
     }
   }, [selectedChat, fetchMessages]);
 
@@ -531,7 +521,7 @@ export const useChat = (): UseChatReturn => {
           table: 'messages'
         },
         (payload) => {
-          if (selectedChat && payload.new?.chat_id === selectedChat.id) {
+          if (selectedChat && (payload.new as any)?.chat_id === selectedChat.id) {
             refreshMessages();
           }
         }

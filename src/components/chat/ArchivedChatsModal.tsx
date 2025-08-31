@@ -50,11 +50,7 @@ export const ArchivedChatsModal: React.FC<ArchivedChatsModalProps> = ({
             id,
             user_id,
             role,
-            profiles (
-              id,
-              full_name,
-              email
-            )
+            joined_at
           )
         `)
         .eq('is_archived', true)
@@ -63,12 +59,7 @@ export const ArchivedChatsModal: React.FC<ArchivedChatsModalProps> = ({
 
       if (error) throw error;
 
-      const transformedChats = data.map(chat => ({
-        ...chat,
-        participants: chat.chat_participants || []
-      }));
-
-      setArchivedChats(transformedChats);
+      setArchivedChats(data || []);
     } catch (error) {
       console.error('Error loading archived chats:', error);
       toast({
@@ -166,8 +157,7 @@ export const ArchivedChatsModal: React.FC<ArchivedChatsModalProps> = ({
     if (chat.chat_type === 'team') {
       return chat.name || 'Team Chat';
     }
-    const otherParticipant = chat.chat_participants.find(p => p.user_id !== user?.id);
-    return otherParticipant?.profiles?.full_name || 'Private Chat';
+    return 'Private Chat';
   };
 
   return (

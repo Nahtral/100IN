@@ -94,13 +94,6 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   };
 
   const renderMessageContent = () => {
-    if (message.is_deleted) {
-      return (
-        <span className="italic text-muted-foreground">
-          This message was deleted
-        </span>
-      );
-    }
 
     if (message.is_recalled) {
       return (
@@ -234,7 +227,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               {message.sender_profile?.full_name || 'Unknown User'}
             </span>
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(message.sent_at), { addSuffix: true })}
+              {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
             </span>
           </div>
         )}
@@ -290,7 +283,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           )}
 
           {/* Message actions */}
-          {showActions && !isEditing && !message.is_deleted && !message.is_recalled && (
+          {showActions && !isEditing && !message.is_recalled && (
             <div className={cn(
               "absolute top-0 flex items-center gap-1 -mt-4",
               isOwnMessage ? "right-0" : "left-0"
@@ -363,7 +356,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           <div className="flex items-center gap-1 mt-1">
             {getDeliveryStatusIcon()}
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(message.sent_at), { addSuffix: true })}
+              {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
             </span>
           </div>
         )}

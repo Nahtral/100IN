@@ -23,12 +23,8 @@ interface ChatSearchProps {
 interface SearchResult {
   id: string;
   content: string;
-  sent_at: string;
-  sender_name: string;
+  created_at: string;
   chat_id: string;
-  chat_name: string;
-  chat_type: string;
-  message_type: string;
 }
 
 export const ChatSearch: React.FC<ChatSearchProps> = ({
@@ -60,37 +56,20 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
         .select(`
           id,
           content,
-          sent_at,
-          message_type,
-          chat_id,
-          sender_profile:profiles!messages_sender_id_fkey (
-            full_name
-          ),
-          chats!inner (
-            id,
-            name,
-            chat_type,
-            chat_participants!inner (
-              user_id
-            )
-          )
+          created_at,
+          chat_id
         `)
         .ilike('content', `%${searchQuery}%`)
-        .eq('chats.chat_participants.user_id', user.id)
-        .order('sent_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
 
       const searchResults: SearchResult[] = data.map(item => ({
         id: item.id,
-        content: item.content,
-        sent_at: item.sent_at,
-        sender_name: item.sender_profile?.full_name || 'Unknown',
-        chat_id: item.chat_id,
-        chat_name: item.chats?.name || 'Chat',
-        chat_type: item.chats?.chat_type || 'private',
-        message_type: item.message_type
+        content: item.content || '',
+        created_at: item.created_at,
+        chat_id: item.chat_id
       }));
 
       setResults(searchResults);
@@ -185,31 +164,19 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                         <div className="flex items-center gap-2">
                           <MessageSquare className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium text-sm">
-                            {result.chat_name}
+                            Message
                           </span>
-                          <Badge variant="outline" className="text-xs">
-                            {result.chat_type}
-                          </Badge>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(result.sent_at), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(result.created_at), { addSuffix: true })}
                         </span>
                       </div>
                       
                       <div className="text-sm">
-                        <span className="text-muted-foreground">
-                          {result.sender_name}:
-                        </span>
                         <span className="ml-2">
                           {highlightText(result.content, searchQuery)}
                         </span>
                       </div>
-                      
-                      {result.message_type !== 'text' && (
-                        <Badge variant="secondary" className="text-xs mt-2">
-                          {result.message_type}
-                        </Badge>
-                      )}
                     </div>
                   ))
                 ) : (

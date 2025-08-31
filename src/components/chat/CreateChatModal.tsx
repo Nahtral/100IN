@@ -76,11 +76,7 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
         .select(`
           id,
           full_name,
-          email,
-          user_roles (
-            role,
-            is_active
-          )
+          email
         `)
         .neq('id', user?.id);
 
@@ -89,8 +85,7 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
       const users = data.map(profile => ({
         id: profile.id,
         full_name: profile.full_name || profile.email,
-        email: profile.email,
-        role: profile.user_roles?.find((ur: any) => ur.is_active)?.role
+        email: profile.email
       }));
 
       setAvailableUsers(users);
@@ -335,11 +330,6 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
                             <span className="text-muted-foreground ml-2">
                               {user.email}
                             </span>
-                            {user.role && (
-                              <Badge variant="outline" className="ml-2 text-xs">
-                                {user.role}
-                              </Badge>
-                            )}
                           </div>
                         </Label>
                       </div>

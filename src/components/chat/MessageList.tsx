@@ -68,7 +68,7 @@ export const MessageList: React.FC<MessageListProps> = ({
     let currentGroup: Message[] = [];
 
     messages.forEach(message => {
-      const messageDate = new Date(message.sent_at).toDateString();
+      const messageDate = new Date(message.created_at).toDateString();
       
       if (messageDate !== currentDate) {
         if (currentGroup.length > 0) {
