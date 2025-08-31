@@ -71,10 +71,30 @@ export const StaffManagement = () => {
   const fetchStaffMembers = async () => {
     try {
       const { data, error } = await supabase
-        .rpc('get_employees_secure');
+        .from('employees')
+        .select(`
+          id,
+          employee_id,
+          first_name,
+          last_name,
+          email,
+          phone,
+          department,
+          position,
+          employment_status,
+          hire_date
+        `)
+        .eq('employment_status', 'active')
+        .order('first_name');
 
       if (error) throw error;
-      setStaffMembers(data || []);
+      
+      const staffWithAccess = data?.map(staff => ({
+        ...staff,
+        has_compensation_access: false // Will be determined by RLS policies
+      })) || [];
+      
+      setStaffMembers(staffWithAccess);
     } catch (error) {
       console.error('Error fetching staff members:', error);
       toast({
