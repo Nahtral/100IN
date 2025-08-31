@@ -75,28 +75,39 @@ export const PermissionsManagement = () => {
 
   const fetchUserPermissions = async () => {
     try {
-      // Get all users with their roles
+      // Get all users - simplified query
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email');
+        .select('id, full_name, email')
+        .limit(10);
 
       if (profilesError) throw profilesError;
 
-      // Get user roles for each user
+      // Get user permissions for each user
       const userPermissionsData = await Promise.all(
         (profiles || []).map(async (profile) => {
+          // Get roles
           const { data: roles } = await supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', profile.id)
             .eq('is_active', true);
 
+          // Get permissions through RPC
+          const { data: perms } = await supabase
+            .rpc('get_user_permissions', { _user_id: profile.id });
+
           return {
             user_id: profile.id,
             user_name: profile.full_name || 'Unknown',
             user_email: profile.email,
-            permissions: [], // Simplified for now
-            roles: roles?.map(r => r.role) || []
+            permissions: (perms || []).map((p: any) => ({
+              id: p.permission_name,
+              name: p.permission_name,
+              description: p.permission_description,
+              category: 'general'
+            })),
+            roles: (roles || []).map((r: any) => r.role)
           };
         })
       );
@@ -395,7 +406,7 @@ export const PermissionsManagement = () => {
                 <div className="flex flex-wrap gap-1">
                   {userPerm.permissions.map((perm, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
-                      {perm.name || 'Permission'}
+                      {perm.name}
                     </Badge>
                   ))}
                   {userPerm.permissions.length === 0 && (

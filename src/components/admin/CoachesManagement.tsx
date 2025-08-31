@@ -62,22 +62,29 @@ export const CoachesManagement = () => {
 
   const fetchCoaches = async () => {
     try {
-      // Get all users with coach role
-      const { data: profiles, error: profilesError } = await supabase
+      // Get coaches directly from profiles and user_roles tables
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          user_roles!inner(role, is_active)
-        `)
-        .eq('user_roles.role', 'coach')
-        .eq('user_roles.is_active', true);
+        .select('id, full_name, email');
 
-      if (profilesError) throw profilesError;
+      if (error) throw error;
 
-      // Transform data to match Coach interface
-      const coachesData = (profiles || []).map(profile => ({
+      // Filter coaches by checking user_roles
+      const coachProfiles = [];
+      for (const profile of profiles || []) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', profile.id)
+          .eq('role', 'coach')
+          .eq('is_active', true);
+        
+        if (roles && roles.length > 0) {
+          coachProfiles.push(profile);
+        }
+      }
+
+      const coachesData = coachProfiles.map(profile => ({
         coach_id: profile.id,
         coach_name: profile.full_name || 'Unknown Coach',
         coach_email: profile.email,
@@ -98,17 +105,21 @@ export const CoachesManagement = () => {
   };
 
   const fetchTeams = async () => {
-    const { data, error } = await supabase
-      .from('teams')
-      .select('id, name')
-      .order('name');
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('id, name');
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching teams:', error);
+        return;
+      }
+
+      setTeams(data || []);
+    } catch (error) {
       console.error('Error fetching teams:', error);
-      return;
+      setTeams([]);
     }
-
-    setTeams(data || []);
   };
 
   const fetchPlayers = async () => {
@@ -116,8 +127,7 @@ export const CoachesManagement = () => {
       .from('players')
       .select(`
         id,
-        user_id,
-        profiles!inner(full_name)
+        user_id
       `)
       .eq('is_active', true);
 
@@ -126,13 +136,24 @@ export const CoachesManagement = () => {
       return;
     }
 
-    const playersData = data?.map(player => ({
-      id: player.id,
-      user_id: player.user_id,
-      full_name: (player.profiles as any)?.full_name || 'Unknown Player'
-    })) || [];
+    // Get player names
+    const playersWithNames = await Promise.all(
+      (data || []).map(async (player) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', player.user_id)
+          .single();
+        
+        return {
+          id: player.id,
+          user_id: player.user_id,
+          full_name: profile?.full_name || 'Unknown Player'
+        };
+      })
+    );
 
-    setPlayers(playersData);
+    setPlayers(playersWithNames);
   };
 
   const createAssignment = async () => {
@@ -179,31 +200,6 @@ export const CoachesManagement = () => {
       toast({
         title: "Error",
         description: "Failed to create assignment",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const removeAssignment = async (assignmentId: string) => {
-    try {
-      const { error } = await supabase
-        .from('coach_assignments')
-        .update({ status: 'inactive' })
-        .eq('id', assignmentId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Assignment removed successfully",
-      });
-
-      fetchData();
-    } catch (error) {
-      console.error('Error removing assignment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove assignment",
         variant: "destructive",
       });
     }
@@ -297,40 +293,6 @@ export const CoachesManagement = () => {
                     </Button>
                   </div>
                 </div>
-
-                {/* Team Assignments */}
-                {coach.team_assignments.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium mb-2 flex items-center gap-1">
-                      <Trophy className="h-4 w-4" />
-                      Team Assignments
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {coach.team_assignments.map((assignment, index) => (
-                        <Badge key={index} variant="secondary" className="bg-green-50 text-green-700">
-                          {assignment.team_name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Player Assignments */}
-                {coach.player_assignments.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-2 flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      Individual Player Assignments
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {coach.player_assignments.map((assignment, index) => (
-                        <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
-                          {assignment.player_name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {coach.total_assignments === 0 && (
                   <div className="text-center py-4 text-muted-foreground">

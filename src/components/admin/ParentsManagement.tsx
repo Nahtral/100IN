@@ -69,21 +69,30 @@ export const ParentsManagement = () => {
       // Get all users with parent role
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          created_at,
-          user_roles!inner(role, is_active)
-        `)
-        .eq('user_roles.role', 'parent')
-        .eq('user_roles.is_active', true);
+        .select('id, full_name, email, created_at');
+
+      if (profilesError) throw profilesError;
+
+      // Filter for parents by checking user_roles
+      const parentProfiles = [];
+      for (const profile of profiles || []) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', profile.id)
+          .eq('role', 'parent')
+          .eq('is_active', true);
+        
+        if (roles && roles.length > 0) {
+          parentProfiles.push(profile);
+        }
+      }
 
       if (profilesError) throw profilesError;
 
       // Get children count and pending requests for each parent
       const parentsData = await Promise.all(
-        (profiles || []).map(async (profile) => {
+        parentProfiles.map(async (profile) => {
           // For now, use default values since table needs setup
           const childrenCount = 0;
           const pendingCount = 0;
