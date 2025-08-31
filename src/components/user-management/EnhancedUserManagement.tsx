@@ -15,6 +15,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus } from 'lucide-react';
 import UserActionsDropdown from './UserActionsDropdown';
 import UserDetailsView from './UserDetailsView';
+import { UserApprovalDashboard } from './UserApprovalDashboard';
 
 interface UserProfile {
   id: string;

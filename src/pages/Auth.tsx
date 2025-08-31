@@ -284,8 +284,7 @@ const Auth = () => {
                   <div className="space-y-2">
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                       <p className="text-sm text-blue-800">
-                        📝 <strong>Role Assignment:</strong> Your account will be created with basic access. 
-                        Please contact an administrator to request specific role permissions.
+                        📝 <strong>Account Approval Required:</strong> Your account will be created but requires administrator approval before you can access the platform. You'll receive an email notification once approved.
                       </p>
                     </div>
                   </div>
