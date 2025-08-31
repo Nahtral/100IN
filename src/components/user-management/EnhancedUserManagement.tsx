@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -859,7 +861,7 @@ const UserEditForm = ({
   onApplyTemplate: (templateId: string, userId: string) => Promise<void>;
 }) => {
   const [selectedRole, setSelectedRole] = useState('');
-  const [selectedPermission, setSelectedPermission] = useState('');
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [reason, setReason] = useState('');
 
@@ -873,10 +875,14 @@ const UserEditForm = ({
     onSave();
   };
 
-  const handleGrantPermission = async () => {
-    if (!selectedPermission || !reason) return;
-    await onGrantPermission(user.id, selectedPermission, reason);
-    setSelectedPermission('');
+  const handleGrantPermissions = async () => {
+    if (selectedPermissions.length === 0 || !reason) return;
+    
+    for (const permissionId of selectedPermissions) {
+      await onGrantPermission(user.id, permissionId, reason);
+    }
+    
+    setSelectedPermissions([]);
     setReason('');
     onSave();
   };
@@ -916,19 +922,71 @@ const UserEditForm = ({
         <div>
           <Label htmlFor="permission">Grant Additional Permission</Label>
           <div className="flex gap-2 mt-1">
-            <Select value={selectedPermission} onValueChange={setSelectedPermission}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select permission" />
-              </SelectTrigger>
-              <SelectContent>
-                {permissions.map((permission) => (
-                  <SelectItem key={permission.id} value={permission.id}>
-                    {permission.name.replace('_', ' ')} - {permission.description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={handleGrantPermission} disabled={!selectedPermission || !reason}>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="justify-start">
+                  {selectedPermissions.length === 0 
+                    ? "Select permissions..." 
+                    : `${selectedPermissions.length} permission${selectedPermissions.length > 1 ? 's' : ''} selected`
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="start">
+                <div className="p-4">
+                  <h4 className="font-medium mb-3">Select Permissions</h4>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {permissions.map((permission) => {
+                      const isSelected = selectedPermissions.includes(permission.id);
+                      return (
+                        <div 
+                          key={permission.id} 
+                          className="flex items-start space-x-2 p-2 hover:bg-muted rounded-md cursor-pointer"
+                          onClick={() => {
+                            setSelectedPermissions(prev => 
+                              isSelected 
+                                ? prev.filter(id => id !== permission.id)
+                                : [...prev, permission.id]
+                            );
+                          }}
+                        >
+                          <Checkbox 
+                            checked={isSelected}
+                            onCheckedChange={(checked) => {
+                              setSelectedPermissions(prev => 
+                                checked 
+                                  ? [...prev, permission.id]
+                                  : prev.filter(id => id !== permission.id)
+                              );
+                            }}
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">
+                              {permission.name.replace('_', ' ')}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {permission.description}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 pt-3 border-t flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedPermissions([])}
+                    >
+                      Clear All
+                    </Button>
+                    <div className="text-xs text-muted-foreground">
+                      {selectedPermissions.length} selected
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button onClick={handleGrantPermissions} disabled={selectedPermissions.length === 0 || !reason}>
               Grant
             </Button>
           </div>
