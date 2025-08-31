@@ -245,6 +245,45 @@ export type Database = {
           },
         ]
       }
+      coach_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          assignment_type: string
+          coach_id: string
+          created_at: string
+          id: string
+          player_id: string | null
+          status: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          assignment_type?: string
+          coach_id: string
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          assignment_type?: string
+          coach_id?: string
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_health_checkins: {
         Row: {
           additional_notes: string | null
@@ -3605,6 +3644,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      staff_departments: {
+        Row: {
+          budget_allocation: number | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          manager_id: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          budget_allocation?: number | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          manager_id?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          budget_allocation?: number | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          manager_id?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       staff_tasks: {
         Row: {
