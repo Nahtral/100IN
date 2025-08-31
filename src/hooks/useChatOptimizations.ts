@@ -34,7 +34,7 @@ export const useChatOptimizations = ({
         .from('messages')
         .select(`
           *,
-          message_reactions(
+          message_reactions!fk_message_reactions_message_id(
             emoji,
             user_id
           )

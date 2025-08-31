@@ -53,7 +53,7 @@ export default function Chat() {
         .from('chats')
         .select(`
           *,
-          chat_participants!chat_participants_chat_id_fkey(
+          chat_participants(
             user_id,
             role,
             profiles:user_id(
