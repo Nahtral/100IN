@@ -169,6 +169,24 @@ All colors MUST be HSL.
     }
   }
 
+  /* Ensure all mobile devices have black status bar area */
+  body {
+    background-color: black;
+  }
+
+  /* Additional status bar styling for all mobile browsers */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background-color: black;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
   /* Bold Typography Hierarchy */
   h1 {
     @apply text-4xl font-bold tracking-tight;
