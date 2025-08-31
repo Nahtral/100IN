@@ -55,7 +55,7 @@ export const useChat = (): UseChatReturn => {
         .from('chats')
         .select(`
           *,
-          chat_participants (
+          chat_participants!chat_participants_chat_id_fkey (
             id,
             user_id,
             role,
