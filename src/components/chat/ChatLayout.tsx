@@ -6,6 +6,7 @@ import { ChatSearch } from './ChatSearch';
 import { CreateChatModal } from './CreateChatModal';
 import { ChatSettingsModal } from './ChatSettingsModal';
 import { ArchivedChatsModal } from './ArchivedChatsModal';
+import { ChatMembersModal } from './ChatMembersModal';
 import { useChat } from '@/hooks/useChat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -41,6 +42,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [showArchivedModal, setShowArchivedModal] = React.useState(false);
   const [showSearch, setShowSearch] = React.useState(false);
+  const [showMembers, setShowMembers] = React.useState(false);
 
   const renameChat = async (chatId: string, newName: string) => {
     try {
@@ -97,6 +99,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
             onLoadMore={loadMoreMessages}
             onRefresh={refreshMessages}
             onBack={isMobile ? () => selectChat('') : undefined}
+            onShowMembers={() => setShowMembers(true)}
+            onSearchMessages={() => setShowSearch(true)}
+            onShowSettings={() => setShowSettingsModal(true)}
           />
         </div>
       )}
@@ -146,6 +151,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
         open={showArchivedModal}
         onClose={() => setShowArchivedModal(false)}
         onChatRestored={refreshChats}
+      />
+
+      <ChatMembersModal
+        open={showMembers}
+        onClose={() => setShowMembers(false)}
+        chat={selectedChat}
       />
 
       {showSearch && (

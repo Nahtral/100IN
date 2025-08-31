@@ -35,6 +35,9 @@ interface ChatWindowProps {
   onLoadMore: () => Promise<void>;
   onRefresh: () => void;
   onBack?: () => void;
+  onShowMembers?: () => void;
+  onSearchMessages?: () => void;
+  onShowSettings?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -49,7 +52,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onRemoveReaction,
   onLoadMore,
   onRefresh,
-  onBack
+  onBack,
+  onShowMembers,
+  onSearchMessages,
+  onShowSettings
 }) => {
   const { onlineUsers, typingUsers, setTyping } = useChatPresence(chat?.id);
 
@@ -147,14 +153,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={onShowMembers}>
                 <Users className="mr-2 h-4 w-4" />
                 View Members
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={onSearchMessages}>
                 Search Messages
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={onShowSettings}>
                 Chat Settings
               </DropdownMenuItem>
             </DropdownMenuContent>
