@@ -41,14 +41,20 @@ export default function Chat() {
   const [showClearModal, setShowClearModal] = useState(false);
 
   useEffect(() => {
+    console.log('Chat useEffect triggered, user:', user?.id);
     if (user) {
+      console.log('User found, fetching chats...');
       fetchChats();
       subscribeToChats();
+    } else {
+      console.log('No user found in Chat useEffect');
     }
   }, [user]);
 
   const fetchChats = async () => {
+    console.log('fetchChats called');
     try {
+      console.log('Making Supabase query for chats...');
       const { data, error } = await supabase
         .from('chats')
         .select(`
@@ -60,6 +66,8 @@ export default function Chat() {
         `)
         .order('updated_at', { ascending: false });
 
+      console.log('Supabase response - data:', data, 'error:', error);
+
       if (error) {
         console.error('Error fetching chats:', error);
         throw error;
@@ -69,6 +77,7 @@ export default function Chat() {
           ...chat,
           participants: chat.chat_participants || []
         }));
+        console.log('Transformed chats:', transformedChats);
         setChats(transformedChats);
       }
     } catch (error) {
