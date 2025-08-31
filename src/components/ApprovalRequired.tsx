@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +8,6 @@ type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export const ApprovalRequired = () => {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,7 +34,7 @@ export const ApprovalRequired = () => {
       
       // If approved, redirect to main app
       if (data.approval_status === 'approved') {
-        navigate('/', { replace: true });
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Error checking approval status:', error);
@@ -47,7 +45,7 @@ export const ApprovalRequired = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    window.location.href = '/auth';
   };
 
   if (loading) {
