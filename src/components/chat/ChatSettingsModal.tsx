@@ -2,86 +2,81 @@ import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
-
-interface ChatSettings {
-  notifications_enabled: boolean;
-  sound_enabled: boolean;
-  auto_archive_days: number;
-  theme: 'light' | 'dark' | 'system';
-  message_preview: boolean;
-  typing_indicators: boolean;
-  read_receipts: boolean;
-}
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { ChatSettings } from '@/types/chat';
 
 interface ChatSettingsModalProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
 }
 
 export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
-  isOpen,
-  onClose,
+  open,
+  onClose
 }) => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { currentUser } = useCurrentUser();
+  const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState<ChatSettings>({
-    notifications_enabled: true,
-    sound_enabled: true,
-    auto_archive_days: 30,
-    theme: 'system',
+    notifications: true,
+    sound: true,
     message_preview: true,
     typing_indicators: true,
     read_receipts: true,
+    auto_archive_days: 30,
+    theme: 'auto'
   });
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && currentUser) {
+    if (open && user) {
       loadSettings();
     }
-  }, [isOpen, currentUser]);
+  }, [open, user]);
 
   const loadSettings = async () => {
-    try {
-      // For now, just use default settings since we don't have user ID access
-      // In a real implementation, you'd get the user ID from auth context
-      console.log('Loading chat settings for user...');
-    } catch (error) {
-      console.error('Error loading chat settings:', error);
-    }
+    // For now, we'll use default settings
+    // In a real app, you'd fetch these from the database
+    setSettings({
+      notifications: true,
+      sound: true,
+      message_preview: true,
+      typing_indicators: true,
+      read_receipts: true,
+      auto_archive_days: 30,
+      theme: 'auto'
+    });
   };
 
   const saveSettings = async () => {
-    if (!currentUser) return;
+    if (!user) return;
 
     setLoading(true);
     try {
-      // For now, just show success since we don't have proper user ID access
-      // In a real implementation, you'd save to the database
+      // Here you would save settings to the database
+      // For now, we'll just simulate success
+      
       toast({
         title: "Success",
-        description: "Chat settings saved successfully",
+        description: "Chat settings saved successfully"
       });
+      
       onClose();
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
-        title: "Error",
-        description: "Failed to save chat settings",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to save settings"
       });
     } finally {
       setLoading(false);
@@ -92,86 +87,96 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
     key: K,
     value: ChatSettings[K]
   ) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Chat Settings</DialogTitle>
-          <DialogDescription>
-            Customize your chat experience and preferences.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Notifications */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Notifications</h4>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="notifications">Enable Notifications</Label>
-                <Switch
-                  id="notifications"
-                  checked={settings.notifications_enabled}
-                  onCheckedChange={(checked) => updateSetting('notifications_enabled', checked)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="sound">Sound Notifications</Label>
-                <Switch
-                  id="sound"
-                  checked={settings.sound_enabled}
-                  onCheckedChange={(checked) => updateSetting('sound_enabled', checked)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="preview">Message Preview</Label>
-                <Switch
-                  id="preview"
-                  checked={settings.message_preview}
-                  onCheckedChange={(checked) => updateSetting('message_preview', checked)}
-                />
-              </div>
+            <h3 className="text-sm font-medium">Notifications</h3>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notifications" className="text-sm">
+                Enable notifications
+              </Label>
+              <Switch
+                id="notifications"
+                checked={settings.notifications}
+                onCheckedChange={(checked) => updateSetting('notifications', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="sound" className="text-sm">
+                Sound notifications
+              </Label>
+              <Switch
+                id="sound"
+                checked={settings.sound}
+                onCheckedChange={(checked) => updateSetting('sound', checked)}
+                disabled={!settings.notifications}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="preview" className="text-sm">
+                Message preview
+              </Label>
+              <Switch
+                id="preview"
+                checked={settings.message_preview}
+                onCheckedChange={(checked) => updateSetting('message_preview', checked)}
+                disabled={!settings.notifications}
+              />
             </div>
           </div>
 
           <Separator />
 
-          {/* Chat Features */}
+          {/* Privacy */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Chat Features</h4>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="typing">Typing Indicators</Label>
-                <Switch
-                  id="typing"
-                  checked={settings.typing_indicators}
-                  onCheckedChange={(checked) => updateSetting('typing_indicators', checked)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="receipts">Read Receipts</Label>
-                <Switch
-                  id="receipts"
-                  checked={settings.read_receipts}
-                  onCheckedChange={(checked) => updateSetting('read_receipts', checked)}
-                />
-              </div>
+            <h3 className="text-sm font-medium">Privacy</h3>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="typing" className="text-sm">
+                Typing indicators
+              </Label>
+              <Switch
+                id="typing"
+                checked={settings.typing_indicators}
+                onCheckedChange={(checked) => updateSetting('typing_indicators', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="receipts" className="text-sm">
+                Read receipts
+              </Label>
+              <Switch
+                id="receipts"
+                checked={settings.read_receipts}
+                onCheckedChange={(checked) => updateSetting('read_receipts', checked)}
+              />
             </div>
           </div>
 
           <Separator />
 
-          {/* Auto Archive */}
+          {/* Auto-archive */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Auto Archive</h4>
+            <h3 className="text-sm font-medium">Auto-archive</h3>
+            
             <div className="space-y-2">
-              <Label htmlFor="archive-days">Archive chats after</Label>
+              <Label htmlFor="archive" className="text-sm">
+                Archive inactive chats after
+              </Label>
               <Select
                 value={settings.auto_archive_days.toString()}
                 onValueChange={(value) => updateSetting('auto_archive_days', parseInt(value))}
@@ -193,14 +198,17 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
 
           <Separator />
 
-          {/* Theme */}
+          {/* Appearance */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Appearance</h4>
+            <h3 className="text-sm font-medium">Appearance</h3>
+            
             <div className="space-y-2">
-              <Label htmlFor="theme">Chat Theme</Label>
+              <Label htmlFor="theme" className="text-sm">
+                Theme
+              </Label>
               <Select
                 value={settings.theme}
-                onValueChange={(value: 'light' | 'dark' | 'system') => updateSetting('theme', value)}
+                onValueChange={(value) => updateSetting('theme', value as 'light' | 'dark' | 'auto')}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -208,7 +216,7 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
                 <SelectContent>
                   <SelectItem value="light">Light</SelectItem>
                   <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -220,7 +228,7 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
             Cancel
           </Button>
           <Button onClick={saveSettings} disabled={loading}>
-            {loading ? "Saving..." : "Save Settings"}
+            {loading ? 'Saving...' : 'Save Settings'}
           </Button>
         </DialogFooter>
       </DialogContent>

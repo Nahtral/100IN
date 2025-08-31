@@ -1,320 +1,189 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { VirtualizedMessageList } from './VirtualizedMessageList';
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  ArrowLeft, 
+  Phone, 
+  Video, 
+  MoreVertical,
+  Users,
+  Hash,
+  Lock
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
-import { ChatHeader } from './ChatHeader';
-import { useToast } from '@/components/ui/use-toast';
-import { useOptimisticMessages } from '@/hooks/useOptimisticMessages';
-import { useChatOptimizations } from '@/hooks/useChatOptimizations';
-import { useNotificationHelpers } from '@/hooks/useNotificationHelpers';
+import { Chat, Message } from '@/types/chat';
+import { useChatPresence } from '@/hooks/useChatPresence';
 
 interface ChatWindowProps {
-  chatId: string;
+  chat: Chat | null;
+  messages: Message[];
+  loading: boolean;
+  hasMore: boolean;
+  onSendMessage: (content: string, type?: string, mediaUrl?: string) => Promise<void>;
+  onEditMessage: (messageId: string, content: string) => Promise<void>;
+  onDeleteMessage: (messageId: string) => Promise<void>;
+  onAddReaction: (messageId: string, emoji: string) => Promise<void>;
+  onRemoveReaction: (reactionId: string) => Promise<void>;
+  onLoadMore: () => Promise<void>;
+  onRefresh: () => void;
+  onBack?: () => void;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [chat, setChat] = useState<any>(null);
-  const { notifyChatMessage, notifyChatMention } = useNotificationHelpers();
+export const ChatWindow: React.FC<ChatWindowProps> = ({
+  chat,
+  messages,
+  loading,
+  hasMore,
+  onSendMessage,
+  onEditMessage,
+  onDeleteMessage,
+  onAddReaction,
+  onRemoveReaction,
+  onLoadMore,
+  onRefresh,
+  onBack
+}) => {
+  const { onlineUsers, typingUsers, setTyping } = useChatPresence(chat?.id);
 
-  // Original API functions
-  const sendMessageAPI = async (content: string, messageType: string = 'text', mediaUrl?: string, mediaType?: string, mediaSize?: number) => {
-    if (!user || !content.trim() && !mediaUrl) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        chat_id: chatId,
-        sender_id: user.id,
-        content: content.trim() || null,
-        message_type: messageType,
-        media_url: mediaUrl || null,
-        media_type: mediaType || null,
-        media_size: mediaSize || null,
-      });
-
-    if (error) {
-      console.error('Error sending message:', error);
-      throw error;
-    }
-
-    // Send notifications to other chat participants
-    if (chat && user) {
-      try {
-        // Get sender name from profiles
-        const { data: senderProfile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-
-        const senderName = senderProfile?.full_name || 'Someone';
-        const messageContent = content || 'Sent a file';
-        
-        // Check for mentions in the message
-        const mentionRegex = /@(\w+)/g;
-        const mentions = messageContent.match(mentionRegex);
-        
-        // Get all participants except the sender
-        const otherParticipants = chat.chat_participants?.filter(
-          (p: any) => p.user_id !== user.id
-        ) || [];
-
-        for (const participant of otherParticipants) {
-          const isMentioned = mentions?.some(mention => 
-            mention.toLowerCase().includes(participant.profiles?.full_name?.toLowerCase() || '')
-          );
-
-          if (isMentioned) {
-            // High priority notification for mentions
-            await notifyChatMention(
-              participant.user_id,
-              senderName,
-              chatId,
-              messageContent
-            );
-          } else {
-            // Normal notification for regular messages
-            await notifyChatMessage(
-              participant.user_id,
-              senderName,
-              chatId,
-              messageContent
-            );
-          }
-        }
-      } catch (notificationError) {
-        console.error('Error sending notifications:', notificationError);
-        // Don't throw - message was sent successfully, notification is secondary
-      }
-    }
-  };
-
-  const editMessageAPI = async (messageId: string, newContent: string) => {
-    if (!user) return;
-
-    const { data: originalMessage } = await supabase
-      .from('messages')
-      .select('content, edit_history')
-      .eq('id', messageId)
-      .single();
-
-    if (!originalMessage) return;
-
-    const editHistory = Array.isArray(originalMessage.edit_history) 
-      ? originalMessage.edit_history 
-      : [];
-    
-    const updatedHistory = [...editHistory, {
-      content: originalMessage.content,
-      edited_at: new Date().toISOString(),
-    }];
-
-    const { error } = await supabase
-      .from('messages')
-      .update({
-        content: newContent,
-        is_edited: true,
-        edit_history: updatedHistory,
-      })
-      .eq('id', messageId);
-
-    if (error) {
-      console.error('Error editing message:', error);
-      throw error;
-    }
-  };
-
-  const deleteMessageAPI = async (messageId: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .delete()
-      .eq('id', messageId);
-
-    if (error) {
-      console.error('Error deleting message:', error);
-      throw error;
-    }
-  };
-
-  // Use optimistic messages hook
-  const {
-    messages,
-    loading,
-    setLoading,
-    sendMessage,
-    editMessage,
-    deleteMessage,
-    updateMessagesFromRealtime,
-  } = useOptimisticMessages({
-    chatId,
-    currentUserId: user?.id,
-    onSendMessage: sendMessageAPI,
-    onEditMessage: editMessageAPI,
-    onDeleteMessage: deleteMessageAPI,
-  });
-
-  // Use chat optimizations hook
-  const {
-    loadMoreMessages,
-    hasMore,
-    loadingMore,
-    refreshMessages,
-  } = useChatOptimizations({
-    chatId,
-    onMessagesUpdate: updateMessagesFromRealtime,
-    setLoading,
-  });
-
-  // Fetch chat details
-  useEffect(() => {
-    if (chatId) {
-      fetchChat();
-    }
-  }, [chatId]);
-
-  const fetchChat = async () => {
-    const { data, error } = await supabase
-      .from('chats')
-      .select(`
-        *,
-        chat_participants(
-          user_id,
-          role
-        )
-      `)
-      .eq('id', chatId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching chat:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load chat details",
-        variant: "destructive",
-      });
-    } else {
-      setChat(data);
-    }
-  };
-
-  const addReaction = async (messageId: string, emoji: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('message_reactions')
-      .upsert({
-        message_id: messageId,
-        user_id: user.id,
-        emoji,
-      });
-
-    if (error) {
-      console.error('Error adding reaction:', error);
-    }
-  };
-
-  const removeReaction = async (messageId: string, emoji: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('message_reactions')
-      .delete()
-      .eq('message_id', messageId)
-      .eq('user_id', user.id)
-      .eq('emoji', emoji);
-
-    if (error) {
-      console.error('Error removing reaction:', error);
-    }
-  };
-
-  const archiveMessage = async (messageId: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .update({
-        is_archived: true,
-      })
-      .eq('id', messageId);
-
-    if (error) {
-      console.error('Error archiving message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to archive message",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Message archived",
-      });
-    }
-  };
-
-  const recallMessage = async (messageId: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .update({
-        is_recalled: true,
-        recalled_at: new Date().toISOString(),
-        recalled_by: user.id,
-      })
-      .eq('id', messageId);
-
-    if (error) {
-      console.error('Error recalling message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to recall message",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Message recalled",
-      });
-    }
-  };
-
-  if (loading) {
+  if (!chat) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground mt-2">Loading messages...</p>
-        </div>
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-muted-foreground">Select a chat to start messaging</p>
       </div>
     );
   }
 
+  const getChatDisplayName = () => {
+    if (chat.chat_type === 'group') {
+      return chat.name || 'Group Chat';
+    }
+    if (chat.chat_type === 'team') {
+      return chat.name || 'Team Chat';
+    }
+    const otherParticipant = chat.chat_participants.find(p => p.profiles);
+    return otherParticipant?.profiles?.full_name || 'Private Chat';
+  };
+
+  const getChatIcon = () => {
+    if (chat.chat_type === 'group') {
+      return <Users className="h-5 w-5" />;
+    }
+    if (chat.chat_type === 'team') {
+      return <Hash className="h-5 w-5" />;
+    }
+    return <Lock className="h-5 w-5" />;
+  };
+
+  const getParticipantCount = () => {
+    return chat.chat_participants?.length || 0;
+  };
+
+  const getSubtitle = () => {
+    if (chat.chat_type === 'private') {
+      return 'Private conversation';
+    }
+    
+    const count = getParticipantCount();
+    const onlineCount = onlineUsers.length;
+    
+    if (onlineCount > 0) {
+      return `${count} member${count !== 1 ? 's' : ''} • ${onlineCount} online`;
+    }
+    
+    return `${count} member${count !== 1 ? 's' : ''}`;
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader chat={chat} onChatUpdated={fetchChat} />
-      
-      <VirtualizedMessageList
-        messages={messages}
-        currentUserId={user?.id}
-        onAddReaction={addReaction}
-        onRemoveReaction={removeReaction}
-        onEditMessage={editMessage}
-        onDeleteMessage={deleteMessage}
-        onArchiveMessage={archiveMessage}
-        onRecallMessage={recallMessage}
-        onLoadMore={loadMoreMessages}
-        hasMore={hasMore}
-        loadingMore={loadingMore}
-      />
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          
+          <Avatar className="h-10 w-10">
+            <AvatarFallback>
+              {getChatIcon()}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div>
+            <h3 className="font-semibold text-foreground">
+              {getChatDisplayName()}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {getSubtitle()}
+            </p>
+          </div>
+        </div>
 
-      <MessageInput onSendMessage={sendMessage} />
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm">
+            <Phone className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm">
+            <Video className="h-4 w-4" />
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Users className="mr-2 h-4 w-4" />
+                View Members
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                Search Messages
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                Chat Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 relative">
+        <MessageList
+          messages={messages}
+          loading={loading}
+          hasMore={hasMore}
+          typingUsers={typingUsers}
+          onLoadMore={onLoadMore}
+          onEditMessage={onEditMessage}
+          onDeleteMessage={onDeleteMessage}
+          onAddReaction={onAddReaction}
+          onRemoveReaction={onRemoveReaction}
+        />
+      </div>
+
+      {/* Input */}
+      <div className="border-t border-border bg-card">
+        <MessageInput
+          onSendMessage={onSendMessage}
+          onTyping={(typing) => setTyping(chat.id, typing)}
+        />
+      </div>
     </div>
   );
 };

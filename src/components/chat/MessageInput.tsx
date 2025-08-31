@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Send, 
@@ -9,32 +8,47 @@ import {
   Video, 
   MapPin, 
   Link,
-  File 
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface MessageInputProps {
-  onSendMessage: (content: string, messageType?: string, mediaUrl?: string, mediaType?: string, mediaSize?: number) => void;
+  onSendMessage: (content: string, type?: string, mediaUrl?: string) => Promise<void>;
+  onTyping: (typing: boolean) => void;
 }
 
-export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
+export const MessageInput: React.FC<MessageInputProps> = ({
+  onSendMessage,
+  onTyping
+}) => {
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
 
-  const handleSend = () => {
-    if (message.trim()) {
-      onSendMessage(message.trim());
-      setMessage('');
+  const handleSend = async () => {
+    if (!message.trim()) return;
+
+    const content = message.trim();
+    setMessage('');
+    onTyping(false);
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
     }
+
+    await onSendMessage(content);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -44,14 +58,36 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => 
     }
   };
 
-  const handleFileUpload = async (file: File, messageType: string) => {
-    if (!file) return;
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setMessage(value);
 
+    // Auto-resize textarea
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+
+    // Handle typing indicator
+    onTyping(value.length > 0);
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new timeout to stop typing
+    typingTimeoutRef.current = setTimeout(() => {
+      onTyping(false);
+    }, 1000);
+  };
+
+  const handleFileUpload = async (file: File, type: string) => {
     setUploading(true);
+    
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${messageType}s/${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `chat-media/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('chat-media')
@@ -63,18 +99,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => 
         .from('chat-media')
         .getPublicUrl(filePath);
 
-      onSendMessage('', messageType, publicUrl, file.type, file.size);
-      
+      await onSendMessage(file.name, type, publicUrl);
+
       toast({
         title: "Success",
-        description: "File uploaded successfully",
+        description: "File uploaded successfully"
       });
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Error uploading file:', error);
       toast({
-        title: "Error",
-        description: "Failed to upload file",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to upload file"
       });
     } finally {
       setUploading(false);
@@ -83,135 +119,150 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => 
 
   const handleAttachmentClick = (type: string) => {
     if (type === 'location') {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            const locationString = `Location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-            onSendMessage(locationString, 'location');
-          },
-          (error) => {
-            toast({
-              title: "Error",
-              description: "Failed to get location",
-              variant: "destructive",
-            });
-          }
-        );
-      }
+      handleLocationShare();
     } else if (type === 'link') {
-      const url = prompt('Enter URL:');
-      if (url) {
-        onSendMessage(url, 'link');
-      }
+      handleLinkShare();
     } else {
-      fileInputRef.current?.click();
+      // Trigger file input
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = type === 'image' ? 'image/*' : 
+                                     type === 'video' ? 'video/*' : '*/*';
+        fileInputRef.current.setAttribute('data-type', type);
+        fileInputRef.current.click();
+      }
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const type = e.target.getAttribute('data-type') || 'file';
+    
+    if (file) {
+      handleFileUpload(file, type);
+    }
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleLocationShare = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const locationText = `📍 Location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          await onSendMessage(locationText, 'location');
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to get location"
+          });
+        }
+      );
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Geolocation is not supported"
+      });
+    }
+  };
+
+  const handleLinkShare = () => {
+    const url = prompt('Enter URL to share:');
+    if (url) {
+      onSendMessage('', 'link', url);
     }
   };
 
   return (
-    <>
-      <div className="border-t border-border bg-background">
-        {/* Text Preview Area - Shows what's being typed on mobile */}
-        {message.trim() && (
-          <div className="px-4 pt-3 pb-2 border-b border-border/50">
-            <div className="bg-muted/30 rounded-lg p-3 max-h-24 overflow-y-auto">
-              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">
-                {message}
-              </p>
-            </div>
-          </div>
-        )}
-        
-        <div className="p-4">
-          <div className="flex items-end gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={uploading}
-                  className="shrink-0"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => handleAttachmentClick('image')}>
-                  <Image className="h-4 w-4 mr-2" />
-                  Photo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleAttachmentClick('video')}>
-                  <Video className="h-4 w-4 mr-2" />
-                  Video
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleAttachmentClick('file')}>
-                  <File className="h-4 w-4 mr-2" />
-                  File
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleAttachmentClick('location')}>
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Location
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleAttachmentClick('link')}>
-                  <Link className="h-4 w-4 mr-2" />
-                  Link
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <div className="flex-1 min-w-0">
-              {/* Use Textarea for better mobile experience */}
-              <Textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
-                disabled={uploading}
-                className="min-h-[44px] max-h-32 resize-none rounded-full border-2 px-4 py-3 text-base leading-5 
-                           focus:border-primary focus:ring-0 bg-muted/50 
-                           placeholder:text-muted-foreground/70
-                           md:text-sm md:leading-4"
-                rows={1}
-              />
-            </div>
-            
+    <div className="p-4">
+      <div className="flex items-end gap-2">
+        {/* Attachment menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
-              onClick={handleSend}
-              disabled={!message.trim() || uploading}
+              variant="ghost"
               size="sm"
-              className="shrink-0 h-11 w-11 rounded-full bg-primary hover:bg-primary/90 
-                         disabled:bg-muted disabled:text-muted-foreground"
+              disabled={uploading}
             >
-              <Send className="h-5 w-5" />
+              <Paperclip className="h-4 w-4" />
             </Button>
-          </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start">
+            <DropdownMenuItem onClick={() => handleAttachmentClick('image')}>
+              <Image className="mr-2 h-4 w-4" />
+              Photo
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAttachmentClick('video')}>
+              <Video className="mr-2 h-4 w-4" />
+              Video
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAttachmentClick('file')}>
+              <Paperclip className="mr-2 h-4 w-4" />
+              File
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAttachmentClick('location')}>
+              <MapPin className="mr-2 h-4 w-4" />
+              Location
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAttachmentClick('link')}>
+              <Link className="mr-2 h-4 w-4" />
+              Link
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Message input */}
+        <div className="flex-1 relative">
+          <Textarea
+            ref={textareaRef}
+            placeholder="Type a message..."
+            value={message}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyPress}
+            className={cn(
+              "resize-none min-h-[40px] max-h-[120px] pr-12",
+              "border-0 shadow-none focus-visible:ring-0",
+              "bg-muted rounded-lg"
+            )}
+            rows={1}
+          />
           
-          {uploading && (
-            <div className="flex items-center gap-2 mt-3 px-2">
-              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              <p className="text-sm text-muted-foreground">Uploading...</p>
-            </div>
-          )}
+          {/* Send button */}
+          <Button
+            size="sm"
+            className="absolute right-2 bottom-2 h-6 w-6 p-0"
+            onClick={handleSend}
+            disabled={!message.trim() || uploading}
+          >
+            {uploading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Send className="h-3 w-3" />
+            )}
+          </Button>
         </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept="image/*,video/*,*"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            let messageType = 'file';
-            if (file.type.startsWith('image/')) messageType = 'image';
-            else if (file.type.startsWith('video/')) messageType = 'video';
-            
-            handleFileUpload(file, messageType);
-          }
-        }}
-      />
-    </>
+      {/* Upload indicator */}
+      {uploading && (
+        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Uploading...
+        </div>
+      )}
+    </div>
   );
 };

@@ -3,121 +3,126 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Loader2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useToast } from '@/components/ui/use-toast';
-import { Users, MessageCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface CreateChatModalProps {
   open: boolean;
   onClose: () => void;
-  onChatCreated: (chatId: string) => void;
+  onChatCreated: (chatId: string | null) => void;
+}
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  role?: string;
+}
+
+interface Team {
+  id: string;
+  name: string;
 }
 
 export const CreateChatModal: React.FC<CreateChatModalProps> = ({
   open,
   onClose,
-  onChatCreated,
+  onChatCreated
 }) => {
   const { user } = useAuth();
-  const { isSuperAdmin, hasRole } = useUserRole();
   const { toast } = useToast();
-  const [chatType, setChatType] = useState<'group' | 'private'>('private');
+  
+  const [chatType, setChatType] = useState<'private' | 'group' | 'team'>('private');
   const [chatName, setChatName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && user) {
       fetchAvailableUsers();
-      fetchTeams();
+      if (chatType === 'team') {
+        fetchTeams();
+      }
     }
-  }, [open]);
+  }, [open, user, chatType]);
 
   const fetchAvailableUsers = async () => {
+    setUsersLoading(true);
     try {
-      console.log('Fetching available users for chat...');
-      
-      // Get all users with their profiles
-      const { data: profiles, error: profilesError } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email');
+        .select(`
+          id,
+          full_name,
+          email,
+          user_roles (
+            role,
+            is_active
+          )
+        `)
+        .neq('id', user?.id);
 
-      console.log('Profiles query result:', { data: profiles, error: profilesError });
+      if (error) throw error;
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        toast({
-          title: "Error",
-          description: "Failed to load users. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
+      const users = data.map(profile => ({
+        id: profile.id,
+        full_name: profile.full_name || profile.email,
+        email: profile.email,
+        role: profile.user_roles?.find((ur: any) => ur.is_active)?.role
+      }));
 
-      // Get user roles separately
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .eq('is_active', true);
-
-      console.log('User roles query result:', { data: userRoles, error: rolesError });
-
-      if (rolesError) {
-        console.warn('Could not fetch user roles:', rolesError);
-      }
-
-      if (profiles && profiles.length > 0) {
-        const profilesWithRoles = profiles.map(profile => ({
-          ...profile,
-          user_roles: userRoles?.filter(ur => ur.user_id === profile.id) || []
-        }));
-
-        const filteredUsers = profilesWithRoles.filter(profile => {
-          if (profile.id === user?.id) return false; // Exclude current user
-          return true;
-        });
-        
-        console.log('Available users after filtering:', filteredUsers);
-        setAvailableUsers(filteredUsers);
-      } else {
-        console.log('No profiles found or empty result');
-        setAvailableUsers([]);
-      }
+      setAvailableUsers(users);
     } catch (error) {
-      console.error('Unexpected error fetching users:', error);
+      console.error('Error fetching users:', error);
       toast({
-        title: "Error",
-        description: "Failed to load users. Please try again.",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to load users"
       });
+    } finally {
+      setUsersLoading(false);
     }
   };
 
   const fetchTeams = async () => {
-    const { data } = await supabase
-      .from('teams')
-      .select('*')
-      .order('name');
-    
-    setTeams(data || []);
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      setTeams(data || []);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+    }
   };
 
   const handleUserToggle = (userId: string) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
+    setSelectedUsers(prev =>
+      prev.includes(userId)
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     );
@@ -126,45 +131,46 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
   const createChat = async () => {
     if (!user) return;
 
-    if (chatType === 'group' && !chatName.trim()) {
+    if (selectedUsers.length === 0) {
       toast({
-        title: "Error",
-        description: "Group name is required",
         variant: "destructive",
+        title: "Error",
+        description: "Please select at least one participant"
       });
       return;
     }
 
-    if (selectedUsers.length === 0) {
+    if (chatType === 'group' && !chatName.trim()) {
       toast({
-        title: "Error",
-        description: "Please select at least one user",
         variant: "destructive",
+        title: "Error",
+        description: "Please enter a group name"
       });
       return;
     }
 
     setLoading(true);
     try {
-      // Create the chat
-      const { data: chat, error: chatError } = await supabase
+      const chatData = {
+        name: chatName.trim() || (chatType === 'private' ? 'Private Chat' : 'New Chat'),
+        chat_type: chatType,
+        created_by: user.id,
+        team_id: chatType === 'team' ? selectedTeam : null
+      };
+
+      const { data: newChat, error: chatError } = await supabase
         .from('chats')
-        .insert({
-          name: chatType === 'group' ? chatName : null,
-          chat_type: chatType,
-          team_id: selectedTeam || null,
-          created_by: user.id,
-        })
+        .insert(chatData)
         .select()
         .single();
 
       if (chatError) throw chatError;
 
-      // Add participants
+      // Add participants including the creator
       const participants = [
-        { chat_id: chat.id, user_id: user.id, role: 'admin' },
+        { chat_id: newChat.id, user_id: user.id, role: 'admin' },
         ...selectedUsers.map(userId => ({
-          chat_id: chat.id,
+          chat_id: newChat.id,
           user_id: userId,
           role: 'member'
         }))
@@ -178,19 +184,19 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
 
       toast({
         title: "Success",
-        description: `${chatType === 'group' ? 'Group' : 'Private'} chat created successfully`,
+        description: "Chat created successfully"
       });
 
-      onChatCreated(chat.id);
-      onClose();
+      onChatCreated(newChat.id);
       resetForm();
     } catch (error) {
       console.error('Error creating chat:', error);
       toast({
-        title: "Error",
-        description: "Failed to create chat",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to create chat"
       });
+      onChatCreated(null);
     } finally {
       setLoading(false);
     }
@@ -203,139 +209,168 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
     setSelectedTeam('');
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const getSelectedUsersList = () => {
+    return selectedUsers.map(userId => {
+      const user = availableUsers.find(u => u.id === userId);
+      return user?.full_name || user?.email || 'Unknown';
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create New Chat</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Chat Type Selection */}
-          {isSuperAdmin && (
-            <div className="space-y-3">
-              <Label>Chat Type</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={chatType === 'private' ? 'default' : 'outline'}
-                  onClick={() => setChatType('private')}
-                  className="flex-1"
-                >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Private
-                </Button>
-                <Button
-                  type="button"
-                  variant={chatType === 'group' ? 'default' : 'outline'}
-                  onClick={() => setChatType('group')}
-                  className="flex-1"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Group
-                </Button>
+          {/* Chat Type */}
+          <div>
+            <Label className="text-sm font-medium">Chat Type</Label>
+            <RadioGroup
+              value={chatType}
+              onValueChange={(value) => setChatType(value as any)}
+              className="mt-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="private" id="private" />
+                <Label htmlFor="private">Private Chat</Label>
               </div>
-            </div>
-          )}
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="group" id="group" />
+                <Label htmlFor="group">Group Chat</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="team" id="team" />
+                <Label htmlFor="team">Team Chat</Label>
+              </div>
+            </RadioGroup>
+          </div>
 
-          {/* Group Name */}
+          {/* Chat Name (for group chats) */}
           {chatType === 'group' && (
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="chatName">Group Name</Label>
               <Input
                 id="chatName"
                 value={chatName}
                 onChange={(e) => setChatName(e.target.value)}
                 placeholder="Enter group name"
+                className="mt-1"
               />
             </div>
           )}
 
-          {/* Team Selection for Group Chats */}
-          {chatType === 'group' && teams.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="team">Team (Optional)</Label>
-              <select
-                id="team"
-                value={selectedTeam}
-                onChange={(e) => setSelectedTeam(e.target.value)}
-                className="w-full p-2 border border-border rounded-md bg-background"
-              >
-                <option value="">All Teams</option>
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
+          {/* Team Selection (for team chats) */}
+          {chatType === 'team' && (
+            <div>
+              <Label>Select Team</Label>
+              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Choose a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map(team => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Selected Users */}
+          {selectedUsers.length > 0 && (
+            <div>
+              <Label className="text-sm font-medium">Selected Participants</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {getSelectedUsersList().map((name, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {name}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 ml-1"
+                      onClick={() => handleUserToggle(selectedUsers[index])}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
                 ))}
-              </select>
+              </div>
             </div>
           )}
 
           {/* User Selection */}
-          <div className="space-y-3">
-            <Label>Select Users</Label>
-            
-            {selectedUsers.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {selectedUsers.map(userId => {
-                  const user = availableUsers.find(u => u.id === userId);
-                  return (
-                    <Badge key={userId} variant="secondary">
-                      {user?.full_name}
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-            
-            <div className="max-h-48 overflow-y-auto space-y-2">
-              {availableUsers.map(user => (
-                <div key={user.id} className="flex items-center space-x-3">
-                  <Checkbox
-                    id={user.id}
-                    checked={selectedUsers.includes(user.id)}
-                    onCheckedChange={() => handleUserToggle(user.id)}
-                  />
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {user.full_name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <Label htmlFor={user.id} className="cursor-pointer">
-                      {user.full_name}
-                    </Label>
-                    {user.user_roles && user.user_roles.length > 0 && (
-                      <div className="flex gap-1 mt-1">
-                        {user.user_roles.map((ur: any, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {ur.role}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+          <div>
+            <Label className="text-sm font-medium">Add Participants</Label>
+            <ScrollArea className="h-48 mt-2 border rounded-md">
+              <div className="p-4">
+                {usersLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="ml-2 text-sm">Loading users...</span>
                   </div>
-                </div>
-              ))}
-            </div>
+                ) : availableUsers.length > 0 ? (
+                  <div className="space-y-2">
+                    {availableUsers.map(user => (
+                      <div key={user.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={user.id}
+                          checked={selectedUsers.includes(user.id)}
+                          onCheckedChange={() => handleUserToggle(user.id)}
+                        />
+                        <Label
+                          htmlFor={user.id}
+                          className="flex-1 text-sm cursor-pointer"
+                        >
+                          <div>
+                            <span className="font-medium">{user.full_name}</span>
+                            <span className="text-muted-foreground ml-2">
+                              {user.email}
+                            </span>
+                            {user.role && (
+                              <Badge variant="outline" className="ml-2 text-xs">
+                                {user.role}
+                              </Badge>
+                            )}
+                          </div>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">
+                    No users available
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
+          {/* Actions */}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
             <Button
               onClick={createChat}
-              disabled={loading || selectedUsers.length === 0}
-              className="flex-1"
+              disabled={selectedUsers.length === 0 || loading}
             >
-              {loading ? 'Creating...' : 'Create Chat'}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create Chat'
+              )}
             </Button>
           </div>
         </div>
