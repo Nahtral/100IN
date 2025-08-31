@@ -89,7 +89,7 @@ export const useChat = (): UseChatReturn => {
         .from('messages')
         .select(`
           *,
-          message_reactions (
+          message_reactions!message_reactions_message_id_fkey (
             id,
             emoji,
             user_id,
@@ -250,7 +250,7 @@ export const useChat = (): UseChatReturn => {
         })
         .select(`
           *,
-          message_reactions (
+          message_reactions!message_reactions_message_id_fkey (
             id,
             emoji,
             user_id,
