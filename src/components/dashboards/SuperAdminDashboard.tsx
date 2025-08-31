@@ -33,6 +33,7 @@ import { ParentsManagement } from "@/components/admin/ParentsManagement";
 import { CoachesManagement } from "@/components/admin/CoachesManagement";
 import { StaffManagement } from "@/components/admin/StaffManagement";
 import { useToast } from "@/hooks/use-toast";
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 
 interface PendingRequest {
   id: string;
@@ -52,6 +53,7 @@ const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('approvals');
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const { logUserAction } = useActivityLogger();
 
   useEffect(() => {
     fetchPendingRequests();
@@ -103,6 +105,9 @@ const SuperAdminDashboard = () => {
         title: approved ? "User Approved" : "User Rejected",
         description: `User has been ${approved ? 'approved' : 'rejected'} successfully.`,
       });
+
+      // Log the approval action
+      logUserAction(approved ? 'user_approved' : 'user_rejected', 'user_approval', { userId });
 
       fetchPendingRequests();
     } catch (error) {

@@ -18,6 +18,7 @@ import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus } from 'lucide-r
 import UserActionsDropdown from './UserActionsDropdown';
 import UserDetailsView from './UserDetailsView';
 import { UserApprovalDashboard } from './UserApprovalDashboard';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 
 interface UserProfile {
   id: string;
@@ -85,6 +86,7 @@ const EnhancedUserManagement = () => {
   const [editMode, setEditMode] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [grantReason, setGrantReason] = useState('');
+  const { logUserAction, logRoleChange, logPermissionChange } = useActivityLogger();
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -247,6 +249,9 @@ const EnhancedUserManagement = () => {
         description: `User has been assigned the ${role} role.`,
       });
 
+      // Log the role change activity
+      logRoleChange(role, undefined, reason);
+
       fetchUsers();
     } catch (error) {
       console.error('Error assigning role:', error);
@@ -306,6 +311,14 @@ const EnhancedUserManagement = () => {
       toast({
         title: "Permissions granted successfully",
         description: `${permissionIds.length} permission(s) have been granted to the user.`,
+      });
+
+      // Log permission changes
+      permissionIds.forEach(permissionId => {
+        const permission = permissions.find(p => p.id === permissionId);
+        if (permission) {
+          logPermissionChange(permission.name, 'granted', reason);
+        }
       });
 
       fetchUsers();

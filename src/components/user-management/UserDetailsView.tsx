@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { 
   User, 
   Shield, 
@@ -12,7 +13,11 @@ import {
   FileText,
   Clock,
   UserCheck,
-  AlertTriangle 
+  AlertTriangle,
+  LogIn,
+  Database,
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 
 interface UserProfile {
@@ -49,6 +54,7 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [accountStatus, setAccountStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { activities, loading: activitiesLoading, refreshActivities } = useActivityTracking(user.id);
 
   useEffect(() => {
     fetchUserData();
@@ -77,6 +83,32 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
       case 'suspended': return 'destructive';
       case 'deleted': return 'destructive';
       default: return 'outline';
+    }
+  };
+
+  const getActivityIcon = (iconName: string) => {
+    const iconMap: { [key: string]: any } = {
+      LogIn,
+      Shield,
+      User,
+      Eye,
+      Database,
+      AlertTriangle,
+      Activity,
+      Clock
+    };
+    return iconMap[iconName] || Clock;
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Authentication': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Permissions': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'Account': return 'bg-green-50 text-green-700 border-green-200';
+      case 'Data Access': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'Security': return 'bg-red-50 text-red-700 border-red-200';
+      case 'Navigation': return 'bg-gray-50 text-gray-700 border-gray-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
@@ -186,15 +218,76 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
         <TabsContent value="activity" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Recent Activity
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Recent Activity
+                </CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={refreshActivities}
+                  disabled={activitiesLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${activitiesLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Activity tracking will be available soon</p>
-              </div>
+              {activitiesLoading ? (
+                <div className="text-center py-8">
+                  <Clock className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+                  <p className="text-muted-foreground">Loading activity data...</p>
+                </div>
+              ) : activities.length > 0 ? (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {activities.map((activity) => {
+                    const IconComponent = getActivityIcon(activity.icon);
+                    return (
+                      <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="mt-1">
+                          <IconComponent className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-medium truncate">{activity.description}</p>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs whitespace-nowrap ${getCategoryColor(activity.category)}`}
+                            >
+                              {activity.category}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <time className="text-xs text-muted-foreground">
+                              {new Date(activity.created_at).toLocaleString()}
+                            </time>
+                            {activity.event_data?.url && (
+                              <span className="text-xs text-muted-foreground">
+                                • {new URL(activity.event_data.url).pathname}
+                              </span>
+                            )}
+                          </div>
+                          {activity.event_data?.error && (
+                            <p className="text-xs text-red-600 mt-1">
+                              Error: {activity.event_data.error}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No recent activity found</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    User activities will appear here once they start using the system
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
