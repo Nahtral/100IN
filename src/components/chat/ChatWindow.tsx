@@ -182,10 +182,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chatId }) => {
       .from('chats')
       .select(`
         *,
-        chat_participants!fk_chat_participants_chat_id(
+        chat_participants(
           user_id,
-          role,
-          profiles:user_id(full_name)
+          role
         )
       `)
       .eq('id', chatId)
