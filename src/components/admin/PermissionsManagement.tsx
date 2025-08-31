@@ -78,28 +78,25 @@ export const PermissionsManagement = () => {
       // Get all users with their roles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          user_roles!inner(role, is_active)
-        `)
-        .eq('user_roles.is_active', true);
+        .select('id, full_name, email');
 
       if (profilesError) throw profilesError;
 
-      // Get user permissions for each user
+      // Get user roles for each user
       const userPermissionsData = await Promise.all(
         (profiles || []).map(async (profile) => {
-          const { data: perms } = await supabase
-            .rpc('get_user_permissions', { _user_id: profile.id });
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.id)
+            .eq('is_active', true);
 
           return {
             user_id: profile.id,
             user_name: profile.full_name || 'Unknown',
             user_email: profile.email,
-            permissions: perms || [],
-            roles: profile.user_roles?.map((ur: any) => ur.role) || []
+            permissions: [], // Simplified for now
+            roles: roles?.map(r => r.role) || []
           };
         })
       );
@@ -398,7 +395,7 @@ export const PermissionsManagement = () => {
                 <div className="flex flex-wrap gap-1">
                   {userPerm.permissions.map((perm, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
-                      {perm.permission_name}
+                      {perm.name || 'Permission'}
                     </Badge>
                   ))}
                   {userPerm.permissions.length === 0 && (

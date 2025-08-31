@@ -62,11 +62,31 @@ export const CoachesManagement = () => {
 
   const fetchCoaches = async () => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_coaches_with_assignments');
+      // Get all users with coach role
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          email,
+          user_roles!inner(role, is_active)
+        `)
+        .eq('user_roles.role', 'coach')
+        .eq('user_roles.is_active', true);
 
-      if (error) throw error;
-      setCoaches(data || []);
+      if (profilesError) throw profilesError;
+
+      // Transform data to match Coach interface
+      const coachesData = (profiles || []).map(profile => ({
+        coach_id: profile.id,
+        coach_name: profile.full_name || 'Unknown Coach',
+        coach_email: profile.email,
+        team_assignments: [],
+        player_assignments: [],
+        total_assignments: 0
+      }));
+
+      setCoaches(coachesData);
     } catch (error) {
       console.error('Error fetching coaches:', error);
       toast({
@@ -81,7 +101,6 @@ export const CoachesManagement = () => {
     const { data, error } = await supabase
       .from('teams')
       .select('id, name')
-      .eq('is_active', true)
       .order('name');
 
     if (error) {

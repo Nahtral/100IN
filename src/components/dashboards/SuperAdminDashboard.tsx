@@ -28,6 +28,10 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserApprovalDashboard } from "@/components/user-management/UserApprovalDashboard";
+import { PermissionsManagement } from "@/components/admin/PermissionsManagement";
+import { ParentsManagement } from "@/components/admin/ParentsManagement";
+import { CoachesManagement } from "@/components/admin/CoachesManagement";
+import { StaffManagement } from "@/components/admin/StaffManagement";
 import { useToast } from "@/hooks/use-toast";
 
 interface PendingRequest {
@@ -324,41 +328,17 @@ const SuperAdminDashboard = () => {
 
           {/* Permissions Tab */}
           <TabsContent value="permissions">
-            <Card>
-              <CardHeader>
-                <CardTitle>Permissions Management</CardTitle>
-                <CardDescription>Configure system permissions and role-based access</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Permissions management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <PermissionsManagement />
           </TabsContent>
 
           {/* Parents Tab */}
           <TabsContent value="parents">
-            <Card>
-              <CardHeader>
-                <CardTitle>Parent Management</CardTitle>
-                <CardDescription>Manage parent accounts and child relationships</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Parent management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <ParentsManagement />
           </TabsContent>
 
           {/* Coaches Tab */}
           <TabsContent value="coaches">
-            <Card>
-              <CardHeader>
-                <CardTitle>Coach Management</CardTitle>
-                <CardDescription>Manage coaching staff and their assignments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Coach management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <CoachesManagement />
           </TabsContent>
 
           {/* Teams Tab */}
@@ -467,37 +447,7 @@ const SuperAdminDashboard = () => {
 
           {/* Staff Tab */}
           <TabsContent value="staff">
-            <Card>
-              <CardHeader>
-                <CardTitle>Staff Management</CardTitle>
-                <CardDescription>Manage administrative staff, HR, and organizational personnel</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Add Staff Member
-                    </Button>
-                    <Button variant="outline">
-                      <Users className="h-4 w-4 mr-2" />
-                      View All Staff
-                    </Button>
-                    <Button variant="outline">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      HR Management
-                    </Button>
-                    <Button variant="outline">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Staff Permissions
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Comprehensive staff management system with HR features, scheduling, and access control.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <StaffManagement />
           </TabsContent>
         </Tabs>
       </div>

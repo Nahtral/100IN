@@ -16,7 +16,8 @@ import {
   Clock,
   Eye,
   Edit,
-  Building
+  Building,
+  Plus
 } from 'lucide-react';
 
 interface StaffMember {
