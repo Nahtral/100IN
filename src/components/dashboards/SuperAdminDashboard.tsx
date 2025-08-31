@@ -1,18 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Users, 
-  TrendingUp, 
-  Calendar, 
-  Trophy, 
-  Activity, 
-  Shield, 
   UserCheck, 
-  Heart,
+  Key, 
+  Heart, 
+  UserCog, 
+  Trophy, 
+  Calendar, 
+  Shield,
   Handshake,
-  BarChart3,
-  DollarSign,
+  BriefcaseMedical,
+  UserPlus,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock,
   AlertCircle
 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -22,71 +27,89 @@ import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { UserApprovalDashboard } from "@/components/user-management/UserApprovalDashboard";
+import { useToast } from "@/hooks/use-toast";
+
+interface PendingRequest {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  requested_at: string;
+  status: string;
+}
 
 const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const { userRole } = useUserRole();
   const { stats, loading, error } = useDashboardData();
   const navigate = useNavigate();
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('approvals');
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
-  // Fetch recent activities from database
   useEffect(() => {
-    const fetchRecentActivities = async () => {
-      try {
-        // Fetch recent data without complex joins
-        const [teamsData, schedulesData, newsData] = await Promise.all([
-          supabase.from('teams').select('*').order('created_at', { ascending: false }).limit(3),
-          supabase.from('schedules').select('*').order('created_at', { ascending: false }).limit(3),
-          supabase.from('news_updates').select('*').order('created_at', { ascending: false }).limit(3)
-        ]);
-
-        const activities = [];
-
-        // Add team activities
-        teamsData.data?.forEach(team => {
-          activities.push({
-            action: `New team "${team.name}" registered`,
-            user: 'Team Admin',
-            time: formatTimeAgo(team.created_at),
-            type: 'success'
-          });
-        });
-
-        // Add schedule activities
-        schedulesData.data?.forEach(schedule => {
-          activities.push({
-            action: `Event "${schedule.title}" scheduled`,
-            user: 'Staff Member',
-            time: formatTimeAgo(schedule.created_at),
-            type: 'info'
-          });
-        });
-
-        // Add news activities
-        newsData.data?.forEach(news => {
-          activities.push({
-            action: `News "${news.title}" published`,
-            user: 'Content Manager',
-            time: formatTimeAgo(news.created_at),
-            type: 'info'
-          });
-        });
-
-        // Sort by most recent and take top 4
-        activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-        setRecentActivities(activities.slice(0, 4));
-      } catch (error) {
-        console.error('Error fetching recent activities:', error);
-        // Fallback to mock data if needed
-        setRecentActivities([
-          { action: "System started", user: "System", time: "1 hour ago", type: "info" }
-        ]);
-      }
-    };
-
-    fetchRecentActivities();
+    fetchPendingRequests();
   }, []);
+
+  const fetchPendingRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, created_at, approval_status')
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const requests = data?.map(profile => ({
+        id: profile.id,
+        user_id: profile.id,
+        full_name: profile.full_name || 'Unknown User',
+        email: profile.email,
+        requested_at: profile.created_at,
+        status: profile.approval_status
+      })) || [];
+
+      setPendingRequests(requests);
+    } catch (error) {
+      console.error('Error fetching pending requests:', error);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const handleApprovalAction = async (userId: string, approved: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          approval_status: approved ? 'approved' : 'rejected',
+          approved_by: user?.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: approved ? "User Approved" : "User Rejected",
+        description: `User has been ${approved ? 'approved' : 'rejected'} successfully.`,
+      });
+
+      fetchPendingRequests();
+    } catch (error) {
+      console.error('Error processing approval:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process approval request",
+        variant: "destructive",
+      });
+    }
+  };
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -109,7 +132,7 @@ const SuperAdminDashboard = () => {
   }
 
   if (error) {
-    return <div className="flex items-center justify-center p-8 text-red-600">Error: {error}</div>;
+    return <div className="flex items-center justify-center p-8 text-destructive">Error: {error}</div>;
   }
 
   return (
@@ -118,18 +141,18 @@ const SuperAdminDashboard = () => {
       role: userRole || 'Super Admin',
       avatar: '' 
     }}>
-      <div className="space-y-6">
+      <div className="mobile-container space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
-              Super Admin Dashboard
+            <h1 className="mobile-title text-foreground" style={{ textShadow: '2px 2px 0px hsl(var(--panther-gold)), -2px -2px 0px hsl(var(--panther-gold)), 2px -2px 0px hsl(var(--panther-gold)), -2px 2px 0px hsl(var(--panther-gold))' }}>
+              Admin Dashboard
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Welcome back, {user?.user_metadata?.full_name || 'Admin'}! Manage your organization.
+            <p className="text-muted-foreground mt-2 mobile-text">
+              Manage teams, players, schedules, security, and permissions
             </p>
           </div>
-          <div className="bg-black text-white px-4 py-2 rounded-lg">
+          <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg">
             <span className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Admin Panel
@@ -137,133 +160,346 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-blue-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/user-management')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Registered users
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-orange-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/user-management')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-              <AlertCircle className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.pendingTasks || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                All caught up
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-green-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/schedule')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Teams</CardTitle>
-              <Trophy className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalTeams || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Teams managed
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-blue-200 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/players')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Players</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalPlayers || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Players registered
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Admin Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 lg:grid-cols-9 gap-1 h-auto p-1">
+            <TabsTrigger value="approvals" className="flex items-center gap-1 p-2 text-xs">
+              <UserCheck className="h-3 w-3" />
+              <span className="hidden sm:inline">Approvals</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-1 p-2 text-xs">
+              <Users className="h-3 w-3" />
+              <span className="hidden sm:inline">Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-1 p-2 text-xs">
+              <Key className="h-3 w-3" />
+              <span className="hidden sm:inline">Permissions</span>
+            </TabsTrigger>
+            <TabsTrigger value="parents" className="flex items-center gap-1 p-2 text-xs">
+              <Heart className="h-3 w-3" />
+              <span className="hidden sm:inline">Parents</span>
+            </TabsTrigger>
+            <TabsTrigger value="coaches" className="flex items-center gap-1 p-2 text-xs">
+              <UserCog className="h-3 w-3" />
+              <span className="hidden sm:inline">Coaches</span>
+            </TabsTrigger>
+            <TabsTrigger value="teams" className="flex items-center gap-1 p-2 text-xs">
+              <Trophy className="h-3 w-3" />
+              <span className="hidden sm:inline">Teams</span>
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="flex items-center gap-1 p-2 text-xs">
+              <Calendar className="h-3 w-3" />
+              <span className="hidden sm:inline">Schedule</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-1 p-2 text-xs">
+              <Shield className="h-3 w-3" />
+              <span className="hidden sm:inline">Security</span>
+            </TabsTrigger>
+            <TabsTrigger value="medical" className="flex items-center gap-1 p-2 text-xs">
+              <BriefcaseMedical className="h-3 w-3" />
+              <span className="hidden sm:inline">Medical</span>
+            </TabsTrigger>
+            <TabsTrigger value="partners" className="flex items-center gap-1 p-2 text-xs">
+              <Handshake className="h-3 w-3" />
+              <span className="hidden sm:inline">Partners</span>
+            </TabsTrigger>
+            <TabsTrigger value="staff" className="flex items-center gap-1 p-2 text-xs">
+              <UserPlus className="h-3 w-3" />
+              <span className="hidden sm:inline">Staff</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-green-600" />
-                Recent Activity
-              </CardTitle>
-              <CardDescription>
-                Latest system activities
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentActivities.length > 0 ? recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="font-medium">{activity.action}</p>
-                      <p className="text-sm text-muted-foreground">User accessed the main dashboard</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Activity className="h-3 w-3" />
-                      <span>Just now</span>
-                      <span>User Action</span>
-                    </div>
+          {/* Approvals Tab */}
+          <TabsContent value="approvals" className="space-y-6">
+            <div>
+              <h2 className="mobile-subtitle mb-2">User Approval Requests</h2>
+              <p className="text-muted-foreground mobile-text-sm">
+                Review and approve new player, parent, and coach requests
+              </p>
+            </div>
+
+            {/* Success Message */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-green-700">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  User Approvals loaded successfully - Found {pendingRequests.length} requests
+                </span>
+              </div>
+            </div>
+
+            {/* Parent-Child Connection Requests */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-panthers-red" />
+                  Parent-Child Connection Requests
+                  <Badge variant="secondary">0 Pending</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mb-4 opacity-50" />
+                  <p>No pending parent-child connections</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* User Approval Requests */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  User Approval Requests
+                  <Badge variant="secondary">({pendingRequests.length})</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingRequests ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Clock className="h-6 w-6 animate-spin mr-2" />
+                    Loading requests...
                   </div>
-                )) : (
-                  <div className="flex items-center gap-4">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="font-medium">Viewed dashboard</p>
-                      <p className="text-sm text-muted-foreground">User accessed the main dashboard</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Activity className="h-3 w-3" />
-                      <span>Just now</span>
-                      <span>User Action</span>
-                    </div>
+                ) : pendingRequests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <CheckCircle className="h-12 w-12 mb-4 opacity-50" />
+                    <p>No pending approval requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingRequests.map((request) => (
+                      <div key={request.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <UserCheck className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="font-medium">{request.full_name}</p>
+                            <p className="text-sm text-muted-foreground">{request.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Requested: {formatTimeAgo(request.requested_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                            Approved
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {/* View details logic */}}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Details
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleApprovalAction(request.user_id, false)}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Recent Users */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-600" />
-                Recent Users
-              </CardTitle>
-              <CardDescription>
-                Newly registered users
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="font-medium">N</span>
+          {/* Users Tab */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate('/user-management')} className="w-full">
+                  <Users className="h-4 w-4 mr-2" />
+                  Open User Management
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Permissions Tab */}
+          <TabsContent value="permissions">
+            <Card>
+              <CardHeader>
+                <CardTitle>Permissions Management</CardTitle>
+                <CardDescription>Configure system permissions and role-based access</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Permissions management interface coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Parents Tab */}
+          <TabsContent value="parents">
+            <Card>
+              <CardHeader>
+                <CardTitle>Parent Management</CardTitle>
+                <CardDescription>Manage parent accounts and child relationships</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Parent management interface coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Coaches Tab */}
+          <TabsContent value="coaches">
+            <Card>
+              <CardHeader>
+                <CardTitle>Coach Management</CardTitle>
+                <CardDescription>Manage coaching staff and their assignments</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Coach management interface coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Teams Tab */}
+          <TabsContent value="teams">
+            <Card>
+              <CardHeader>
+                <CardTitle>Team Management</CardTitle>
+                <CardDescription>Create and manage teams, player assignments</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate('/teams')} className="w-full">
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Open Team Management
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Schedule Tab */}
+          <TabsContent value="schedule">
+            <Card>
+              <CardHeader>
+                <CardTitle>Schedule Management</CardTitle>
+                <CardDescription>Manage events, practices, and games</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate('/schedule')} className="w-full">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Open Schedule Management
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Security Tab */}
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Security Management</CardTitle>
+                <CardDescription>Monitor system security and access logs</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate('/security')} className="w-full">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Open Security Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Medical Tab */}
+          <TabsContent value="medical">
+            <Card>
+              <CardHeader>
+                <CardTitle>Medical Management</CardTitle>
+                <CardDescription>Manage medical staff, health records, and medical protocols</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button onClick={() => navigate('/medical')} className="w-full">
+                    <BriefcaseMedical className="h-4 w-4 mr-2" />
+                    Open Medical Dashboard
+                  </Button>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button variant="outline" size="sm">
+                      <Heart className="h-4 w-4 mr-2" />
+                      Health Records
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Medical Staff
+                    </Button>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{user?.user_metadata?.full_name || 'Nahtral'}</p>
-                    <p className="text-sm text-muted-foreground">{user?.email || 'nahtral@supernahtral.com'}</p>
-                  </div>
-                  <Badge variant="outline">admin</Badge>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Partners Tab */}
+          <TabsContent value="partners">
+            <Card>
+              <CardHeader>
+                <CardTitle>Partnership Management</CardTitle>
+                <CardDescription>Manage business partnerships, sponsorships, and collaborations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button onClick={() => navigate('/partners')} className="w-full">
+                    <Handshake className="h-4 w-4 mr-2" />
+                    Open Partnership Dashboard
+                  </Button>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button variant="outline" size="sm">
+                      <Trophy className="h-4 w-4 mr-2" />
+                      Sponsorships
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Users className="h-4 w-4 mr-2" />
+                      Partner Accounts
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Staff Tab */}
+          <TabsContent value="staff">
+            <Card>
+              <CardHeader>
+                <CardTitle>Staff Management</CardTitle>
+                <CardDescription>Manage administrative staff, HR, and organizational personnel</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button variant="outline">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Staff Member
+                    </Button>
+                    <Button variant="outline">
+                      <Users className="h-4 w-4 mr-2" />
+                      View All Staff
+                    </Button>
+                    <Button variant="outline">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      HR Management
+                    </Button>
+                    <Button variant="outline">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Staff Permissions
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Comprehensive staff management system with HR features, scheduling, and access control.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
