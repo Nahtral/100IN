@@ -83,6 +83,8 @@ const EnhancedUserManagement = () => {
   const [userStatuses, setUserStatuses] = useState<Record<string, string>>({});
   const [showEditModal, setShowEditModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [grantReason, setGrantReason] = useState('');
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -282,34 +284,46 @@ const EnhancedUserManagement = () => {
     }
   };
 
-  const grantPermission = async (userId: string, permissionId: string, reason: string) => {
+  const grantMultiplePermissions = async (userId: string, permissionIds: string[], reason: string) => {
     try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      // Insert multiple permissions at once
+      const permissionInserts = permissionIds.map(permissionId => ({
+        user_id: userId,
+        permission_id: permissionId,
+        granted_by: currentUser?.id,
+        reason,
+        is_active: true
+      }));
+
       const { error } = await supabase
         .from('user_permissions')
-        .insert({
-          user_id: userId,
-          permission_id: permissionId,
-          granted_by: (await supabase.auth.getUser()).data.user?.id,
-          reason,
-          is_active: true
-        });
+        .insert(permissionInserts);
 
       if (error) throw error;
 
       toast({
-        title: "Permission granted successfully",
-        description: "Additional permission has been granted to the user.",
+        title: "Permissions granted successfully",
+        description: `${permissionIds.length} permission(s) have been granted to the user.`,
       });
 
       fetchUsers();
+      setSelectedPermissions([]);
+      setGrantReason('');
+      setShowEditModal(false);
     } catch (error) {
-      console.error('Error granting permission:', error);
+      console.error('Error granting permissions:', error);
       toast({
         title: "Error",
-        description: "Failed to grant permission. Please try again.",
+        description: "Failed to grant permissions. Please try again.",
         variant: "destructive",
       });
     }
+  };
+
+  const grantPermission = async (userId: string, permissionId: string, reason: string) => {
+    return grantMultiplePermissions(userId, [permissionId], reason);
   };
 
   const handleApprovalAction = async (requestId: string, approved: boolean) => {

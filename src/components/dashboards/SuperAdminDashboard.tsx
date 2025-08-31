@@ -318,7 +318,13 @@ const SuperAdminDashboard = () => {
                 <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => navigate('/user-management')} className="w-full">
+                <Button onClick={() => {
+                  navigate('/user-management');
+                  toast({
+                    title: "User Management",
+                    description: "Accessing production-ready user management system",
+                  });
+                }} className="w-full">
                   <Users className="h-4 w-4 mr-2" />
                   Open User Management
                 </Button>

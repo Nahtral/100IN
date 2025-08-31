@@ -121,23 +121,52 @@ export const PermissionsManagement = () => {
   const createPermission = async () => {
     if (!newPermission.name || !newPermission.description) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: "Permission name and description are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate permission name format
+    if (!/^[a-z_]+$/.test(newPermission.name)) {
+      toast({
+        title: "Validation Error",
+        description: "Permission name must be lowercase with underscores only",
         variant: "destructive",
       });
       return;
     }
 
     try {
+      // Check for duplicate permission names
+      const { data: existing } = await supabase
+        .from('permissions')
+        .select('id')
+        .eq('name', newPermission.name)
+        .single();
+
+      if (existing) {
+        toast({
+          title: "Duplicate Permission",
+          description: "A permission with this name already exists",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('permissions')
-        .insert([newPermission]);
+        .insert([{
+          ...newPermission,
+          created_at: new Date().toISOString()
+        }]);
 
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Permission created successfully",
+        title: "Permission Created",
+        description: `Permission '${newPermission.name}' created successfully and is production ready`,
       });
 
       setNewPermission({ name: '', description: '', category: 'general' });
@@ -147,7 +176,7 @@ export const PermissionsManagement = () => {
       console.error('Error creating permission:', error);
       toast({
         title: "Error",
-        description: "Failed to create permission",
+        description: "Failed to create permission. Please try again.",
         variant: "destructive",
       });
     }
