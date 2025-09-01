@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Save, AlertTriangle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Users, Save, AlertTriangle, UserPlus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { InputSanitizer } from '@/utils/inputSanitizer';
@@ -29,11 +30,17 @@ const teamFormSchema = z.object({
     .max(50, 'Season must be less than 50 characters')
     .regex(/^\d{4}-\d{4}$|^\d{4}$|^[A-Za-z\s\d-]+$/, 'Please use valid season format (e.g., 2024-2025)'),
   coachId: z.string().optional(),
+  staffIds: z.array(z.string()).optional(),
 });
 
 type TeamFormData = z.infer<typeof teamFormSchema>;
 
 interface Coach {
+  id: string;
+  full_name: string;
+}
+
+interface Staff {
   id: string;
   full_name: string;
 }
@@ -52,7 +59,9 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
   onCancel
 }) => {
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [loadingCoaches, setLoadingCoaches] = useState(true);
+  const [loadingStaff, setLoadingStaff] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { user } = useAuth();
   const { userRole } = useUserRole();
@@ -64,6 +73,7 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
       ageGroup: initialData?.ageGroup || '',
       season: initialData?.season || '',
       coachId: initialData?.coachId || '',
+      staffIds: initialData?.staffIds || [],
     },
   });
 
@@ -125,9 +135,62 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
     }
   }, [user?.id, userRole]);
 
+  const fetchStaff = useCallback(async () => {
+    try {
+      setLoadingStaff(true);
+      
+      // Get users with staff role
+      const { data: staffRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'staff')
+        .eq('is_active', true);
+
+      if (rolesError) throw rolesError;
+
+      if (!staffRoles || staffRoles.length === 0) {
+        setStaff([]);
+        return;
+      }
+
+      const staffIds = staffRoles.map(role => role.user_id);
+
+      // Get profiles for staff
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', staffIds)
+        .order('full_name');
+
+      if (profilesError) throw profilesError;
+
+      setStaff(profiles || []);
+    } catch (error) {
+      await ErrorLogger.logError(error, {
+        component: 'EnhancedTeamForm',
+        action: 'fetchStaff',
+        userId: user?.id,
+        userRole
+      });
+      setStaff([]);
+    } finally {
+      setLoadingStaff(false);
+    }
+  }, [user?.id, userRole]);
+
   useEffect(() => {
     fetchCoaches();
-  }, [fetchCoaches]);
+    fetchStaff();
+  }, [fetchCoaches, fetchStaff]);
+
+  const handleStaffToggle = (staffId: string, checked: boolean) => {
+    const currentStaffIds = form.getValues('staffIds') || [];
+    if (checked) {
+      form.setValue('staffIds', [...currentStaffIds, staffId]);
+    } else {
+      form.setValue('staffIds', currentStaffIds.filter(id => id !== staffId));
+    }
+  };
 
   const handleSubmit = async (data: TeamFormData) => {
     try {
@@ -137,6 +200,7 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
         ageGroup: InputSanitizer.sanitizeText(data.ageGroup),
         season: InputSanitizer.sanitizeText(data.season),
         coachId: data.coachId && data.coachId !== 'none' && InputSanitizer.isValidUUID(data.coachId) ? data.coachId : undefined,
+        staffIds: data.staffIds ? data.staffIds.filter(id => InputSanitizer.isValidUUID(id)) : undefined,
       };
 
       await onSubmit(sanitizedData);
@@ -155,7 +219,7 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
@@ -271,6 +335,48 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
                 )}
               />
             </div>
+            
+            {/* Staff Selection */}
+            <FormField
+              control={form.control}
+              name="staffIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Assign Staff Members
+                  </FormLabel>
+                  <FormControl>
+                    <div className="space-y-3 max-h-48 overflow-y-auto border rounded-md p-3">
+                      {loadingStaff ? (
+                        <div className="text-sm text-muted-foreground">Loading staff...</div>
+                      ) : staff.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">No staff members available</div>
+                      ) : (
+                        staff.map((staffMember) => (
+                          <div key={staffMember.id} className="flex items-center space-x-2">
+                             <Checkbox
+                               id={`staff-${staffMember.id}`}
+                               checked={(field.value || []).includes(staffMember.id)}
+                               onCheckedChange={(checked) => 
+                                 handleStaffToggle(staffMember.id, checked as boolean)
+                               }
+                             />
+                            <label
+                              htmlFor={`staff-${staffMember.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {staffMember.full_name}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <div className="flex justify-end gap-2">
               {onCancel && (

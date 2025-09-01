@@ -3732,6 +3732,42 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_team_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          assignment_type: string
+          created_at: string
+          id: string
+          staff_id: string
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          assignment_type?: string
+          created_at?: string
+          id?: string
+          staff_id: string
+          status?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          assignment_type?: string
+          created_at?: string
+          id?: string
+          staff_id?: string
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_alerts: {
         Row: {
           alert_type: string
