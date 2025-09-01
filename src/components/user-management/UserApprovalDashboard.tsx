@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Check, X, UserCheck, UserX, Eye, Calendar, Mail, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import UserDetailsView from './UserDetailsView';
 
 interface PendingUser {
   id: string;
@@ -30,6 +32,7 @@ export const UserApprovalDashboard = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
+  const [viewDetailsUser, setViewDetailsUser] = useState<PendingUser | null>(null);
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -185,6 +188,37 @@ export const UserApprovalDashboard = () => {
                       </div>
 
                       <div className="flex items-center gap-2 ml-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                              onClick={() => setViewDetailsUser(user)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Details
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>User Details - {user.full_name}</DialogTitle>
+                            </DialogHeader>
+                            {viewDetailsUser && (
+                              <UserDetailsView 
+                                user={{
+                                  id: viewDetailsUser.id,
+                                  email: viewDetailsUser.email,
+                                  full_name: viewDetailsUser.full_name,
+                                  created_at: viewDetailsUser.created_at,
+                                  roles: [],
+                                  permissions: []
+                                }}
+                              />
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
