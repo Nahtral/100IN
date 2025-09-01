@@ -37,15 +37,15 @@ const getIconForCategory = (category: string, iconName?: string) => {
 const getPriorityColor = (priority: string) => {
   switch (priority) {
     case 'urgent':
-      return 'text-red-500';
+      return 'text-destructive';
     case 'high':
-      return 'text-orange-500';
+      return 'text-panther-gold';
     case 'normal':
-      return 'text-blue-500';
+      return 'text-panther-blue';
     case 'low':
-      return 'text-gray-500';
+      return 'text-muted-foreground';
     default:
-      return 'text-blue-500';
+      return 'text-panther-blue';
   }
 };
 
@@ -102,7 +102,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMar
                 </Badge>
               )}
               {notification.priority === 'high' && (
-                <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                <Badge variant="secondary" className="text-xs bg-panther-gold/20 text-panther-gold border-panther-gold/30">
                   High
                 </Badge>
               )}

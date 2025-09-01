@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { NotificationToastProvider } from "@/components/notifications/NotificationToast";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -56,6 +57,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <NotificationToastProvider />
           <BrowserRouter>
           <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
