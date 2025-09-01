@@ -4335,6 +4335,10 @@ export type Database = {
           source: string
         }[]
       }
+      get_user_requested_role: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
