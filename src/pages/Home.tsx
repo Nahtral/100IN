@@ -51,22 +51,80 @@ const Home = () => {
     }
   });
 
-  // Fetch quick stats
+  // Fetch quick stats - team-specific for non-super admins
   const { data: quickStats } = useQuery({
-    queryKey: ['quick-stats'],
+    queryKey: ['quick-stats', isSuperAdmin],
     queryFn: async () => {
-      const [playersResult, teamsResult, upcomingResult] = await Promise.all([
-        supabase.from('players').select('*', { count: 'exact', head: true }),
-        supabase.from('teams').select('*', { count: 'exact', head: true }),
-        supabase.from('schedules').select('*', { count: 'exact', head: true }).gte('start_time', new Date().toISOString())
-      ]);
+      if (isSuperAdmin) {
+        // Super admin sees all data
+        const [playersResult, teamsResult, upcomingResult] = await Promise.all([
+          supabase.from('players').select('*', { count: 'exact', head: true }),
+          supabase.from('teams').select('*', { count: 'exact', head: true }),
+          supabase.from('schedules').select('*', { count: 'exact', head: true }).gte('start_time', new Date().toISOString())
+        ]);
 
-      return {
-        totalPlayers: playersResult.count || 0,
-        totalTeams: teamsResult.count || 0,
-        upcomingEvents: upcomingResult.count || 0
-      };
-    }
+        return {
+          totalPlayers: playersResult.count || 0,
+          totalTeams: teamsResult.count || 0,
+          upcomingEvents: upcomingResult.count || 0
+        };
+      } else {
+        // Non-super admin users see only their team's data
+        const { data: userPlayer } = await supabase
+          .from('players')
+          .select('team_id')
+          .eq('user_id', user?.id)
+          .eq('is_active', true)
+          .single();
+
+        const userTeamId = userPlayer?.team_id;
+
+        if (userTeamId) {
+          // User is a player, show their team's data
+          const [playersResult, upcomingResult] = await Promise.all([
+            supabase.from('players').select('*', { count: 'exact', head: true }).eq('team_id', userTeamId).eq('is_active', true),
+            supabase.from('schedules').select('*', { count: 'exact', head: true }).contains('team_ids', [userTeamId]).gte('start_time', new Date().toISOString())
+          ]);
+
+          return {
+            totalPlayers: playersResult.count || 0,
+            totalTeams: 1, // User only sees their own team
+            upcomingEvents: upcomingResult.count || 0
+          };
+        } else {
+          // Check if user is a coach/staff assigned to teams
+          const { data: coachAssignments } = await supabase
+            .from('coach_assignments')
+            .select('team_id')
+            .eq('coach_id', user?.id)
+            .eq('status', 'active');
+
+          const teamIds = coachAssignments?.map(ca => ca.team_id) || [];
+
+          if (teamIds.length > 0) {
+            // User is a coach/staff, show their assigned teams' data
+            const [playersResult, upcomingResult] = await Promise.all([
+              supabase.from('players').select('*', { count: 'exact', head: true }).in('team_id', teamIds).eq('is_active', true),
+              supabase.from('schedules').select('*', { count: 'exact', head: true }).overlaps('team_ids', teamIds).gte('start_time', new Date().toISOString())
+            ]);
+
+            return {
+              totalPlayers: playersResult.count || 0,
+              totalTeams: teamIds.length,
+              upcomingEvents: upcomingResult.count || 0
+            };
+          }
+        }
+
+        // Default case - user has no team connections
+        return {
+          totalPlayers: 0,
+          totalTeams: 0,
+          upcomingEvents: 0
+        };
+      }
+    },
+    enabled: !!user
   });
 
   return (
