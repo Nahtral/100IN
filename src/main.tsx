@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import App from './App.tsx'
 import './index.css'
+import { PerformanceMonitoring } from './utils/performanceMonitoring'
 
 // Configure status bar for mobile
 const setStatusBarBlack = async () => {
@@ -16,5 +17,8 @@ const setStatusBarBlack = async () => {
 };
 
 setStatusBarBlack();
+
+// Initialize performance monitoring
+PerformanceMonitoring.initialize();
 
 createRoot(document.getElementById("root")!).render(<App />);

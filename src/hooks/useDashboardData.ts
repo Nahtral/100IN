@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DashboardStats {
@@ -17,23 +17,40 @@ export const useDashboardData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
+  const memoizedFetch = useMemo(() => {
+    let abortController: AbortController | null = null;
+    
+    return async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
+        // Cancel previous request if still pending
+        if (abortController) {
+          abortController.abort();
+        }
+        abortController = new AbortController();
+
+        // Get current user with timeout
+        const userPromise = supabase.auth.getUser();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth request timeout')), 10000)
+        );
+        
+        const { data: { user } } = await Promise.race([userPromise, timeoutPromise]) as any;
         if (!user) {
           throw new Error('User not authenticated');
         }
 
         // Check if user is super admin or staff (can see all data)
-        const { data: userRoles } = await supabase
+        const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .abortSignal(abortController.signal);
+
+        if (rolesError && rolesError.name !== 'AbortError') throw rolesError;
 
         const isSuperAdmin = userRoles?.some(ur => ur.role === 'super_admin');
         const isStaff = userRoles?.some(ur => ur.role === 'staff');
@@ -42,44 +59,56 @@ export const useDashboardData = () => {
         // Get user's team(s) if they are a player
         let userTeamIds: string[] = [];
         if (!canSeeAllData) {
-          const { data: playerData } = await supabase
+          const { data: playerData, error: playerError } = await supabase
             .from('players')
             .select('team_id')
             .eq('user_id', user.id)
-            .eq('is_active', true);
+            .eq('is_active', true)
+            .abortSignal(abortController.signal);
           
+          if (playerError && playerError.name !== 'AbortError') throw playerError;
           if (playerData && playerData.length > 0) {
             userTeamIds = playerData.map(p => p.team_id).filter(Boolean);
           }
         }
 
-        // Fetch data based on permissions
+        // Fetch data based on permissions with proper error handling
         let usersResult, playersResult, teamsResult, performanceResult, schedulesResult, paymentsResult, alertsResult;
 
         if (canSeeAllData) {
           // Super admin and staff can see all data
-          [usersResult, playersResult, teamsResult, performanceResult, schedulesResult, paymentsResult, alertsResult] = await Promise.all([
-            supabase.from('profiles').select('id', { count: 'exact', head: true }),
-            supabase.from('players').select('*', { count: 'exact', head: true }),
-            supabase.from('teams').select('*', { count: 'exact', head: true }),
-            supabase.from('player_performance').select('*', { count: 'exact', head: true }),
-            supabase.from('schedules').select('*').gte('start_time', new Date().toISOString()),
+          const promises = [
+            supabase.from('profiles').select('id', { count: 'exact', head: true }).abortSignal(abortController.signal),
+            supabase.from('players').select('*', { count: 'exact', head: true }).abortSignal(abortController.signal),
+            supabase.from('teams').select('*', { count: 'exact', head: true }).abortSignal(abortController.signal),
+            supabase.from('player_performance').select('*', { count: 'exact', head: true }).abortSignal(abortController.signal),
+            supabase.from('schedules').select('*').gte('start_time', new Date().toISOString()).abortSignal(abortController.signal),
             supabase.from('payments')
               .select('amount')
               .eq('payment_status', 'completed')
-              .gte('payment_date', new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString()),
+              .gte('payment_date', new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString())
+              .abortSignal(abortController.signal),
             supabase.from('system_alerts')
               .select('*', { count: 'exact', head: true })
               .eq('is_resolved', false)
-          ]);
+              .abortSignal(abortController.signal)
+          ];
+
+          const results = await Promise.allSettled(promises);
+          [usersResult, playersResult, teamsResult, performanceResult, schedulesResult, paymentsResult, alertsResult] = 
+            results.map(result => result.status === 'fulfilled' ? result.value : { count: 0, data: [] });
         } else {
           // Regular users only see data for their teams
           if (userTeamIds.length > 0) {
-            [playersResult, teamsResult, schedulesResult] = await Promise.all([
-              supabase.from('players').select('*', { count: 'exact', head: true }).in('team_id', userTeamIds),
-              supabase.from('teams').select('*', { count: 'exact', head: true }).in('id', userTeamIds),
-              supabase.from('schedules').select('*').gte('start_time', new Date().toISOString()).overlaps('team_ids', userTeamIds)
-            ]);
+            const promises = [
+              supabase.from('players').select('*', { count: 'exact', head: true }).in('team_id', userTeamIds).abortSignal(abortController.signal),
+              supabase.from('teams').select('*', { count: 'exact', head: true }).in('id', userTeamIds).abortSignal(abortController.signal),
+              supabase.from('schedules').select('*').gte('start_time', new Date().toISOString()).overlaps('team_ids', userTeamIds).abortSignal(abortController.signal)
+            ];
+
+            const results = await Promise.allSettled(promises);
+            [playersResult, teamsResult, schedulesResult] = 
+              results.map(result => result.status === 'fulfilled' ? result.value : { count: 0, data: [] });
           } else {
             // User is not on any team, return empty results
             playersResult = { count: 0 };
@@ -116,16 +145,20 @@ export const useDashboardData = () => {
           revenue,
           upcomingEvents
         });
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to fetch dashboard data');
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Error fetching dashboard data:', err);
+          setError('Failed to fetch dashboard data');
+        }
       } finally {
         setLoading(false);
       }
     };
-
-    fetchDashboardData();
   }, []);
+
+  useEffect(() => {
+    memoizedFetch();
+  }, [memoizedFetch]);
 
   return { stats, loading, error };
 };
