@@ -306,40 +306,6 @@ export const UserApprovalDashboard = () => {
                       </div>
 
                       <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setViewDetailsUser(user);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Details
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>User Details - {user.full_name}</DialogTitle>
-                            </DialogHeader>
-                            {viewDetailsUser && (
-                              <UserDetailsView 
-                                user={{
-                                  id: viewDetailsUser.id,
-                                  email: viewDetailsUser.email,
-                                  full_name: viewDetailsUser.full_name,
-                                  created_at: viewDetailsUser.created_at,
-                                  roles: [],
-                                  permissions: []
-                                }}
-                              />
-                            )}
-                          </DialogContent>
-                        </Dialog>
-
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -482,6 +448,27 @@ export const UserApprovalDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* User Details Dialog */}
+      <Dialog open={!!viewDetailsUser} onOpenChange={(open) => !open && setViewDetailsUser(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>User Details - {viewDetailsUser?.full_name}</DialogTitle>
+          </DialogHeader>
+          {viewDetailsUser && (
+            <UserDetailsView 
+              user={{
+                id: viewDetailsUser.id,
+                email: viewDetailsUser.email,
+                full_name: viewDetailsUser.full_name,
+                created_at: viewDetailsUser.created_at,
+                roles: [],
+                permissions: []
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
