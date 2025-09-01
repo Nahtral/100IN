@@ -31,6 +31,7 @@ interface ChatSidebarProps {
   onShowArchived: () => void;
   onShowSearch: () => void;
   onArchiveChat: (chatId: string) => void;
+  onDeleteChat: (chatId: string) => void;
   onRefresh: () => void;
 }
 
@@ -44,6 +45,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onShowArchived,
   onShowSearch,
   onArchiveChat,
+  onDeleteChat,
   onRefresh
 }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -143,15 +145,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     Pinned
                   </h3>
                   <div className="space-y-1">
-                    {pinnedChats.map(chat => (
-                      <ChatListItem
-                        key={chat.id}
-                        chat={chat}
-                        isSelected={chat.id === selectedChatId}
-                        onClick={() => onSelectChat(chat.id)}
-                        onArchive={() => onArchiveChat(chat.id)}
-                      />
-                    ))}
+                     {pinnedChats.map(chat => (
+                       <ChatListItem
+                         key={chat.id}
+                         chat={chat}
+                         isSelected={chat.id === selectedChatId}
+                         onClick={() => onSelectChat(chat.id)}
+                         onArchive={() => onArchiveChat(chat.id)}
+                         onDelete={() => onDeleteChat(chat.id)}
+                       />
+                     ))}
                   </div>
                 </div>
               )}
@@ -164,15 +167,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       All Chats
                     </h3>
                   )}
-                  {regularChats.map(chat => (
-                    <ChatListItem
-                      key={chat.id}
-                      chat={chat}
-                      isSelected={chat.id === selectedChatId}
-                      onClick={() => onSelectChat(chat.id)}
-                      onArchive={() => onArchiveChat(chat.id)}
-                    />
-                  ))}
+                   {regularChats.map(chat => (
+                     <ChatListItem
+                       key={chat.id}
+                       chat={chat}
+                       isSelected={chat.id === selectedChatId}
+                       onClick={() => onSelectChat(chat.id)}
+                       onArchive={() => onArchiveChat(chat.id)}
+                       onDelete={() => onDeleteChat(chat.id)}
+                     />
+                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8">

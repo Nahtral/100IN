@@ -8,6 +8,7 @@ import { ChatSettingsModal } from './ChatSettingsModal';
 import { ArchivedChatsModal } from './ArchivedChatsModal';
 import { ChatMembersModal } from './ChatMembersModal';
 import { useChat } from '@/hooks/useChat';
+import { useChatNotifications } from '@/hooks/useChatNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatLayoutProps {
@@ -16,6 +17,10 @@ interface ChatLayoutProps {
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
   const isMobile = useIsMobile();
+  
+  // Initialize chat notifications
+  useChatNotifications();
+  
   const {
     chats,
     loading,
@@ -30,6 +35,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     deleteMessage,
     archiveChat,
     unarchiveChat,
+    deleteChat,
     addReaction,
     removeReaction,
     loadMoreMessages,
@@ -78,6 +84,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
             onShowArchived={() => setShowArchivedModal(true)}
             onShowSearch={() => setShowSearch(true)}
             onArchiveChat={archiveChat}
+            onDeleteChat={deleteChat}
             onRefresh={refreshChats}
           />
         </div>

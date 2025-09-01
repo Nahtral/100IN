@@ -18,6 +18,7 @@ interface UseChatReturn {
   deleteMessage: (messageId: string) => Promise<void>;
   archiveChat: (chatId: string) => Promise<void>;
   unarchiveChat: (chatId: string) => Promise<void>;
+  deleteChat: (chatId: string) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
   removeReaction: (reactionId: string) => Promise<void>;
   loadMoreMessages: () => Promise<void>;
@@ -406,6 +407,57 @@ export const useChat = (): UseChatReturn => {
     }
   }, [toast]);
 
+  // Delete chat permanently
+  const deleteChat = useCallback(async (chatId: string) => {
+    try {
+      // First delete all messages in the chat
+      const { error: messagesError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('chat_id', chatId);
+
+      if (messagesError) throw messagesError;
+
+      // Delete all participants
+      const { error: participantsError } = await supabase
+        .from('chat_participants')
+        .delete()
+        .eq('chat_id', chatId);
+
+      if (participantsError) throw participantsError;
+
+      // Finally delete the chat
+      const { error: chatError } = await supabase
+        .from('chats')
+        .delete()
+        .eq('id', chatId);
+
+      if (chatError) throw chatError;
+
+      // Update local state
+      setChats(prev => prev.filter(chat => chat.id !== chatId));
+      
+      // Clear selected chat if it was deleted
+      if (selectedChat?.id === chatId) {
+        setSelectedChat(null);
+        setMessages([]);
+        messagesCache.current.delete(chatId);
+      }
+
+      toast({
+        title: "Success",
+        description: "Chat deleted permanently"
+      });
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete chat"
+      });
+    }
+  }, [toast, selectedChat]);
+
   // Add reaction
   const addReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!user) return;
@@ -587,6 +639,7 @@ export const useChat = (): UseChatReturn => {
     deleteMessage,
     archiveChat,
     unarchiveChat,
+    deleteChat,
     addReaction,
     removeReaction,
     loadMoreMessages,

@@ -7,6 +7,7 @@ import {
   Pin, 
   Users, 
   Archive,
+  Trash2,
   MoreHorizontal,
   Hash,
   Lock
@@ -26,13 +27,15 @@ interface ChatListItemProps {
   isSelected: boolean;
   onClick: () => void;
   onArchive: () => void;
+  onDelete: () => void;
 }
 
 export const ChatListItem: React.FC<ChatListItemProps> = ({
   chat,
   isSelected,
   onClick,
-  onArchive
+  onArchive,
+  onDelete
 }) => {
   const { user } = useAuth();
   const getChatDisplayName = () => {
@@ -167,6 +170,18 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
             }}>
               <Archive className="mr-2 h-4 w-4" />
               Archive Chat
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm('Are you sure you want to permanently delete this chat? This action cannot be undone.')) {
+                  onDelete();
+                }
+              }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Chat
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
