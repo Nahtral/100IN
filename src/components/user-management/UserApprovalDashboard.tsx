@@ -3,12 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Check, X, UserCheck, UserX, Eye, Calendar, Mail, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Check, X, UserCheck, UserX, Eye, Calendar, Mail, User, Shield, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import UserDetailsView from './UserDetailsView';
 
@@ -22,10 +25,18 @@ interface PendingUser {
   approved_by?: string;
   approved_at?: string;
   rejection_reason?: string;
+  requested_role?: string;
+}
+
+interface UserRole {
+  role: string;
+  is_active: boolean;
+  approved_at: string | null;
 }
 
 export const UserApprovalDashboard = () => {
   const { isSuperAdmin } = useUserRole();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +44,8 @@ export const UserApprovalDashboard = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
   const [viewDetailsUser, setViewDetailsUser] = useState<PendingUser | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [roleAssignmentReason, setRoleAssignmentReason] = useState('');
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -42,14 +55,34 @@ export const UserApprovalDashboard = () => {
 
   const fetchPendingUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch pending users and their requested roles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .eq('approval_status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPendingUsers((data || []) as PendingUser[]);
+      if (profilesError) throw profilesError;
+
+      // Get requested roles for each user
+      const usersWithRoles = await Promise.all(
+        (profiles || []).map(async (profile) => {
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role, is_active')
+            .eq('user_id', profile.id)
+            .eq('is_active', false)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          return {
+            ...profile,
+            requested_role: roles?.[0]?.role || 'player'
+          };
+        })
+      );
+
+      setPendingUsers(usersWithRoles as PendingUser[]);
     } catch (error) {
       console.error('Error fetching pending users:', error);
       toast({
@@ -81,6 +114,11 @@ export const UserApprovalDashboard = () => {
 
       if (error) throw error;
 
+      // If approved and role is selected, activate the role
+      if (approved && selectedRole) {
+        await assignRoleToUser(userId, selectedRole, roleAssignmentReason || 'Role assigned during approval process');
+      }
+
       toast({
         title: approved ? "User Approved" : "User Rejected",
         description: `User has been ${approved ? 'approved and can now access the platform' : 'rejected'}.`,
@@ -98,6 +136,8 @@ export const UserApprovalDashboard = () => {
       fetchPendingUsers();
       setRejectionReason('');
       setSelectedUser(null);
+      setSelectedRole('');
+      setRoleAssignmentReason('');
     } catch (error) {
       console.error('Error processing approval:', error);
       toast({
@@ -107,6 +147,63 @@ export const UserApprovalDashboard = () => {
       });
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const assignRoleToUser = async (userId: string, role: string, reason: string) => {
+    try {
+      // Check if user already has this role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('role', role as 'player' | 'parent' | 'coach' | 'staff' | 'medical' | 'partner' | 'super_admin')
+        .single();
+
+      if (existingRole) {
+        // Activate existing role
+        const { error: updateError } = await supabase
+          .from('user_roles')
+          .update({ 
+            is_active: true, 
+            approved_by: user?.id,
+            approved_at: new Date().toISOString()
+          })
+          .eq('id', existingRole.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new role
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: role as 'player' | 'parent' | 'coach' | 'staff' | 'medical' | 'partner' | 'super_admin',
+            is_active: true,
+            approved_by: user?.id,
+            approved_at: new Date().toISOString()
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      // Log the role assignment if audit table is available
+      try {
+        await supabase
+          .from('role_change_audit')
+          .insert({
+            user_id: userId,
+            new_role: role,
+            changed_by: user?.id,
+            reason: reason
+          });
+      } catch (auditError) {
+        console.error('Failed to log role assignment:', auditError);
+      }
+
+    } catch (error) {
+      console.error('Error assigning role:', error);
+      throw error;
     }
   };
 
@@ -122,6 +219,12 @@ export const UserApprovalDashboard = () => {
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
+
+  const getRoleDisplayName = (role: string) => {
+    return role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
+  };
+
+  const availableRoles = ['player', 'parent', 'coach', 'staff', 'medical', 'partner'] as const;
 
   if (!isSuperAdmin) {
     return (
@@ -183,12 +286,23 @@ export const UserApprovalDashboard = () => {
                           </div>
                         </div>
 
-                        {user.phone && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-muted-foreground">Phone:</span>
-                            <span>{user.phone}</span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-4 text-sm">
+                          {user.phone && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Phone:</span>
+                              <span>{user.phone}</span>
+                            </div>
+                          )}
+                          {user.requested_role && (
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Requested Role:</span>
+                              <Badge variant="outline" className="text-xs">
+                                {getRoleDisplayName(user.requested_role)}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
@@ -233,28 +347,81 @@ export const UserApprovalDashboard = () => {
                               variant="outline"
                               className="text-green-600 border-green-300 hover:bg-green-50"
                               disabled={actionLoading === user.id}
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setSelectedRole(user.requested_role || 'player');
+                                setRoleAssignmentReason(`Approved as ${getRoleDisplayName(user.requested_role || 'player')}`);
+                              }}
                             >
                               <Check className="h-4 w-4 mr-1" />
-                              Approve
+                              Approve & Assign Role
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="max-w-2xl">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Approve User Access</AlertDialogTitle>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <Settings className="h-5 w-5" />
+                                Approve User & Assign Role
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to approve <strong>{user.full_name}</strong> ({user.email})?
+                                Approve <strong>{user.full_name}</strong> ({user.email}) and assign their role.
                                 <br />
-                                <br />
-                                This will grant them access to the platform and they'll be able to log in.
+                                This will grant them access to the platform with the specified role permissions.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
+                            
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="role-select">Assign Role</Label>
+                                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a role" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {availableRoles.map((role) => (
+                                      <SelectItem key={role} value={role}>
+                                        <div className="flex items-center gap-2">
+                                          <Shield className="h-4 w-4" />
+                                          {getRoleDisplayName(role)}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {user.requested_role && (
+                                  <p className="text-xs text-muted-foreground">
+                                    User requested: {getRoleDisplayName(user.requested_role)}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="role-reason">Role Assignment Reason</Label>
+                                <Textarea
+                                  id="role-reason"
+                                  placeholder="Explain why this role is being assigned..."
+                                  value={roleAssignmentReason}
+                                  onChange={(e) => setRoleAssignmentReason(e.target.value)}
+                                  rows={3}
+                                />
+                              </div>
+                            </div>
+
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel onClick={() => {
+                                setSelectedUser(null);
+                                setSelectedRole('');
+                                setRoleAssignmentReason('');
+                              }}>
+                                Cancel
+                              </AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleApproval(user.id, true)}
                                 className="bg-green-600 hover:bg-green-700"
+                                disabled={!selectedRole || !roleAssignmentReason.trim()}
                               >
-                                Approve User
+                                <Shield className="h-4 w-4 mr-2" />
+                                Approve & Assign Role
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
