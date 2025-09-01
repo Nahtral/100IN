@@ -122,16 +122,26 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
       setRolesLoading(true);
       setPermissionsLoading(true);
 
+      console.log('Fetching roles and permissions for user:', user.id);
+
       // Call the database function to get complete role and permission data
       const { data, error } = await supabase.rpc('get_user_roles_and_permissions', {
         target_user_id: user.id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      console.log('Raw database response:', data);
 
       if (data) {
         // Type cast the data object properly
         const responseData = data as any;
+        
+        console.log('Available roles from DB:', responseData.available_roles);
+        console.log('Available permissions from DB:', responseData.available_permissions);
         
         // Set user's current roles
         const roles = responseData.roles || [];
@@ -146,6 +156,9 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
         // Set available options
         setAvailableRoles(responseData.available_roles || []);
         setAvailablePermissions(responseData.available_permissions || []);
+        
+        console.log('Set available roles:', responseData.available_roles);
+        console.log('Set available permissions:', responseData.available_permissions);
       }
     } catch (error) {
       console.error('Error fetching roles and permissions:', error);
@@ -450,15 +463,16 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
                         <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search roles..." />
-                        <CommandEmpty>No roles found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto">
+                    <PopoverContent className="w-full p-0 bg-background border shadow-lg z-50" align="start">
+                      <Command className="bg-background">
+                        <CommandInput placeholder="Search roles..." className="bg-background" />
+                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">No roles found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto bg-background">
                           {availableRoles.map((role) => (
                             <CommandItem
                               key={role}
                               value={role}
+                              className="bg-background hover:bg-accent cursor-pointer"
                               onSelect={() => {
                                 handleRoleChange(role, !selectedRoles.includes(role));
                               }}
@@ -548,33 +562,33 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
                         <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search permissions..." />
-                        <CommandEmpty>No permissions found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto">
+                    <PopoverContent className="w-full p-0 bg-background border shadow-lg z-50" align="start">
+                      <Command className="bg-background">
+                        <CommandInput placeholder="Search permissions..." className="bg-background" />
+                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">No permissions found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto bg-background">
                           {availablePermissions.map((permission) => {
                             const permissionName = permission.name || permission.permission_name || '';
                             return (
                               <CommandItem
                                 key={permissionName}
                                 value={permissionName}
+                                className="bg-background hover:bg-accent cursor-pointer"
                                 onSelect={() => {
                                   handlePermissionChange(permissionName, !selectedPermissions.includes(permissionName));
                                 }}
-                                className="flex flex-col items-start p-2"
                               >
-                                <div className="flex items-center w-full">
-                                  <Checkbox
-                                    checked={selectedPermissions.includes(permissionName)}
-                                    className="mr-2"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="font-medium">{permissionName.replace('_', ' ')}</div>
-                                    <div className="text-xs text-muted-foreground mt-1">
+                                <Checkbox
+                                  checked={selectedPermissions.includes(permissionName)}
+                                  className="mr-2"
+                                />
+                                <div className="flex flex-col">
+                                  <span>{permissionName.replace('_', ' ')}</span>
+                                  {(permission.description || permission.permission_description) && (
+                                    <span className="text-xs text-muted-foreground">
                                       {permission.description || permission.permission_description}
-                                    </div>
-                                  </div>
+                                    </span>
+                                  )}
                                 </div>
                               </CommandItem>
                             );
