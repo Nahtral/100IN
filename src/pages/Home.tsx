@@ -168,7 +168,7 @@ const Home = () => {
           
           <Card className={`mobile-card text-center ${isSuperAdmin ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}>
             {isSuperAdmin ? (
-              <Link to="/players" className="block">
+              <Link to="/teams" className="block">
                 <CardContent className="mobile-card-content pt-4">
                   <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-primary mx-auto mb-3" />
                   <div className="text-2xl sm:text-3xl font-bold">{quickStats?.totalTeams || 0}</div>
