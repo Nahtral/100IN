@@ -6,10 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { supabase } from '@/integrations/supabase/client';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { cn } from '@/lib/utils';
 import { 
   User, 
   Shield, 
@@ -26,7 +29,9 @@ import {
   Save,
   Plus,
   Minus,
-  Settings
+  Settings,
+  ChevronDown,
+  X
 } from 'lucide-react';
 
 interface UserProfile {
@@ -404,26 +409,74 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
             <CardContent>
               {isEditing ? (
                 <div className="space-y-3">
-                  <ScrollArea className="h-48 border rounded-md p-3">
-                    {availableRoles.map((role) => (
-                      <div key={role} className="flex items-center space-x-2 py-2">
-                        <Checkbox
-                          id={`role-${role}`}
-                          checked={selectedRoles.includes(role)}
-                          onCheckedChange={(checked) => handleRoleChange(role, checked as boolean)}
-                        />
-                        <label
-                          htmlFor={`role-${role}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {formatRoleName(role)}
-                        </label>
-                      </div>
-                    ))}
-                  </ScrollArea>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        role="combobox" 
+                        className="w-full justify-between h-auto min-h-[40px] p-3"
+                        disabled={rolesLoading}
+                      >
+                        <div className="flex flex-wrap gap-1 flex-1">
+                          {selectedRoles.length > 0 ? (
+                            selectedRoles.map((role) => (
+                              <Badge 
+                                key={role} 
+                                variant="secondary" 
+                                className="mr-1 mb-1"
+                              >
+                                {formatRoleName(role)}
+                                <button
+                                  className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      handleRoleChange(role, false);
+                                    }
+                                  }}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }}
+                                  onClick={() => handleRoleChange(role, false)}
+                                >
+                                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                </button>
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground">Select roles...</span>
+                          )}
+                        </div>
+                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search roles..." />
+                        <CommandEmpty>No roles found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {availableRoles.map((role) => (
+                            <CommandItem
+                              key={role}
+                              value={role}
+                              onSelect={() => {
+                                handleRoleChange(role, !selectedRoles.includes(role));
+                              }}
+                            >
+                              <Checkbox
+                                checked={selectedRoles.includes(role)}
+                                className="mr-2"
+                              />
+                              {formatRoleName(role)}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="min-h-[120px] border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 flex flex-wrap gap-2 content-start">
                   {userRoles.filter(r => r.is_active).map((roleObj) => (
                     <Badge 
                       key={roleObj.role} 
@@ -433,7 +486,9 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
                     </Badge>
                   ))}
                   {userRoles.filter(r => r.is_active).length === 0 && (
-                    <p className="text-muted-foreground">No active roles assigned</p>
+                    <div className="flex items-center justify-center w-full h-full text-muted-foreground">
+                      No active roles assigned
+                    </div>
                   )}
                 </div>
               )}
@@ -447,48 +502,108 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
             <CardContent>
               {isEditing ? (
                 <div className="space-y-3">
-                  <ScrollArea className="h-64 border rounded-md p-3">
-                    {availablePermissions.map((permission) => (
-                      <div key={permission.name || permission.permission_name} className="flex items-start space-x-2 py-2">
-                        <Checkbox
-                          id={`perm-${permission.name || permission.permission_name}`}
-                          checked={selectedPermissions.includes(permission.name || permission.permission_name || '')}
-                          onCheckedChange={(checked) => handlePermissionChange(permission.name || permission.permission_name || '', checked as boolean)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <label
-                            htmlFor={`perm-${permission.name || permission.permission_name}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {(permission.name || permission.permission_name || '').replace('_', ' ')}
-                          </label>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {permission.description || permission.permission_description}
-                          </p>
-                          <Badge variant="outline" className="text-xs mt-1">
-                            {permission.category || 'general'}
-                          </Badge>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        role="combobox" 
+                        className="w-full justify-between h-auto min-h-[40px] p-3"
+                        disabled={permissionsLoading}
+                      >
+                        <div className="flex flex-wrap gap-1 flex-1">
+                          {selectedPermissions.length > 0 ? (
+                            selectedPermissions.map((permissionName) => {
+                              const permission = availablePermissions.find(p => 
+                                (p.name || p.permission_name) === permissionName
+                              );
+                              return (
+                                <Badge 
+                                  key={permissionName} 
+                                  variant="secondary" 
+                                  className="mr-1 mb-1"
+                                >
+                                  {permissionName.replace('_', ' ')}
+                                  <button
+                                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        handlePermissionChange(permissionName, false);
+                                      }
+                                    }}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
+                                    onClick={() => handlePermissionChange(permissionName, false)}
+                                  >
+                                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                  </button>
+                                </Badge>
+                              );
+                            })
+                          ) : (
+                            <span className="text-muted-foreground">Select permissions...</span>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                  </ScrollArea>
+                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search permissions..." />
+                        <CommandEmpty>No permissions found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {availablePermissions.map((permission) => {
+                            const permissionName = permission.name || permission.permission_name || '';
+                            return (
+                              <CommandItem
+                                key={permissionName}
+                                value={permissionName}
+                                onSelect={() => {
+                                  handlePermissionChange(permissionName, !selectedPermissions.includes(permissionName));
+                                }}
+                                className="flex flex-col items-start p-2"
+                              >
+                                <div className="flex items-center w-full">
+                                  <Checkbox
+                                    checked={selectedPermissions.includes(permissionName)}
+                                    className="mr-2"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="font-medium">{permissionName.replace('_', ' ')}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      {permission.description || permission.permission_description}
+                                    </div>
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {userPermissions.filter(p => p.is_active).map((perm, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{perm.permission_name.replace('_', ' ')}</p>
-                        <p className="text-sm text-muted-foreground">{perm.permission_description}</p>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {perm.source || 'direct'}
-                      </Badge>
+                <div className="min-h-[120px] border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                  {userPermissions.filter(p => p.is_active).length > 0 ? (
+                    <div className="space-y-2">
+                      {userPermissions.filter(p => p.is_active).map((perm, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{perm.permission_name.replace('_', ' ')}</p>
+                            <p className="text-xs text-muted-foreground">{perm.permission_description}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs ml-2">
+                            {perm.source || 'direct'}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  {userPermissions.filter(p => p.is_active).length === 0 && (
-                    <p className="text-muted-foreground">No permissions assigned</p>
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full text-muted-foreground">
+                      No permissions assigned
+                    </div>
                   )}
                 </div>
               )}
