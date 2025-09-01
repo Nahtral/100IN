@@ -94,7 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       try {
         const emailResponse = await resend.emails.send({
-          from: "Health Team <health@resend.dev>",
+          from: "Panthers Health Team <health@100in.app>",
           to: [parent.email],
           subject: `${communicationIcon} ${subject} - ${player.profiles.full_name}`,
           html: `

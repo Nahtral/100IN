@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     const emailResponse = await resend.emails.send({
-      from: "Panthers Court <noreply@yourdomain.com>", // Update this with your actual domain
+      from: "Panthers Court <noreply@100in.app>",
       to: Array.isArray(to) ? to : [to],
       subject: subject,
       html: getEmailHTML(),
