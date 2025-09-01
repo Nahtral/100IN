@@ -16,6 +16,12 @@ const config: CapacitorConfig = {
       style: 'Dark',
       backgroundColor: '#000000',
       overlaysWebView: false
+    },
+    SplashScreen: {
+      launchShowDuration: 0,
+      backgroundColor: '#000000',
+      androidSpinnerStyle: 'small',
+      iosSpinnerStyle: 'small'
     }
   }
 };

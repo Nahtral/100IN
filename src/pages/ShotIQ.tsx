@@ -5,7 +5,7 @@ import ShotIQSettings from '@/components/shotiq/settings/ShotIQSettings';
 import TrainingHistory from '@/components/shotiq/history/TrainingHistory';
 import InteractiveCourtHeatmap from '@/components/shotiq/analytics/InteractiveCourtHeatmap';
 import AdvancedCharts from '@/components/shotiq/analytics/AdvancedCharts';
-import ShotTracker from '@/components/shotiq/ShotTracker';
+import EnhancedShotTracker from '@/components/shotiq/EnhancedShotTracker';
 import VideoLogger from '@/components/shotiq/VideoLogger';
 import { VideoUploader } from '@/components/shotiq/VideoUploader';
 import ShotSessionModal from '@/components/shotiq/ShotSessionModal';
@@ -568,7 +568,7 @@ const ShotIQ = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Shot Tracker Component */}
             <div className="lg:col-span-2 space-y-6">
-              <ShotTracker
+              <EnhancedShotTracker
                 playerId={selectedPlayer || ''}
                 onShotTracked={(shot) => {
                   setRealtimeAnalysis({
