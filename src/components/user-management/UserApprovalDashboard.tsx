@@ -156,7 +156,11 @@ export const UserApprovalDashboard = () => {
           ) : (
             <div className="space-y-4">
               {pendingUsers.map((user) => (
-                <Card key={user.id} className="border-l-4 border-l-yellow-400">
+                <Card 
+                  key={user.id} 
+                  className="border-l-4 border-l-yellow-400 cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => setViewDetailsUser(user)}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="space-y-3 flex-1">
@@ -187,14 +191,17 @@ export const UserApprovalDashboard = () => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               size="sm"
                               variant="outline"
                               className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                              onClick={() => setViewDetailsUser(user)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setViewDetailsUser(user);
+                              }}
                             >
                               <Eye className="h-4 w-4 mr-1" />
                               View Details
