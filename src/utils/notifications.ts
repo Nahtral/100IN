@@ -85,8 +85,8 @@ export const sendWelcomeEmail = async (
 ) => {
   return sendNotification({
     to: recipient,
-    subject: '🏀 Welcome to Panthers Court!',
-    message: `Hello ${userName},\n\nWelcome to the Panthers Court basketball management system! You can now access your dashboard, view schedules, and stay connected with your team.\n\nIf you have any questions, please don't hesitate to reach out to your coach or team administrator.`,
+    subject: '🏀 Welcome to 100IN!',
+    message: `Hello ${userName},\n\nWelcome to the 100IN basketball management system! You can now access your dashboard, view schedules, and stay connected with your team.\n\nIf you have any questions, please don't hesitate to reach out to your coach or team administrator.`,
     type: 'welcome'
   });
 };

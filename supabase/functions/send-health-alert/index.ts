@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       try {
         const emailResponse = await resend.emails.send({
-          from: "Health Alert <alerts@resend.dev>",
+          from: "100IN Health Alert <health@100in.app>",
           to: uniqueEmails,
           subject: `🚨 ${subject}`,
           html: `

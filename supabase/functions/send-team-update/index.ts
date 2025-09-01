@@ -150,7 +150,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       try {
         const emailResponse = await resend.emails.send({
-          from: "Team Update <updates@resend.dev>",
+          from: "100IN Team Updates <updates@100in.app>",
           to: uniqueEmails,
           subject: `${updateIcon} ${subject}`,
           html: `

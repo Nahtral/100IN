@@ -39,14 +39,14 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
           <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <div style="background: linear-gradient(135deg, #FF2A2A, #002d72); color: white; padding: 30px 20px; text-align: center;">
-              <h1 style="color: #B38F54; font-weight: bold; font-size: 24px; margin: 0; text-shadow: 1px 1px 0px #B38F54;">🏀 Panthers Court</h1>
+              <h1 style="color: #B38F54; font-weight: bold; font-size: 24px; margin: 0; text-shadow: 1px 1px 0px #B38F54;">🏀 100IN</h1>
               <p style="margin: 5px 0 0 0; opacity: 0.9;">Basketball Management System</p>
             </div>
       `;
 
       const footer = `
             <div style="background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px;">
-              <p style="margin: 0;">Panthers Court Management System</p>
+              <p style="margin: 0;">100IN Management System</p>
               <p style="margin: 5px 0 0 0;">This email was sent automatically. Please do not reply.</p>
             </div>
           </div>
@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     const emailResponse = await resend.emails.send({
-      from: "Panthers Court <noreply@100in.app>",
+      from: "100IN <noreply@100in.app>",
       to: Array.isArray(to) ? to : [to],
       subject: subject,
       html: getEmailHTML(),

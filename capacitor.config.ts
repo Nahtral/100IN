@@ -1,11 +1,11 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.9a7df55ccf114367ab0d5ed7f247add9',
-  appName: 'panthers-court-vision',
+  appId: 'app.100in.basketball',
+  appName: '100in-basketball',
   webDir: 'dist',
   server: {
-    url: 'https://9a7df55c-cf11-4367-ab0d-5ed7f247add9.lovableproject.com?forceHideBadge=true',
+    url: 'https://100in.app',
     cleartext: true
   },
   plugins: {
@@ -14,12 +14,12 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'Dark',
-      backgroundColor: '#000000',
+      backgroundColor: '#FF2A2A',
       overlaysWebView: false
     },
     SplashScreen: {
       launchShowDuration: 0,
-      backgroundColor: '#000000',
+      backgroundColor: '#FF2A2A',
       androidSpinnerStyle: 'small',
       iosSpinnerStyle: 'small'
     }
