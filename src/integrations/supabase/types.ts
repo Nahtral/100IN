@@ -4263,6 +4263,23 @@ export type Database = {
       }
     }
     Functions: {
+      assign_user_permission: {
+        Args: {
+          assigned_by_user_id?: string
+          assignment_reason?: string
+          permission_name: string
+          target_user_id: string
+        }
+        Returns: Json
+      }
+      assign_user_role: {
+        Args: {
+          assigned_by_user_id?: string
+          target_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
+        }
+        Returns: Json
+      }
       cleanup_old_notifications: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -4375,6 +4392,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string
       }
+      get_user_roles_and_permissions: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -4421,6 +4442,22 @@ export type Database = {
       mask_sensitive_email: {
         Args: { email_input: string }
         Returns: string
+      }
+      remove_user_permission: {
+        Args: {
+          permission_name: string
+          removed_by_user_id?: string
+          target_user_id: string
+        }
+        Returns: Json
+      }
+      remove_user_role: {
+        Args: {
+          removed_by_user_id?: string
+          target_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
+        }
+        Returns: Json
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }

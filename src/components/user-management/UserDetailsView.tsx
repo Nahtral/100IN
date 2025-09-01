@@ -3,8 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { 
   User, 
   Shield, 
@@ -17,7 +22,11 @@ import {
   LogIn,
   Database,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Save,
+  Plus,
+  Minus,
+  Settings
 } from 'lucide-react';
 
 interface UserProfile {
@@ -34,6 +43,22 @@ interface UserProfile {
     permission_description: string;
     source: string;
   }>;
+}
+
+interface Role {
+  role: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface Permission {
+  permission_name: string;
+  permission_description: string;
+  source: string;
+  is_active: boolean;
+  name?: string;
+  description?: string;
+  category?: string;
 }
 
 interface AuditLog {
@@ -54,10 +79,25 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [accountStatus, setAccountStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
+  
+  // Role and permission management state
+  const [userRoles, setUserRoles] = useState<Role[]>([]);
+  const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+
   const { activities, loading: activitiesLoading, refreshActivities } = useActivityTracking(user.id);
+  const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
 
   useEffect(() => {
     fetchUserData();
+    fetchRolesAndPermissions();
   }, [user.id]);
 
   const fetchUserData = async () => {
@@ -70,6 +110,155 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRolesAndPermissions = async () => {
+    try {
+      setRolesLoading(true);
+      setPermissionsLoading(true);
+
+      // Call the database function to get complete role and permission data
+      const { data, error } = await supabase.rpc('get_user_roles_and_permissions', {
+        target_user_id: user.id
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        // Type cast the data object properly
+        const responseData = data as any;
+        
+        // Set user's current roles
+        const roles = responseData.roles || [];
+        setUserRoles(roles);
+        setSelectedRoles(roles.filter((r: any) => r.is_active).map((r: any) => r.role));
+
+        // Set user's current permissions
+        const permissions = responseData.permissions || [];
+        setUserPermissions(permissions.filter((p: any) => p.is_active));
+        setSelectedPermissions(permissions.filter((p: any) => p.is_active).map((p: any) => p.permission_name));
+
+        // Set available options
+        setAvailableRoles(responseData.available_roles || []);
+        setAvailablePermissions(responseData.available_permissions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching roles and permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load role and permission data",
+        variant: "destructive",
+      });
+    } finally {
+      setRolesLoading(false);
+      setPermissionsLoading(false);
+    }
+  };
+
+  const handleRoleChange = (roleName: string, checked: boolean) => {
+    if (checked) {
+      setSelectedRoles(prev => [...prev, roleName]);
+    } else {
+      setSelectedRoles(prev => prev.filter(role => role !== roleName));
+    }
+  };
+
+  const handlePermissionChange = (permissionName: string, checked: boolean) => {
+    if (checked) {
+      setSelectedPermissions(prev => [...prev, permissionName]);
+    } else {
+      setSelectedPermissions(prev => prev.filter(perm => perm !== permissionName));
+    }
+  };
+
+  const saveRolesAndPermissions = async () => {
+    try {
+      setRolesLoading(true);
+      setPermissionsLoading(true);
+
+      // Get current active roles
+      const currentRoles = userRoles.filter(r => r.is_active).map(r => r.role);
+      
+      // Get current active permissions
+      const currentPermissions = userPermissions.filter(p => p.is_active).map(p => p.permission_name);
+
+      // Handle role changes
+      const rolesToAdd = selectedRoles.filter(role => !currentRoles.includes(role));
+      const rolesToRemove = currentRoles.filter(role => !selectedRoles.includes(role));
+
+      // Handle permission changes
+      const permissionsToAdd = selectedPermissions.filter(perm => !currentPermissions.includes(perm));
+      const permissionsToRemove = currentPermissions.filter(perm => !selectedPermissions.includes(perm));
+
+      // Execute role assignments
+      for (const role of rolesToAdd) {
+        const { error } = await supabase.rpc('assign_user_role', {
+          target_user_id: user.id,
+          target_role: role as any
+        });
+        if (error) throw error;
+      }
+
+      // Execute role removals
+      for (const role of rolesToRemove) {
+        const { error } = await supabase.rpc('remove_user_role', {
+          target_user_id: user.id,
+          target_role: role as any
+        });
+        if (error) throw error;
+      }
+
+      // Execute permission assignments
+      for (const permission of permissionsToAdd) {
+        const { error } = await supabase.rpc('assign_user_permission', {
+          target_user_id: user.id,
+          permission_name: permission
+        });
+        if (error) throw error;
+      }
+
+      // Execute permission removals
+      for (const permission of permissionsToRemove) {
+        const { error } = await supabase.rpc('remove_user_permission', {
+          target_user_id: user.id,
+          permission_name: permission
+        });
+        if (error) throw error;
+      }
+
+      // Refresh data and exit edit mode
+      await fetchRolesAndPermissions();
+      setIsEditing(false);
+
+      toast({
+        title: "Success",
+        description: "Roles and permissions updated successfully",
+      });
+
+    } catch (error) {
+      console.error('Error saving roles and permissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update roles and permissions",
+        variant: "destructive",
+      });
+    } finally {
+      setRolesLoading(false);
+      setPermissionsLoading(false);
+    }
+  };
+
+  const cancelEditing = () => {
+    // Reset selections to current state
+    setSelectedRoles(userRoles.filter(r => r.is_active).map(r => r.role));
+    setSelectedPermissions(userPermissions.filter(p => p.is_active).map(p => p.permission_name));
+    setIsEditing(false);
+  };
+
+  const formatRoleName = (role: string) => {
+    return role.replace('_', ' ').split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
   };
 
   const formatDate = (dateString: string) => {
@@ -168,48 +357,141 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
 
         {/* Roles & Permissions Tab */}
         <TabsContent value="roles" className="space-y-4">
+          {isSuperAdmin && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                <span className="text-sm font-medium">Role & Permission Management</span>
+              </div>
+              <div className="flex gap-2">
+                {!isEditing ? (
+                  <Button 
+                    onClick={() => setIsEditing(true)} 
+                    size="sm"
+                    disabled={rolesLoading || permissionsLoading}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={cancelEditing} 
+                      variant="outline" 
+                      size="sm"
+                      disabled={rolesLoading || permissionsLoading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={saveRolesAndPermissions} 
+                      size="sm"
+                      disabled={rolesLoading || permissionsLoading}
+                    >
+                      <Save className="w-4 w-4 mr-2" />
+                      {rolesLoading || permissionsLoading ? 'Saving...' : 'Save'}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Current Roles</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {user.roles.filter(r => r.is_active).map((roleObj) => (
-                  <Badge 
-                    key={roleObj.role} 
-                    variant={roleObj.role === 'super_admin' ? 'default' : 'secondary'}
-                  >
-                    {roleObj.role === 'super_admin' ? 'Super Admin' : roleObj.role}
-                  </Badge>
-                ))}
-                {user.roles.filter(r => r.is_active).length === 0 && (
-                  <p className="text-muted-foreground">No active roles assigned</p>
-                )}
-              </div>
+              {isEditing ? (
+                <div className="space-y-3">
+                  <ScrollArea className="h-48 border rounded-md p-3">
+                    {availableRoles.map((role) => (
+                      <div key={role} className="flex items-center space-x-2 py-2">
+                        <Checkbox
+                          id={`role-${role}`}
+                          checked={selectedRoles.includes(role)}
+                          onCheckedChange={(checked) => handleRoleChange(role, checked as boolean)}
+                        />
+                        <label
+                          htmlFor={`role-${role}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {formatRoleName(role)}
+                        </label>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {userRoles.filter(r => r.is_active).map((roleObj) => (
+                    <Badge 
+                      key={roleObj.role} 
+                      variant={roleObj.role === 'super_admin' ? 'default' : 'secondary'}
+                    >
+                      {formatRoleName(roleObj.role)}
+                    </Badge>
+                  ))}
+                  {userRoles.filter(r => r.is_active).length === 0 && (
+                    <p className="text-muted-foreground">No active roles assigned</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Permissions ({user.permissions.length})</CardTitle>
+              <CardTitle>Permissions ({userPermissions.filter(p => p.is_active).length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {user.permissions.map((perm, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{perm.permission_name.replace('_', ' ')}</p>
-                      <p className="text-sm text-muted-foreground">{perm.permission_description}</p>
+              {isEditing ? (
+                <div className="space-y-3">
+                  <ScrollArea className="h-64 border rounded-md p-3">
+                    {availablePermissions.map((permission) => (
+                      <div key={permission.name || permission.permission_name} className="flex items-start space-x-2 py-2">
+                        <Checkbox
+                          id={`perm-${permission.name || permission.permission_name}`}
+                          checked={selectedPermissions.includes(permission.name || permission.permission_name || '')}
+                          onCheckedChange={(checked) => handlePermissionChange(permission.name || permission.permission_name || '', checked as boolean)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <label
+                            htmlFor={`perm-${permission.name || permission.permission_name}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {(permission.name || permission.permission_name || '').replace('_', ' ')}
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {permission.description || permission.permission_description}
+                          </p>
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {permission.category || 'general'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {userPermissions.filter(p => p.is_active).map((perm, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{perm.permission_name.replace('_', ' ')}</p>
+                        <p className="text-sm text-muted-foreground">{perm.permission_description}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {perm.source || 'direct'}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      {perm.source}
-                    </Badge>
-                  </div>
-                ))}
-                {user.permissions.length === 0 && (
-                  <p className="text-muted-foreground">No permissions assigned</p>
-                )}
-              </div>
+                  ))}
+                  {userPermissions.filter(p => p.is_active).length === 0 && (
+                    <p className="text-muted-foreground">No permissions assigned</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
