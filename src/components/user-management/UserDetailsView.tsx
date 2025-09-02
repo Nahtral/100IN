@@ -7,12 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { supabase } from '@/integrations/supabase/client';
-import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
-import { cn } from '@/lib/utils';
 import { 
   User, 
   Shield, 
@@ -28,30 +24,22 @@ import {
   RefreshCw,
   Save,
   Plus,
-  Minus,
-  Settings,
   ChevronDown,
-  X
+  X,
+  Edit
 } from 'lucide-react';
 
 interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  phone?: string;
   created_at: string;
-  roles: Array<{
-    role: string;
-    is_active: boolean;
-  }>;
-  permissions: Array<{
-    permission_name: string;
-    permission_description: string;
-    source: string;
-  }>;
+  approval_status: string;
 }
 
 interface Role {
-  role: string;
+  role: 'super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medical' | 'partner';
   is_active: boolean;
   created_at: string;
 }
@@ -66,56 +54,25 @@ interface Permission {
   category?: string;
 }
 
-interface AuditLog {
-  id: string;
-  user_id: string;
-  old_role?: string;
-  new_role?: string;
-  changed_by: string;
-  reason: string;
-  created_at: string;
-}
-
 interface UserDetailsViewProps {
   user: UserProfile;
+  onClose: () => void;
 }
 
-const UserDetailsView = ({ user }: UserDetailsViewProps) => {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [accountStatus, setAccountStatus] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [rolesLoading, setRolesLoading] = useState(false);
-  const [permissionsLoading, setPermissionsLoading] = useState(false);
-  
-  // Role and permission management state
+export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose }) => {
   const [userRoles, setUserRoles] = useState<Role[]>([]);
   const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<('super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medical' | 'partner')[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-
-  const { activities, loading: activitiesLoading, refreshActivities } = useActivityTracking(user.id);
+  const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isSuperAdmin } = useUserRole();
-
-  useEffect(() => {
-    fetchUserData();
-    fetchRolesAndPermissions();
-  }, [user.id]);
-
-  const fetchUserData = async () => {
-    try {
-      // For now, use mock data until tables are available in types
-      setAuditLogs([]);
-      setAccountStatus(null);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchRolesAndPermissions = async () => {
     try {
@@ -124,7 +81,7 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
 
       console.log('Fetching roles and permissions for user:', user.id);
 
-      // Fetch user roles directly - avoiding the problematic RPC function
+      // Fetch user roles directly
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('role, is_active, created_at')
@@ -169,201 +126,138 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
       setAvailableRoles(['super_admin', 'staff', 'coach', 'player', 'parent', 'medical', 'partner']);
       setAvailablePermissions(permissions);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching roles and permissions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load role and permission data",
-        variant: "destructive",
-      });
+      setError(`Failed to load role and permission data: ${error?.message || 'Unknown error'}`);
+      
+      // Set empty arrays on error
+      setUserRoles([]);
+      setUserPermissions([]);
+      setAvailableRoles(['super_admin', 'staff', 'coach', 'player', 'parent', 'medical', 'partner']);
+      setAvailablePermissions([]);
     } finally {
       setRolesLoading(false);
       setPermissionsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleRoleChange = (roleName: string, checked: boolean) => {
+  useEffect(() => {
+    fetchRolesAndPermissions();
+  }, [user.id]);
+
+  const handleRoleChange = (role: string, checked: boolean) => {
     if (checked) {
-      setSelectedRoles(prev => [...prev, roleName]);
+      setSelectedRoles([...selectedRoles, role]);
     } else {
-      setSelectedRoles(prev => prev.filter(role => role !== roleName));
+      setSelectedRoles(selectedRoles.filter(r => r !== role));
     }
   };
 
-  const handlePermissionChange = (permissionName: string, checked: boolean) => {
+  const handlePermissionChange = (permission: string, checked: boolean) => {
     if (checked) {
-      setSelectedPermissions(prev => [...prev, permissionName]);
+      setSelectedPermissions([...selectedPermissions, permission]);
     } else {
-      setSelectedPermissions(prev => prev.filter(perm => perm !== permissionName));
+      setSelectedPermissions(selectedPermissions.filter(p => p !== permission));
     }
   };
 
   const saveRolesAndPermissions = async () => {
     try {
-      setRolesLoading(true);
-      setPermissionsLoading(true);
+      setSaving(true);
 
-      // Get current active roles
-      const currentRoles = userRoles.filter(r => r.is_active).map(r => r.role);
-      
-      // Get current active permissions
-      const currentPermissions = userPermissions.filter(p => p.is_active).map(p => p.permission_name);
-
-      // Handle role changes
-      const rolesToAdd = selectedRoles.filter(role => !currentRoles.includes(role));
-      const rolesToRemove = currentRoles.filter(role => !selectedRoles.includes(role));
-
-      // Handle permission changes
-      const permissionsToAdd = selectedPermissions.filter(perm => !currentPermissions.includes(perm));
-      const permissionsToRemove = currentPermissions.filter(perm => !selectedPermissions.includes(perm));
-
-      // Execute role assignments
-      for (const role of rolesToAdd) {
-        const { error } = await supabase.rpc('assign_user_role', {
+      // Save roles
+      for (const role of selectedRoles) {
+        await supabase.rpc('assign_user_role', {
           target_user_id: user.id,
-          target_role: role as any
+          target_role: role as 'super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medical' | 'partner'
         });
-        if (error) throw error;
       }
 
-      // Execute role removals
-      for (const role of rolesToRemove) {
-        const { error } = await supabase.rpc('remove_user_role', {
-          target_user_id: user.id,
-          target_role: role as any
-        });
-        if (error) throw error;
-      }
-
-      // Execute permission assignments
-      for (const permission of permissionsToAdd) {
-        const { error } = await supabase.rpc('assign_user_permission', {
+      // Save permissions
+      for (const permission of selectedPermissions) {
+        await supabase.rpc('assign_user_permission', {
           target_user_id: user.id,
           permission_name: permission
         });
-        if (error) throw error;
       }
-
-      // Execute permission removals
-      for (const permission of permissionsToRemove) {
-        const { error } = await supabase.rpc('remove_user_permission', {
-          target_user_id: user.id,
-          permission_name: permission
-        });
-        if (error) throw error;
-      }
-
-      // Refresh data and exit edit mode
-      await fetchRolesAndPermissions();
-      setIsEditing(false);
 
       toast({
         title: "Success",
-        description: "Roles and permissions updated successfully",
+        description: "Roles and permissions updated successfully"
       });
 
-    } catch (error) {
+      setIsEditing(false);
+      await fetchRolesAndPermissions();
+    } catch (error: any) {
       console.error('Error saving roles and permissions:', error);
       toast({
         title: "Error",
-        description: "Failed to update roles and permissions",
-        variant: "destructive",
+        description: `Failed to save: ${error?.message || 'Unknown error'}`,
+        variant: "destructive"
       });
     } finally {
-      setRolesLoading(false);
-      setPermissionsLoading(false);
+      setSaving(false);
     }
   };
 
-  const cancelEditing = () => {
-    // Reset selections to current state
-    setSelectedRoles(userRoles.filter(r => r.is_active).map(r => r.role));
-    setSelectedPermissions(userPermissions.filter(p => p.is_active).map(p => p.permission_name));
-    setIsEditing(false);
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading user details...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const formatRoleName = (role: string) => {
-    return role.replace('_', ' ').split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'archived': return 'secondary';
-      case 'suspended': return 'destructive';
-      case 'deleted': return 'destructive';
-      default: return 'outline';
-    }
-  };
-
-  const getActivityIcon = (iconName: string) => {
-    const iconMap: { [key: string]: any } = {
-      LogIn,
-      Shield,
-      User,
-      Eye,
-      Database,
-      AlertTriangle,
-      Activity,
-      Clock
-    };
-    return iconMap[iconName] || Clock;
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'Authentication': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'Permissions': return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'Account': return 'bg-green-50 text-green-700 border-green-200';
-      case 'Data Access': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'Security': return 'bg-red-50 text-red-700 border-red-200';
-      case 'Navigation': return 'bg-gray-50 text-gray-700 border-gray-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* User Overview */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            User Overview
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              User Overview
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-              <p className="text-lg">{user.full_name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Email</p>
-              <p className="text-lg">{user.email}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Account Created</p>
-              <p className="text-lg">{formatDate(user.created_at)}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Account Status</p>
-              <Badge variant={getStatusColor(accountStatus?.status || 'active')}>
-                {accountStatus?.status || 'Active'}
-              </Badge>
-            </div>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium text-muted-foreground mb-1">Full Name</h4>
+            <p className="text-lg">{user.full_name}</p>
+          </div>
+          <div>
+            <h4 className="font-medium text-muted-foreground mb-1">Email</h4>
+            <p className="text-lg">{user.email}</p>
+          </div>
+          <div>
+            <h4 className="font-medium text-muted-foreground mb-1">Account Created</h4>
+            <p className="text-lg">{new Date(user.created_at).toLocaleDateString()}</p>
+          </div>
+          <div>
+            <h4 className="font-medium text-muted-foreground mb-1">Account Status</h4>
+            <Badge variant={user.approval_status === 'approved' ? 'default' : 'secondary'}>
+              {user.approval_status}
+            </Badge>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="roles" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full">
+      {/* Role and Permission Management */}
+      <Tabs defaultValue="roles" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="roles" className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
             Roles & Permissions
@@ -376,418 +270,286 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
             <FileText className="w-4 h-4" />
             Audit Log
           </TabsTrigger>
-          <TabsTrigger value="status" className="flex items-center gap-2">
+          <TabsTrigger value="account" className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
             Account Status
           </TabsTrigger>
         </TabsList>
 
-        {/* Roles & Permissions Tab */}
         <TabsContent value="roles" className="space-y-4">
-          {isSuperAdmin && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                <span className="text-sm font-medium">Role & Permission Management</span>
-              </div>
-              <div className="flex gap-2">
-                {!isEditing ? (
-                  <Button 
-                    onClick={() => setIsEditing(true)} 
-                    size="sm"
-                    disabled={rolesLoading || permissionsLoading}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                ) : (
-                  <>
-                    <Button 
-                      onClick={cancelEditing} 
-                      variant="outline" 
-                      size="sm"
-                      disabled={rolesLoading || permissionsLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={saveRolesAndPermissions} 
-                      size="sm"
-                      disabled={rolesLoading || permissionsLoading}
-                    >
-                      <Save className="w-4 w-4 mr-2" />
-                      {rolesLoading || permissionsLoading ? 'Saving...' : 'Save'}
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Current Roles</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isEditing ? (
-                <div className="space-y-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        role="combobox" 
-                        className="w-full justify-between h-auto min-h-[40px] p-3"
-                        disabled={rolesLoading}
-                      >
-                        <div className="flex flex-wrap gap-1 flex-1">
-                          {selectedRoles.length > 0 ? (
-                            selectedRoles.map((role) => (
-                              <Badge 
-                                key={role} 
-                                variant="secondary" 
-                                className="mr-1 mb-1"
-                              >
-                                {formatRoleName(role)}
-                                <button
-                                  className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      handleRoleChange(role, false);
-                                    }
-                                  }}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                  }}
-                                  onClick={() => handleRoleChange(role, false)}
-                                >
-                                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                </button>
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-muted-foreground">Select roles...</span>
-                          )}
-                        </div>
-                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 bg-background border shadow-lg z-50" align="start">
-                      <Command className="bg-background">
-                        <CommandInput placeholder="Search roles..." className="bg-background" />
-                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">No roles found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto bg-background">
-                          {availableRoles.map((role) => (
-                            <CommandItem
-                              key={role}
-                              value={role}
-                              className="bg-background hover:bg-accent cursor-pointer"
-                              onSelect={() => {
-                                handleRoleChange(role, !selectedRoles.includes(role));
-                              }}
-                            >
-                              <Checkbox
-                                checked={selectedRoles.includes(role)}
-                                className="mr-2"
-                              />
-                              {formatRoleName(role)}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              ) : (
-                <div className="min-h-[120px] border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 flex flex-wrap gap-2 content-start">
-                  {userRoles.filter(r => r.is_active).map((roleObj) => (
-                    <Badge 
-                      key={roleObj.role} 
-                      variant={roleObj.role === 'super_admin' ? 'default' : 'secondary'}
-                    >
-                      {formatRoleName(roleObj.role)}
-                    </Badge>
-                  ))}
-                  {userRoles.filter(r => r.is_active).length === 0 && (
-                    <div className="flex items-center justify-center w-full h-full text-muted-foreground">
-                      No active roles assigned
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Permissions ({userPermissions.filter(p => p.is_active).length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isEditing ? (
-                <div className="space-y-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        role="combobox" 
-                        className="w-full justify-between h-auto min-h-[40px] p-3"
-                        disabled={permissionsLoading}
-                      >
-                        <div className="flex flex-wrap gap-1 flex-1">
-                          {selectedPermissions.length > 0 ? (
-                            selectedPermissions.map((permissionName) => {
-                              const permission = availablePermissions.find(p => 
-                                (p.name || p.permission_name) === permissionName
-                              );
-                              return (
-                                <Badge 
-                                  key={permissionName} 
-                                  variant="secondary" 
-                                  className="mr-1 mb-1"
-                                >
-                                  {permissionName.replace('_', ' ')}
-                                  <button
-                                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        handlePermissionChange(permissionName, false);
-                                      }
-                                    }}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                    }}
-                                    onClick={() => handlePermissionChange(permissionName, false)}
-                                  >
-                                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                  </button>
-                                </Badge>
-                              );
-                            })
-                          ) : (
-                            <span className="text-muted-foreground">Select permissions...</span>
-                          )}
-                        </div>
-                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 bg-background border shadow-lg z-50" align="start">
-                      <Command className="bg-background">
-                        <CommandInput placeholder="Search permissions..." className="bg-background" />
-                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">No permissions found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto bg-background">
-                          {availablePermissions.map((permission) => {
-                            const permissionName = permission.name || permission.permission_name || '';
-                            return (
-                              <CommandItem
-                                key={permissionName}
-                                value={permissionName}
-                                className="bg-background hover:bg-accent cursor-pointer"
-                                onSelect={() => {
-                                  handlePermissionChange(permissionName, !selectedPermissions.includes(permissionName));
-                                }}
-                              >
-                                <Checkbox
-                                  checked={selectedPermissions.includes(permissionName)}
-                                  className="mr-2"
-                                />
-                                <div className="flex flex-col">
-                                  <span>{permissionName.replace('_', ' ')}</span>
-                                  {(permission.description || permission.permission_description) && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {permission.description || permission.permission_description}
-                                    </span>
-                                  )}
-                                </div>
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              ) : (
-                <div className="min-h-[120px] border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                  {userPermissions.filter(p => p.is_active).length > 0 ? (
-                    <div className="space-y-2">
-                      {userPermissions.filter(p => p.is_active).map((perm, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{perm.permission_name.replace('_', ' ')}</p>
-                            <p className="text-xs text-muted-foreground">{perm.permission_description}</p>
-                          </div>
-                          <Badge variant="outline" className="text-xs ml-2">
-                            {perm.source || 'direct'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full text-muted-foreground">
-                      No permissions assigned
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Recent Activity
+                  <Shield className="w-5 h-5" />
+                  Role & Permission Management
                 </CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={refreshActivities}
-                  disabled={activitiesLoading}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${activitiesLoading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isEditing ? (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setIsEditing(false);
+                          setSelectedRoles(userRoles.filter(r => r.is_active).map(r => r.role));
+                          setSelectedPermissions([]);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={saveRolesAndPermissions}
+                        disabled={saving}
+                      >
+                        {saving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        Save
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" onClick={() => setIsEditing(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
-              {activitiesLoading ? (
-                <div className="text-center py-8">
-                  <Clock className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-                  <p className="text-muted-foreground">Loading activity data...</p>
-                </div>
-              ) : activities.length > 0 ? (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {activities.map((activity) => {
-                    const IconComponent = getActivityIcon(activity.icon);
-                    return (
-                      <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="mt-1">
-                          <IconComponent className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-medium truncate">{activity.description}</p>
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs whitespace-nowrap ${getCategoryColor(activity.category)}`}
-                            >
-                              {activity.category}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <time className="text-xs text-muted-foreground">
-                              {new Date(activity.created_at).toLocaleString()}
-                            </time>
-                            {activity.event_data?.url && (
-                              <span className="text-xs text-muted-foreground">
-                                • {new URL(activity.event_data.url).pathname}
-                              </span>
+            <CardContent className="space-y-6">
+              {/* Current Roles */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Current Roles</h3>
+                
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between h-auto min-h-[40px] p-3 bg-background hover:bg-muted"
+                        >
+                          <div className="flex flex-wrap gap-1 flex-1">
+                            {selectedRoles.length > 0 ? (
+                              selectedRoles.map((role) => (
+                                <Badge 
+                                  key={role} 
+                                  variant="secondary" 
+                                  className="mr-1 mb-1 flex items-center gap-1"
+                                >
+                                  {role.replace('_', ' ')}
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleRoleChange(role, false);
+                                    }}
+                                  />
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">Select roles...</span>
                             )}
                           </div>
-                          {activity.event_data?.error && (
-                            <p className="text-xs text-red-600 mt-1">
-                              Error: {activity.event_data.error}
-                            </p>
+                          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 bg-background border shadow-lg z-50" align="start">
+                        <div className="max-h-64 overflow-auto p-2 bg-background">
+                          {availableRoles.map((role) => {
+                            const isSelected = selectedRoles.includes(role);
+                            return (
+                              <div
+                                key={role}
+                                className="flex items-center space-x-2 py-2 px-2 hover:bg-muted rounded-md cursor-pointer"
+                                onClick={() => handleRoleChange(role, !isSelected)}
+                              >
+                                <Checkbox checked={isSelected} />
+                                <span className="text-sm font-medium">{role.replace('_', ' ')}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                ) : (
+                  <div className="min-h-[120px] border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                    {userRoles.filter(r => r.is_active).length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {userRoles.filter(r => r.is_active).map((role, index) => (
+                          <Badge key={index} variant="default">
+                            {role.role.replace('_', ' ')}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center w-full h-full text-muted-foreground">
+                        No active roles assigned
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Permissions */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Permissions ({availablePermissions.length})</h3>
+                
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between h-auto min-h-[40px] p-3 bg-background hover:bg-muted"
+                        >
+                          <div className="flex flex-wrap gap-1 flex-1">
+                            {selectedPermissions.length > 0 ? (
+                              selectedPermissions.map((permissionName) => (
+                                <Badge 
+                                  key={permissionName} 
+                                  variant="secondary" 
+                                  className="mr-1 mb-1 flex items-center gap-1"
+                                >
+                                  {permissionName.replace(/_/g, ' ')}
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handlePermissionChange(permissionName, false);
+                                    }}
+                                  />
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">Select permissions...</span>
+                            )}
+                          </div>
+                          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 bg-background border shadow-lg z-50" align="start">
+                        <div className="max-h-64 overflow-auto p-2 bg-background">
+                          {availablePermissions.length > 0 ? (
+                            availablePermissions.map((permission) => {
+                              const permissionName = permission.name || permission.permission_name || '';
+                              const isSelected = selectedPermissions.includes(permissionName);
+                              
+                              if (!permissionName) return null;
+                              
+                              return (
+                                <div
+                                  key={permissionName}
+                                  className="flex items-center space-x-2 py-2 px-2 hover:bg-muted rounded-md cursor-pointer"
+                                  onClick={() => handlePermissionChange(permissionName, !isSelected)}
+                                >
+                                  <Checkbox checked={isSelected} />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">{permissionName.replace(/_/g, ' ')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {permission.description || permission.permission_description}
+                                    </p>
+                                    {permission.category && (
+                                      <Badge variant="outline" className="text-xs mt-1">
+                                        {permission.category}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-center py-4 text-muted-foreground">
+                              No permissions available
+                            </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">No recent activity found</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    User activities will appear here once they start using the system
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Audit Log Tab */}
-        <TabsContent value="audit" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Role Change History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-4">Loading audit logs...</div>
-              ) : auditLogs.length > 0 ? (
-                <div className="space-y-3">
-                  {auditLogs.map((log) => (
-                    <div key={log.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">
-                          {log.old_role ? 
-                            `Role changed from ${log.old_role} to ${log.new_role}` :
-                            `Role ${log.new_role} assigned`
-                          }
-                        </p>
-                        <p className="text-sm text-muted-foreground">{log.reason}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(log.created_at)}</p>
-                      </div>
-                      <UserCheck className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No audit logs found</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Account Status Tab */}
-        <TabsContent value="status" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Status Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {accountStatus ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Status</p>
-                      <Badge variant={getStatusColor(accountStatus.status)}>
-                        {accountStatus.status}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Last Changed</p>
-                      <p>{formatDate(accountStatus.status_changed_at)}</p>
-                    </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                  {accountStatus.reason && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Reason</p>
-                      <p>{accountStatus.reason}</p>
-                    </div>
-                  )}
-                  {accountStatus.notes && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Notes</p>
-                      <p>{accountStatus.notes}</p>
-                    </div>
-                  )}
+                ) : (
+                  <div className="min-h-[120px] border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                    {availablePermissions.length > 0 ? (
+                      <div className="space-y-2">
+                        {availablePermissions.map((perm, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{(perm.name || perm.permission_name)?.replace(/_/g, ' ')}</p>
+                              <p className="text-xs text-muted-foreground">{perm.description || perm.permission_description}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs ml-2">
+                              available
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center w-full h-full text-muted-foreground">
+                        No permissions found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Recent Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                Activity tracking coming soon...
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Audit Log
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                Audit log coming soon...
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="account">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Account Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Account Status</h4>
+                    <p className="text-sm text-muted-foreground">Current approval status</p>
+                  </div>
+                  <Badge variant={user.approval_status === 'approved' ? 'default' : 'secondary'}>
+                    {user.approval_status}
+                  </Badge>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Badge variant="default">Active</Badge>
-                  <p className="text-muted-foreground mt-2">Account is in good standing</p>
-                </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
