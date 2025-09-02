@@ -78,6 +78,7 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
     try {
       setRolesLoading(true);
       setPermissionsLoading(true);
+      setError(null);
 
       console.log('Fetching roles and permissions for user:', user.id);
 
@@ -102,7 +103,23 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
         throw permissionsError;
       }
 
-      console.log('Direct queries successful:', { rolesData, permissionsData });
+      // Fetch user's current permissions
+      const { data: userPermissionsData, error: userPermissionsError } = await supabase
+        .from('user_permissions')
+        .select(`
+          permission_id,
+          is_active,
+          granted_at,
+          permissions!inner(name, description, category)
+        `)
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (userPermissionsError) {
+        console.error('Error fetching user permissions:', userPermissionsError);
+      }
+
+      console.log('Direct queries successful:', { rolesData, permissionsData, userPermissionsData });
 
       // Set user's current roles
       const roles = rolesData || [];
@@ -110,7 +127,7 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
       setSelectedRoles(roles.filter((r: any) => r.is_active).map((r: any) => r.role));
 
       // Set available permissions (transform to match expected format)
-      const permissions = permissionsData?.map(p => ({
+      const allPermissions = permissionsData?.map(p => ({
         permission_name: p.name,
         permission_description: p.description,
         source: 'available',
@@ -119,12 +136,24 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
         description: p.description,
         category: p.category
       })) || [];
-      setUserPermissions(permissions);
-      setSelectedPermissions([]);
+
+      // Set user's current permissions
+      const currentUserPermissions = userPermissionsData?.map((up: any) => ({
+        permission_name: up.permissions.name,
+        permission_description: up.permissions.description,
+        source: 'direct',
+        is_active: up.is_active,
+        name: up.permissions.name,
+        description: up.permissions.description,
+        category: up.permissions.category
+      })) || [];
+
+      setUserPermissions(currentUserPermissions);
+      setSelectedPermissions(currentUserPermissions.map(p => p.name || p.permission_name));
 
       // Set available roles manually since we're not using the RPC function
       setAvailableRoles(['super_admin', 'staff', 'coach', 'player', 'parent', 'medical', 'partner']);
-      setAvailablePermissions(permissions);
+      setAvailablePermissions(allPermissions);
 
     } catch (error: any) {
       console.error('Error fetching roles and permissions:', error);
