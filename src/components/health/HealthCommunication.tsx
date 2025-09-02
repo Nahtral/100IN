@@ -5,17 +5,21 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   MessageSquare,
   Send,
   Users,
   Bell,
   Filter,
-  Search
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import HealthAlertModal from './HealthAlertModal';
 import TeamUpdatesModal from './TeamUpdatesModal';
 import ParentCommunicationModal from './ParentCommunicationModal';
@@ -33,6 +37,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { userRoles, hasRole, canAccessMedical } = useUserRole();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState('');
@@ -40,11 +45,17 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
   const [subject, setSubject] = useState('');
   const [priority, setPriority] = useState('normal');
   const [loading, setLoading] = useState(true);
+  const [players, setPlayers] = useState<any[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [showPlayerDropdown, setShowPlayerDropdown] = useState(false);
   
   // Modal states
   const [healthAlertModalOpen, setHealthAlertModalOpen] = useState(false);
   const [teamUpdatesModalOpen, setTeamUpdatesModalOpen] = useState(false);
   const [parentCommModalOpen, setParentCommModalOpen] = useState(false);
+
+  // Check if user can compose messages (super admin or staff with manage_medical permission)
+  const canComposeMessages = isSuperAdmin || hasRole('staff');
 
   // Mock data for demonstration
   const mockMessages = [
@@ -82,13 +93,19 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
 
   useEffect(() => {
     fetchMessages();
-  }, [userRole, playerProfile]);
+    if (canComposeMessages) {
+      fetchPlayers();
+    }
+  }, [userRole, playerProfile, canComposeMessages]);
 
   const fetchMessages = async () => {
     try {
       let query = supabase
         .from('medical_communications')
-        .select('*')
+        .select(`
+          *,
+          sender:profiles!medical_communications_sender_id_fkey(full_name)
+        `)
         .order('created_at', { ascending: false });
 
       const { data, error } = await query;
@@ -104,8 +121,37 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
     }
   };
 
+  const fetchPlayers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          jersey_number,
+          teams:team_id(name)
+        `)
+        .eq('is_active', true)
+        .order('first_name');
+
+      if (error) throw error;
+      setPlayers(data || []);
+    } catch (error) {
+      console.error('Error fetching players:', error);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedRecipient || !subject.trim()) return;
+    if (!canComposeMessages) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to send health communications.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const messageData = {
@@ -114,7 +160,8 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
         message: newMessage,
         communication_type: messageType,
         priority: priority,
-        recipient_type: selectedRecipient,
+        recipient_type: selectedRecipient === 'Specific Player' ? 'player' : selectedRecipient.toLowerCase().replace(' ', '_'),
+        recipient_ids: selectedRecipient === 'Specific Player' ? selectedPlayers : null,
         related_player_id: playerProfile?.id || null
       };
 
@@ -134,6 +181,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
       setSubject('');
       setPriority('normal');
       setMessageType('general');
+      setSelectedPlayers([]);
       
       fetchMessages();
     } catch (error) {
@@ -143,6 +191,25 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
         description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePlayerSelection = (playerId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedPlayers(prev => [...prev, playerId]);
+    } else {
+      setSelectedPlayers(prev => prev.filter(id => id !== playerId));
+    }
+  };
+
+  const handleRecipientChange = (value: string) => {
+    setSelectedRecipient(value);
+    if (value === 'Specific Player') {
+      setShowPlayerDropdown(true);
+      setSelectedPlayers([]);
+    } else {
+      setShowPlayerDropdown(false);
+      setSelectedPlayers([]);
     }
   };
 
@@ -189,17 +256,18 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Message Compose */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              Compose Message
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {canComposeMessages && (
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Compose Message
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Send To</label>
-              <Select value={selectedRecipient} onValueChange={setSelectedRecipient}>
+              <Select value={selectedRecipient} onValueChange={handleRecipientChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select recipient" />
                 </SelectTrigger>
@@ -212,6 +280,39 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Specific Player Selection */}
+            {showPlayerDropdown && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Select Players ({selectedPlayers.length} selected)</label>
+                <Card className="p-3">
+                  <ScrollArea className="h-48">
+                    <div className="space-y-2">
+                      {players.map((player) => (
+                        <div key={player.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={player.id}
+                            checked={selectedPlayers.includes(player.id)}
+                            onCheckedChange={(checked) => handlePlayerSelection(player.id, checked as boolean)}
+                          />
+                          <label
+                            htmlFor={player.id}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                          >
+                            {player.first_name} {player.last_name} 
+                            {player.jersey_number && ` (#${player.jersey_number})`}
+                            {player.teams && <span className="text-gray-500 ml-2">- {player.teams.name}</span>}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  {selectedPlayers.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-2">Please select at least one player</p>
+                  )}
+                </Card>
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium mb-2 block">Message Type</label>
@@ -264,7 +365,12 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
 
             <Button 
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() || !selectedRecipient || !subject.trim()}
+              disabled={
+                !newMessage.trim() || 
+                !selectedRecipient || 
+                !subject.trim() ||
+                (selectedRecipient === 'Specific Player' && selectedPlayers.length === 0)
+              }
               className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
               <Send className="h-4 w-4 mr-2" />
@@ -272,9 +378,31 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
             </Button>
           </CardContent>
         </Card>
+        )}
+
+        {/* Access denied message for non-authorized users */}
+        {!canComposeMessages && (
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Compose Message
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center py-8">
+              <div className="text-gray-400 mb-4">
+                <Send className="h-12 w-12 mx-auto mb-2" />
+              </div>
+              <h3 className="font-medium text-gray-900 mb-2">Access Restricted</h3>
+              <p className="text-sm text-gray-600">
+                Only Super Admins and authorized staff members can compose health communications.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Message List */}
-        <Card className="lg:col-span-2">
+        <Card className={canComposeMessages ? "lg:col-span-2" : "lg:col-span-3"}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
@@ -306,12 +434,16 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
                   <div key={message.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{message.from}</span>
-                        <span className="text-sm text-gray-500">to {message.to}</span>
+                        <span className="font-medium text-gray-900">
+                          {message.sender?.full_name || message.from || 'Unknown Sender'}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          to {message.recipient_type ? message.recipient_type.replace('_', ' ') : message.to}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         {getPriorityBadge(message.priority)}
-                        {getMessageTypeBadge(message.type)}
+                        {getMessageTypeBadge(message.communication_type || message.type)}
                       </div>
                     </div>
 
@@ -319,7 +451,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
                     <p className="text-gray-700 text-sm mb-3">{message.message}</p>
 
                     <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{new Date(message.timestamp).toLocaleString()}</span>
+                      <span>{new Date(message.created_at || message.timestamp).toLocaleString()}</span>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm" className="h-6 px-2">
                           Reply
