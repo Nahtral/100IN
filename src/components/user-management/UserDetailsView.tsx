@@ -74,6 +74,8 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
   const [error, setError] = useState<string | null>(null);
   const [activityData, setActivityData] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [auditData, setAuditData] = useState<any[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchRolesAndPermissions = async () => {
@@ -199,9 +201,93 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
     }
   };
 
+  const fetchAuditData = async () => {
+    try {
+      setAuditLoading(true);
+      
+      // Fetch comprehensive audit data including:
+      // 1. Role changes
+      // 2. Permission changes  
+      // 3. Profile modifications
+      // 4. Security events
+      // 5. Administrative actions
+      
+      const [
+        roleChanges,
+        permissionChanges,
+        securityEvents,
+        profileAccess,
+        adminActions
+      ] = await Promise.all([
+        // Role assignment/removal events
+        supabase
+          .from('analytics_events')
+          .select('*')
+          .in('event_type', ['role_assigned', 'role_removed'])
+          .eq('event_data->>target_user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+          
+        // Permission assignment/removal events
+        supabase
+          .from('analytics_events') 
+          .select('*')
+          .in('event_type', ['permission_assigned', 'permission_removed'])
+          .eq('event_data->>target_user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+          
+        // Security-related events
+        supabase
+          .from('analytics_events')
+          .select('*')
+          .in('event_type', ['security_alert', 'auth_attempt'])
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+          
+        // Profile access events
+        supabase
+          .from('analytics_events')
+          .select('*')
+          .in('event_type', ['profile_access', 'medical_data_access', 'employee_data_access'])
+          .eq('event_data->>accessed_profile_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+          
+        // Admin actions on this user
+        supabase
+          .from('analytics_events')
+          .select('*')
+          .in('event_type', ['user_approved', 'user_suspended', 'user_activated'])
+          .eq('event_data->>target_user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10)
+      ]);
+
+      // Combine all audit events and sort by timestamp
+      const allAuditEvents = [
+        ...(roleChanges.data || []),
+        ...(permissionChanges.data || []),
+        ...(securityEvents.data || []),
+        ...(profileAccess.data || []),
+        ...(adminActions.data || [])
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      console.log('Audit data fetched:', allAuditEvents);
+      setAuditData(allAuditEvents);
+      
+    } catch (error) {
+      console.error('Error in fetchAuditData:', error);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchRolesAndPermissions();
     fetchActivityData();
+    fetchAuditData();
   }, [user.id]);
 
   const handleRoleChange = (role: string, checked: boolean) => {
@@ -638,9 +724,122 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                Audit log coming soon...
-              </div>
+              {auditLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Loading audit log...</span>
+                </div>
+              ) : auditData.length > 0 ? (
+                <ScrollArea className="h-96">
+                  <div className="space-y-3">
+                    {auditData.map((audit, index) => (
+                      <div key={index} className="flex items-start gap-3 p-4 border rounded-lg bg-card">
+                        <div className="flex-shrink-0 mt-1">
+                          {audit.event_type === 'role_assigned' && <Shield className="w-4 h-4 text-green-600" />}
+                          {audit.event_type === 'role_removed' && <Shield className="w-4 h-4 text-red-600" />}
+                          {audit.event_type === 'permission_assigned' && <Eye className="w-4 h-4 text-blue-600" />}
+                          {audit.event_type === 'permission_removed' && <Eye className="w-4 h-4 text-red-600" />}
+                          {audit.event_type === 'security_alert' && <AlertTriangle className="w-4 h-4 text-orange-600" />}
+                          {audit.event_type === 'profile_access' && <User className="w-4 h-4 text-purple-600" />}
+                          {audit.event_type === 'medical_data_access' && <FileText className="w-4 h-4 text-red-600" />}
+                          {audit.event_type === 'employee_data_access' && <Database className="w-4 h-4 text-indigo-600" />}
+                          {audit.event_type === 'user_approved' && <UserCheck className="w-4 h-4 text-green-600" />}
+                          {audit.event_type === 'user_suspended' && <AlertTriangle className="w-4 h-4 text-red-600" />}
+                          {audit.event_type === 'auth_attempt' && <LogIn className="w-4 h-4 text-blue-600" />}
+                          {!['role_assigned', 'role_removed', 'permission_assigned', 'permission_removed', 'security_alert', 'profile_access', 'medical_data_access', 'employee_data_access', 'user_approved', 'user_suspended', 'auth_attempt'].includes(audit.event_type) && <Clock className="w-4 h-4 text-gray-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold">
+                                {audit.event_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                              </p>
+                              <Badge variant={
+                                ['role_assigned', 'permission_assigned', 'user_approved'].includes(audit.event_type) ? 'default' :
+                                ['role_removed', 'permission_removed', 'user_suspended', 'security_alert'].includes(audit.event_type) ? 'destructive' :
+                                'secondary'
+                              } className="text-xs">
+                                {audit.event_type.includes('assigned') || audit.event_type.includes('approved') ? 'GRANTED' :
+                                 audit.event_type.includes('removed') || audit.event_type.includes('suspended') ? 'REVOKED' :
+                                 audit.event_type.includes('access') ? 'ACCESS' :
+                                 audit.event_type.includes('security') ? 'SECURITY' : 'SYSTEM'}
+                              </Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(audit.created_at).toLocaleDateString()} {new Date(audit.created_at).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          
+                          {audit.event_data && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                              {audit.event_data.assigned_role && (
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-muted-foreground">Role:</span>
+                                  <span className="font-mono bg-muted px-2 py-1 rounded">{audit.event_data.assigned_role}</span>
+                                </div>
+                              )}
+                              {audit.event_data.removed_role && (
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-muted-foreground">Removed Role:</span>
+                                  <span className="font-mono bg-muted px-2 py-1 rounded">{audit.event_data.removed_role}</span>
+                                </div>
+                              )}
+                              {audit.event_data.assigned_permission && (
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-muted-foreground">Permission:</span>
+                                  <span className="font-mono bg-muted px-2 py-1 rounded text-xs">{audit.event_data.assigned_permission}</span>
+                                </div>
+                              )}
+                              {audit.event_data.removed_permission && (
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-muted-foreground">Removed Permission:</span>
+                                  <span className="font-mono bg-muted px-2 py-1 rounded text-xs">{audit.event_data.removed_permission}</span>
+                                </div>
+                              )}
+                              {audit.event_data.accessed_profile_id && (
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-muted-foreground">Accessed By:</span>
+                                  <span className="font-mono bg-muted px-2 py-1 rounded text-xs">User ID: {audit.user_id?.slice(0, 8)}...</span>
+                                </div>
+                              )}
+                              {audit.event_data.alert_type && (
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-muted-foreground">Alert Type:</span>
+                                  <span className="font-mono bg-muted px-2 py-1 rounded text-xs">{audit.event_data.alert_type}</span>
+                                </div>
+                              )}
+                              {audit.event_data.ip_address && (
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-muted-foreground">IP Address:</span>
+                                  <span className="font-mono bg-muted px-2 py-1 rounded text-xs">{audit.event_data.ip_address}</span>
+                                </div>
+                              )}
+                              {audit.event_data.justification && (
+                                <div className="col-span-full">
+                                  <span className="font-medium text-muted-foreground">Justification: </span>
+                                  <span className="text-xs italic">{audit.event_data.justification}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="mt-2 pt-2 border-t border-muted flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>User ID: {audit.user_id || 'system'}</span>
+                            <span>Event ID: {audit.id.slice(0, 8)}...</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No audit trail found for this user</p>
+                  <p className="text-sm mt-1">Administrative actions and security events will appear here</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
