@@ -860,7 +860,13 @@ const EnhancedUserManagement = () => {
             <DialogTitle>User Details: {selectedUser?.full_name}</DialogTitle>
           </DialogHeader>
           {selectedUser && (
-            <UserDetailsView user={selectedUser} />
+            <UserDetailsView 
+              user={{
+                ...selectedUser,
+                approval_status: (selectedUser as any).approval_status || 'pending'
+              }} 
+              onClose={() => setSelectedUser(null)}
+            />
           )}
         </DialogContent>
       </Dialog>

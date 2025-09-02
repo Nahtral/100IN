@@ -462,9 +462,9 @@ export const UserApprovalDashboard = () => {
                 email: viewDetailsUser.email,
                 full_name: viewDetailsUser.full_name,
                 created_at: viewDetailsUser.created_at,
-                roles: [],
-                permissions: []
+                approval_status: viewDetailsUser.approval_status || 'pending'
               }}
+              onClose={() => setViewDetailsUser(null)}
             />
           )}
         </DialogContent>
