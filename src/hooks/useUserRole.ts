@@ -55,7 +55,7 @@ export const useUserRole = () => {
         const { data: roles, error: rolesError } = rolesResponse;
 
         if (superAdminError) {
-          console.error('Error checking super admin status:', superAdminError);
+          console.error('Error checking super admin status:', superAdminError.message || superAdminError);
           setIsSuperAdmin(false);
         } else {
           console.log('Super admin check result:', superAdminResult);
@@ -63,13 +63,23 @@ export const useUserRole = () => {
         }
 
         if (rolesError) {
-          console.error('Error fetching user roles:', rolesError);
-          setUserRoles([]);
-          setUserRole(null);
+          console.error('Error fetching user roles:', rolesError.message || rolesError);
+          // If super admin check succeeded but roles failed, still set super admin role
+          if (superAdminResult) {
+            setUserRoles(['super_admin']);
+            setUserRole('super_admin');
+          } else {
+            setUserRoles([]);
+            setUserRole(null);
+          }
         } else {
           const rolesList = roles?.map(r => r.role) || [];
+          // Ensure super admin role is included if the check passed
+          if (superAdminResult && !rolesList.includes('super_admin')) {
+            rolesList.push('super_admin');
+          }
           setUserRoles(rolesList);
-          const primaryRole = roles?.[0]?.role || null;
+          const primaryRole = superAdminResult ? 'super_admin' : (roles?.[0]?.role || null);
           setUserRole(primaryRole);
         }
       } catch (error) {
