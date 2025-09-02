@@ -429,19 +429,19 @@ const Schedule = () => {
                                Attendance
                              </Button>
                            )}
-                           {canManageEvents && (
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setEditingEvent(event);
-                                 setIsFormOpen(true);
-                               }}
-                             >
-                               Edit
-                             </Button>
-                           )}
+                            {isSuperAdmin && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingEvent(event);
+                                  setIsFormOpen(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            )}
                          </div>
                        </div>
                      </CardContent>
