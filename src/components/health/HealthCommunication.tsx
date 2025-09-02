@@ -104,7 +104,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
         .from('medical_communications')
         .select(`
           *,
-          sender:profiles!medical_communications_sender_id_fkey(full_name)
+          profiles!sender_id(full_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -114,8 +114,8 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
       setMessages(data || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
-      // Fallback to mock data
-      setMessages(mockMessages);
+      // Remove fallback to mock data to ensure we're using real data
+      setMessages([]);
     } finally {
       setLoading(false);
     }
@@ -436,7 +436,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900">
-                          {message.sender?.full_name || message.from || 'Unknown Sender'}
+                          {message.profiles?.full_name || message.from || 'Unknown Sender'}
                         </span>
                         <span className="text-sm text-gray-500">
                           to {message.recipient_type ? message.recipient_type.replace('_', ' ') : message.to}
