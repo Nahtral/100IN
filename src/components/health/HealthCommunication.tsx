@@ -127,13 +127,14 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
         .from('players')
         .select(`
           id,
-          first_name,
-          last_name,
+          name,
           jersey_number,
-          teams:team_id(name)
+          user_id,
+          teams:team_id(name),
+          profiles:user_id(full_name)
         `)
         .eq('is_active', true)
-        .order('first_name');
+        .order('name');
 
       if (error) throw error;
       setPlayers(data || []);
@@ -299,7 +300,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
                             htmlFor={player.id}
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                           >
-                            {player.first_name} {player.last_name} 
+                            {player.profiles?.full_name || player.name || 'Unknown Player'}
                             {player.jersey_number && ` (#${player.jersey_number})`}
                             {player.teams && <span className="text-gray-500 ml-2">- {player.teams.name}</span>}
                           </label>
