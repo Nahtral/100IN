@@ -72,6 +72,8 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
   const [permissionsLoading, setPermissionsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activityData, setActivityData] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchRolesAndPermissions = async () => {
@@ -171,8 +173,35 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
     }
   };
 
+  const fetchActivityData = async () => {
+    try {
+      setActivityLoading(true);
+      
+      // Fetch recent activity from analytics_events
+      const { data: activityData, error: activityError } = await supabase
+        .from('analytics_events')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (activityError) {
+        console.error('Error fetching activity data:', activityError);
+        return;
+      }
+
+      console.log('Activity data fetched:', activityData);
+      setActivityData(activityData || []);
+    } catch (error) {
+      console.error('Error in fetchActivityData:', error);
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchRolesAndPermissions();
+    fetchActivityData();
   }, [user.id]);
 
   const handleRoleChange = (role: string, checked: boolean) => {
@@ -536,9 +565,66 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                Activity tracking coming soon...
-              </div>
+              {activityLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Loading activity...</span>
+                </div>
+              ) : activityData.length > 0 ? (
+                <ScrollArea className="h-96">
+                  <div className="space-y-3">
+                    {activityData.map((activity, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50">
+                        <div className="flex-shrink-0 mt-1">
+                          {activity.event_type === 'user_action' && <LogIn className="w-4 h-4 text-blue-500" />}
+                          {activity.event_type === 'role_assigned' && <Shield className="w-4 h-4 text-green-500" />}
+                          {activity.event_type === 'permission_assigned' && <Eye className="w-4 h-4 text-purple-500" />}
+                          {activity.event_type === 'profile_access' && <User className="w-4 h-4 text-orange-500" />}
+                          {activity.event_type === 'medical_data_access' && <FileText className="w-4 h-4 text-red-500" />}
+                          {!['user_action', 'role_assigned', 'permission_assigned', 'profile_access', 'medical_data_access'].includes(activity.event_type) && <Database className="w-4 h-4 text-gray-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">
+                              {activity.event_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                            </p>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(activity.created_at).toLocaleDateString()} {new Date(activity.created_at).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          {activity.event_data && (
+                            <div className="mt-1">
+                              <div className="text-xs text-muted-foreground space-y-1">
+                                {activity.event_data.action && (
+                                  <p><span className="font-medium">Action:</span> {activity.event_data.action}</p>
+                                )}
+                                {activity.event_data.target && (
+                                  <p><span className="font-medium">Target:</span> {activity.event_data.target}</p>
+                                )}
+                                {activity.event_data.url && (
+                                  <p><span className="font-medium">URL:</span> {activity.event_data.url}</p>
+                                )}
+                                {activity.event_data.assigned_role && (
+                                  <p><span className="font-medium">Role:</span> {activity.event_data.assigned_role}</p>
+                                )}
+                                {activity.event_data.assigned_permission && (
+                                  <p><span className="font-medium">Permission:</span> {activity.event_data.assigned_permission}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No recent activity found for this user</p>
+                  <p className="text-sm mt-1">Activity will appear here as the user interacts with the system</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
