@@ -56,6 +56,21 @@ const RoleProtectedRoute = ({
     ? allowedRoles.every(role => actualHasRole(role))
     : allowedRoles.some(role => actualHasRole(role));
 
+  // Debug logging for all access attempts
+  console.log('RoleProtectedRoute: Access check', {
+    allowedRoles,
+    actualIsSuperAdmin,
+    userRoles: isTestMode ? [`test: ${testRole}`] : userRoles,
+    requireAll,
+    hasPermission,
+    currentPath: window.location.pathname,
+    isTestMode,
+    testRole,
+    effectiveIsSuperAdmin,
+    isSuperAdmin,
+    initialized
+  });
+
   if (!hasPermission) {
     console.log('RoleProtectedRoute: Access denied', {
       allowedRoles,
