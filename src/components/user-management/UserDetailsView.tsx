@@ -124,42 +124,51 @@ const UserDetailsView = ({ user }: UserDetailsViewProps) => {
 
       console.log('Fetching roles and permissions for user:', user.id);
 
-      // Call the database function to get complete role and permission data
-      const { data, error } = await supabase.rpc('get_user_roles_and_permissions', {
-        target_user_id: user.id
-      });
+      // Fetch user roles directly - avoiding the problematic RPC function
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role, is_active, created_at')
+        .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        throw rolesError;
       }
 
-      console.log('Raw database response:', data);
+      // Fetch all permissions for the dropdown
+      const { data: permissionsData, error: permissionsError } = await supabase
+        .from('permissions')
+        .select('name, description, category');
 
-      if (data) {
-        // Type cast the data object properly
-        const responseData = data as any;
-        
-        console.log('Available roles from DB:', responseData.available_roles);
-        console.log('Available permissions from DB:', responseData.available_permissions);
-        
-        // Set user's current roles
-        const roles = responseData.roles || [];
-        setUserRoles(roles);
-        setSelectedRoles(roles.filter((r: any) => r.is_active).map((r: any) => r.role));
-
-        // Set user's current permissions
-        const permissions = responseData.permissions || [];
-        setUserPermissions(permissions.filter((p: any) => p.is_active));
-        setSelectedPermissions(permissions.filter((p: any) => p.is_active).map((p: any) => p.permission_name));
-
-        // Set available options
-        setAvailableRoles(responseData.available_roles || []);
-        setAvailablePermissions(responseData.available_permissions || []);
-        
-        console.log('Set available roles:', responseData.available_roles);
-        console.log('Set available permissions:', responseData.available_permissions);
+      if (permissionsError) {
+        console.error('Error fetching permissions:', permissionsError);
+        throw permissionsError;
       }
+
+      console.log('Direct queries successful:', { rolesData, permissionsData });
+
+      // Set user's current roles
+      const roles = rolesData || [];
+      setUserRoles(roles);
+      setSelectedRoles(roles.filter((r: any) => r.is_active).map((r: any) => r.role));
+
+      // Set available permissions (transform to match expected format)
+      const permissions = permissionsData?.map(p => ({
+        permission_name: p.name,
+        permission_description: p.description,
+        source: 'available',
+        is_active: true,
+        name: p.name,
+        description: p.description,
+        category: p.category
+      })) || [];
+      setUserPermissions(permissions);
+      setSelectedPermissions([]);
+
+      // Set available roles manually since we're not using the RPC function
+      setAvailableRoles(['super_admin', 'staff', 'coach', 'player', 'parent', 'medical', 'partner']);
+      setAvailablePermissions(permissions);
+
     } catch (error) {
       console.error('Error fetching roles and permissions:', error);
       toast({
