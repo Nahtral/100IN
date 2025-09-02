@@ -25,7 +25,9 @@ export const useCurrentUser = () => {
   // Otherwise, always show the true role to prevent confusion
   const displayRole = isSuperAdmin 
     ? (isTestMode && effectiveRole ? `Super Admin (Testing: ${effectiveRole})` : 'Super Admin')
-    : (userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User');
+    : userRole === 'connection_error' 
+      ? 'Connection Error - Please Refresh'
+      : (userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User');
   
   const currentUser = {
     name: user?.user_metadata?.full_name || user?.email || 'User',
