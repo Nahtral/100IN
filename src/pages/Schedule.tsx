@@ -75,10 +75,7 @@ const Schedule = () => {
     error: scheduleError, 
     fetchEvents, 
     refetch 
-  } = useScheduleCache(debouncedFilters, { 
-    pageSize: 20,
-    page: 1 
-  });
+  } = useScheduleCache();
 
   // Debounced refetch to prevent excessive calls
   const debouncedRefetch = useDebouncedCallback(() => refetch(), 1000);
