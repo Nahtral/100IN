@@ -167,32 +167,40 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
 
   const fetchEmployees = async () => {
     try {
+      // Fetch users with super_admin, coach, or staff roles
       const { data, error } = await supabase
-        .from('employees')
+        .from('profiles')
         .select(`
-          *,
-          profiles!employees_user_id_fkey(full_name, email)
+          id,
+          full_name,
+          email,
+          user_roles!inner(
+            role
+          )
         `)
-        .eq('employment_status', 'active')
-        .order('first_name');
+        .in('user_roles.role', ['super_admin', 'coach', 'staff'])
+        .eq('user_roles.is_active', true);
 
       if (error) {
-        console.error('Error fetching employees:', error);
+        console.error('Error fetching users for scheduling:', error);
         return;
       }
 
-      console.log('Fetched employees for scheduling:', data);
-      console.log('Employee count:', data?.length);
+      console.log('Fetched users for scheduling:', data);
+      console.log('User count:', data?.length);
       
-      // Ensure we're getting all employee types including staff
-      const allEmployees = data?.map(emp => ({
-        ...emp,
-        display_name: (emp.profiles as any)?.full_name || `${emp.first_name} ${emp.last_name}`,
-        position_display: emp.position || 'Employee'
+      // Process users for display
+      const eligibleUsers = data?.map(user => ({
+        id: user.id,
+        first_name: user.full_name?.split(' ')[0] || '',
+        last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
+        display_name: user.full_name || user.email,
+        position_display: (user.user_roles as any)?.role || 'Staff',
+        email: user.email
       })) || [];
       
-      console.log('Processed employees:', allEmployees.map(e => `${e.display_name} - ${e.position_display}`));
-      setEmployees(allEmployees);
+      console.log('Processed users:', eligibleUsers.map(u => `${u.display_name} - ${u.position_display}`));
+      setEmployees(eligibleUsers);
     } catch (error) {
       console.error('Error in fetchEmployees:', error);
     }
