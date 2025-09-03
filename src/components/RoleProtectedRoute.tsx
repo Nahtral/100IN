@@ -1,15 +1,15 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { useReliableUserRole } from '@/hooks/useReliableUserRole';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles: string[];
-  requireAll?: boolean; // If true, user must have ALL roles; if false, user needs ANY role
+  requireAll?: boolean;
 }
 
 const RoleProtectedRoute = ({ 
@@ -17,94 +17,102 @@ const RoleProtectedRoute = ({
   allowedRoles, 
   requireAll = false 
 }: RoleProtectedRouteProps) => {
-  const { user, loading: authLoading } = useAuth();
-  const { userRoles, isSuperAdmin, loading: roleLoading, initialized } = useUserRole();
-  const { isTestMode, effectiveIsSuperAdmin, testHasRole, testRole } = useRoleSwitcher();
+  const { user } = useAuth();
+  const { userData, loading, isSuperAdmin, hasRole, isApproved } = useReliableUserRole();
 
-  // Wait for both auth and roles to be fully initialized
-  if (authLoading || roleLoading || !initialized) {
+  // Show comprehensive loading state while checking
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <Card className="w-96 shadow-xl border-0">
-          <CardContent className="p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-xl mb-4 animate-pulse p-2">
-              <img src="/lovable-uploads/29580579-ebd7-4112-8fc0-10bb4e5d2701.png" alt="Panthers Logo" className="w-full h-full object-contain" />
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+              <div className="space-y-2">
+                <h3 className="text-lg font-medium">Verifying access...</h3>
+                <p className="text-muted-foreground">Please wait while we check your permissions.</p>
+              </div>
             </div>
-            <h2 className="text-xl font-semibold mb-2">100IN</h2>
-            <p className="text-gray-600">Checking permissions...</p>
+          </div>
+          
+          {/* Loading skeleton */}
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-64" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-3/4 mb-4" />
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Check if user is approved
+  if (!isApproved()) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="h-12 w-12 text-panther-gold mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Account Pending Approval</h2>
+            <p className="text-muted-foreground">
+              Your account is pending approval. Please contact an administrator.
+            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // Use effective permissions based on test mode
-  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
-  const actualHasRole = (role: string) => isTestMode ? testHasRole(role) : userRoles.includes(role);
-
   // Super admins can access everything
-  if (actualIsSuperAdmin) {
+  if (isSuperAdmin()) {
+    console.log('✅ Super admin access granted to:', allowedRoles.join(', '));
     return <>{children}</>;
   }
 
   // Check role permissions
   const hasPermission = requireAll 
-    ? allowedRoles.every(role => actualHasRole(role))
-    : allowedRoles.some(role => actualHasRole(role));
+    ? allowedRoles.every(role => hasRole(role))
+    : allowedRoles.some(role => hasRole(role));
 
-  // Debug logging for all access attempts
-  console.log('RoleProtectedRoute: Access check', {
+  console.log('🔐 Role check result:', {
+    user: userData?.email,
     allowedRoles,
-    actualIsSuperAdmin,
-    userRoles: isTestMode ? [`test: ${testRole}`] : userRoles,
-    requireAll,
+    userRoles: userData?.all_roles,
+    isSuperAdmin: isSuperAdmin(),
     hasPermission,
-    currentPath: window.location.pathname,
-    isTestMode,
-    testRole,
-    effectiveIsSuperAdmin,
-    isSuperAdmin,
-    initialized
+    requireAll
   });
 
   if (!hasPermission) {
-    console.log('RoleProtectedRoute: Access denied', {
-      allowedRoles,
-      actualIsSuperAdmin,
-      userRoles: isTestMode ? [`test: ${testRole}`] : userRoles,
-      requireAll,
-      hasPermission,
-      currentPath: window.location.pathname
-    });
-    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl border-0">
-          <CardContent className="p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-xl mb-4">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center space-y-4">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold">Access Denied</h2>
+              <p className="text-muted-foreground">
+                You don't have permission to access this page.
+              </p>
+              <div className="mt-4 p-3 bg-muted rounded-md text-sm">
+                <p><strong>Your roles:</strong> {userData?.all_roles?.join(', ') || 'None'}</p>
+                <p><strong>Required:</strong> {allowedRoles.join(requireAll ? ' AND ' : ' OR ')}</p>
+              </div>
             </div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">Access Denied</h2>
-            <p className="text-gray-600 mb-4">
-              You don't have permission to access this page. 
-              Contact an administrator if you believe this is an error.
-            </p>
-            <p className="text-sm text-gray-500">
-              Required roles: {allowedRoles.join(requireAll ? ' AND ' : ' OR ')}
-            </p>
-            <p className="text-xs text-gray-400 mt-2">
-              Path: {window.location.pathname}
-            </p>
-            <button 
-              onClick={() => window.history.back()} 
-              className="mt-4 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Go Back
-            </button>
           </CardContent>
         </Card>
       </div>

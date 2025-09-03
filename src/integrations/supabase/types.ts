@@ -233,6 +233,13 @@ export type Database = {
             foreignKeyName: "chats_archived_by_fkey"
             columns: ["archived_by"]
             isOneToOne: false
+            referencedRelation: "current_user_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chats_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
             referencedRelation: "employees_v"
             referencedColumns: ["employee_id"]
           },
@@ -1797,6 +1804,13 @@ export type Database = {
             foreignKeyName: "messages_recalled_by_fkey"
             columns: ["recalled_by"]
             isOneToOne: false
+            referencedRelation: "current_user_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_recalled_by_fkey"
+            columns: ["recalled_by"]
+            isOneToOne: false
             referencedRelation: "employees_v"
             referencedColumns: ["employee_id"]
           },
@@ -2280,6 +2294,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "current_user_v"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_payer_id_fkey"
             columns: ["payer_id"]
@@ -2976,6 +2997,13 @@ export type Database = {
           weight?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_players_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "current_user_v"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_players_profiles"
             columns: ["user_id"]
@@ -4329,6 +4357,21 @@ export type Database = {
       }
     }
     Views: {
+      current_user_v: {
+        Row: {
+          all_roles: string[] | null
+          approval_status: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_super_admin: boolean | null
+          primary_role: string | null
+          role_active: boolean | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       employees_v: {
         Row: {
           approval_status: string | null
@@ -4381,6 +4424,10 @@ export type Database = {
         }
         Returns: string
       }
+      current_user_has_role: {
+        Args: { check_role: string }
+        Returns: boolean
+      }
       delete_notification: {
         Args: { notification_id: string }
         Returns: boolean
@@ -4420,6 +4467,10 @@ export type Database = {
           total_cost: number
           total_enrolled: number
         }[]
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_current_user_team_id: {
         Args: Record<PropertyKey, never>
@@ -4510,6 +4561,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_current_user_super_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_same_team_member: {
