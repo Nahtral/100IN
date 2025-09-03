@@ -8,7 +8,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import ProfilePicture from '@/components/ui/ProfilePicture';
-import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { EnhancedNotificationCenter } from '@/components/notifications/EnhancedNotificationCenter';
 
 interface HeaderProps {
   currentUser?: {
@@ -63,7 +63,7 @@ const Header = ({ currentUser }: HeaderProps) => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <NotificationCenter />
+            <EnhancedNotificationCenter />
             <Button variant="ghost" size="icon" onClick={handleSignOut}>
               <LogOut className="h-5 w-5" />
             </Button>

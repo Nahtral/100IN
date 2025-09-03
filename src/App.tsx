@@ -35,6 +35,7 @@ const MedicalManagement = React.lazy(() => import("./pages/MedicalManagement"));
 const ShotIQ = React.lazy(() => import("./pages/ShotIQ"));
 const Security = React.lazy(() => import("./pages/Security"));
 const TeamGridSettings = React.lazy(() => import("./pages/TeamGridSettings"));
+const NotificationSettings = React.lazy(() => import("./pages/NotificationSettings"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -170,12 +171,17 @@ const App = () => (
                   <Security />
                 </RoleProtectedRoute>
               } />
-              <Route path="/admin/teamgrid-settings" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <TeamGridSettings />
-                </RoleProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
+        <Route path="/admin/teamgrid-settings" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <TeamGridSettings />
+          </RoleProtectedRoute>
+        } />
+        <Route path="/settings/notifications" element={
+          <ProtectedRoute>
+            <NotificationSettings />
+          </ProtectedRoute>
+        } />
+        <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

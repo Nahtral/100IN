@@ -1,16 +1,32 @@
 import React, { useState } from 'react';
-import { Bell, Check, CheckCheck, X, Clock, AlertTriangle } from 'lucide-react';
+import { 
+  Bell, 
+  Check, 
+  CheckCheck, 
+  X, 
+  Clock, 
+  AlertTriangle, 
+  MoreVertical, 
+  Settings,
+  Archive,
+  ExternalLink,
+  Trash2,
+  RotateCcw
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNotifications, type Notification } from '@/hooks/useNotifications';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+import { notificationSound, showDesktopNotification } from '@/utils/notificationSound';
 
 const getIconForCategory = (category: string, iconName?: string) => {
-  // Map icon names to actual icons
   const iconMap: { [key: string]: React.ElementType } = {
     'MessageCircle': Bell,
     'AtSign': Bell,
@@ -52,31 +68,37 @@ const getPriorityColor = (priority: string) => {
 interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead: (id: string) => void;
+  onMarkAsUnread: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMarkAsRead }) => {
+const NotificationItem: React.FC<NotificationItemProps> = ({ 
+  notification, 
+  onMarkAsRead, 
+  onMarkAsUnread, 
+  onDelete 
+}) => {
   const Icon = getIconForCategory(
     notification.type_category || '',
     notification.type_icon
   );
 
-  const handleClick = () => {
+  const handleMainClick = () => {
     if (!notification.is_read) {
       onMarkAsRead(notification.id);
     }
     
     if (notification.action_url) {
-      window.location.href = notification.action_url;
+      window.open(notification.action_url, '_blank');
     }
   };
 
   return (
     <div
       className={cn(
-        "p-4 border-b border-border cursor-pointer hover:bg-accent/50 transition-colors",
+        "p-4 border-b border-border hover:bg-accent/50 transition-colors",
         !notification.is_read && "bg-primary/5 border-l-4 border-l-primary"
       )}
-      onClick={handleClick}
     >
       <div className="flex items-start gap-3">
         <div className={cn(
@@ -87,7 +109,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMar
           <Icon size={16} />
         </div>
         
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={handleMainClick}>
           <div className="flex items-center justify-between gap-2">
             <h4 className={cn(
               "text-sm font-medium truncate",
@@ -128,17 +150,96 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMar
             )}
           </div>
         </div>
+
+        {/* Kebab menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <MoreVertical size={14} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {!notification.is_read ? (
+              <DropdownMenuItem onClick={() => onMarkAsRead(notification.id)}>
+                <Check size={14} className="mr-2" />
+                Mark as read
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => onMarkAsUnread(notification.id)}>
+                <RotateCcw size={14} className="mr-2" />
+                Mark as unread
+              </DropdownMenuItem>
+            )}
+            
+            {notification.action_url && (
+              <DropdownMenuItem onClick={() => window.open(notification.action_url!, '_blank')}>
+                <ExternalLink size={14} className="mr-2" />
+                Open related page
+              </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuItem 
+              onClick={() => onDelete(notification.id)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 size={14} className="mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
 };
 
-export const NotificationCenter: React.FC = () => {
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+export const EnhancedNotificationCenter: React.FC = () => {
+  const { 
+    notifications, 
+    unreadCount, 
+    loading, 
+    hasMore,
+    markAsRead, 
+    markAsUnread,
+    deleteNotification,
+    markAllAsRead,
+    loadMore
+  } = useNotifications();
+  const { preferences } = useNotificationPreferences();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const unreadNotifications = notifications.filter(n => !n.is_read);
   const readNotifications = notifications.filter(n => n.is_read);
+
+  // Handle notification sound and desktop notifications
+  React.useEffect(() => {
+    const handleNewNotification = (newNotification: Notification) => {
+      if (!preferences) return;
+
+      const shouldPlaySound = preferences.sound_enabled && 
+                            preferences.severity_filters.includes(newNotification.priority) &&
+                            !preferences.mute_until || new Date(preferences.mute_until) <= new Date();
+
+      if (shouldPlaySound) {
+        notificationSound.playIfActive();
+      }
+
+      const shouldShowDesktop = preferences.desktop_push_enabled &&
+                              preferences.severity_filters.includes(newNotification.priority) &&
+                              Notification.permission === 'granted';
+
+      if (shouldShowDesktop) {
+        showDesktopNotification(
+          newNotification.title,
+          newNotification.message,
+          newNotification.action_url || undefined
+        );
+      }
+    };
+
+    // This would be called from the realtime subscription in useNotifications
+    // For now, it's just a placeholder for the logic
+  }, [preferences]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -167,17 +268,27 @@ export const NotificationCenter: React.FC = () => {
               )}
             </SheetTitle>
             
-            {unreadCount > 0 && (
-              <Button 
-                variant="outline" 
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
                 size="sm"
-                onClick={markAllAsRead}
-                className="text-xs"
+                onClick={() => navigate('/settings/notifications')}
               >
-                <CheckCheck size={14} className="mr-1" />
-                Mark all read
+                <Settings size={14} />
               </Button>
-            )}
+              
+              {unreadCount > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={markAllAsRead}
+                  className="text-xs"
+                >
+                  <CheckCheck size={14} className="mr-1" />
+                  Mark all read
+                </Button>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
@@ -206,6 +317,8 @@ export const NotificationCenter: React.FC = () => {
                       key={notification.id}
                       notification={notification}
                       onMarkAsRead={markAsRead}
+                      onMarkAsUnread={markAsUnread}
+                      onDelete={deleteNotification}
                     />
                   ))}
                   {readNotifications.length > 0 && <Separator className="my-4" />}
@@ -219,13 +332,28 @@ export const NotificationCenter: React.FC = () => {
                       Earlier
                     </h3>
                   )}
-                  {readNotifications.slice(0, 20).map((notification) => (
+                  {readNotifications.map((notification) => (
                     <NotificationItem
                       key={notification.id}
                       notification={notification}
                       onMarkAsRead={markAsRead}
+                      onMarkAsUnread={markAsUnread}
+                      onDelete={deleteNotification}
                     />
                   ))}
+                </div>
+              )}
+
+              {hasMore && (
+                <div className="p-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={loadMore}
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    {loading ? 'Loading...' : 'Load more'}
+                  </Button>
                 </div>
               )}
             </ScrollArea>

@@ -1883,30 +1883,42 @@ export type Database = {
       notification_preferences: {
         Row: {
           created_at: string
+          desktop_push_enabled: boolean
           email_enabled: boolean
           id: string
           in_app_enabled: boolean
+          mute_until: string | null
           push_enabled: boolean
+          severity_filters: string[]
+          sound_enabled: boolean
           type_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          desktop_push_enabled?: boolean
           email_enabled?: boolean
           id?: string
           in_app_enabled?: boolean
+          mute_until?: string | null
           push_enabled?: boolean
+          severity_filters?: string[]
+          sound_enabled?: boolean
           type_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          desktop_push_enabled?: boolean
           email_enabled?: boolean
           id?: string
           in_app_enabled?: boolean
+          mute_until?: string | null
           push_enabled?: boolean
+          severity_filters?: string[]
+          sound_enabled?: boolean
           type_id?: string | null
           updated_at?: string
           user_id?: string
@@ -4369,6 +4381,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_notification: {
+        Args: { notification_id: string }
+        Returns: boolean
+      }
       determine_shot_region: {
         Args: { _x: number; _y: number }
         Returns: string
@@ -4438,6 +4454,29 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_notifications_paginated: {
+        Args: { page_limit?: number; page_offset?: number }
+        Returns: {
+          action_url: string
+          created_at: string
+          data: Json
+          expires_at: string
+          id: string
+          is_read: boolean
+          message: string
+          priority: string
+          read_at: string
+          related_entity_id: string
+          related_entity_type: string
+          title: string
+          type_category: string
+          type_description: string
+          type_icon: string
+          type_id: string
+          type_name: string
+          user_id: string
+        }[]
+      }
       get_safe_profile_info: {
         Args: { profile_id: string }
         Returns: {
@@ -4499,7 +4538,11 @@ export type Database = {
       }
       mark_notification_read: {
         Args: { notification_id: string }
-        Returns: undefined
+        Returns: boolean
+      }
+      mark_notification_unread: {
+        Args: { notification_id: string }
+        Returns: boolean
       }
       mask_employee_compensation: {
         Args: {
