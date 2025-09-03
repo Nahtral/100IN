@@ -10,6 +10,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
+import { TeamGridSettingsButton } from '@/components/teamgrid/TeamGridSettingsButton';
 import SecureEmployeeList from '@/components/hr/SecureEmployeeList';
 import TimeTracking from '@/components/hr/TimeTracking';
 import TimeOffManagement from '@/components/hr/TimeOffManagement';
@@ -206,10 +207,7 @@ const TeamGrid = () => {
               <UserPlus className="h-4 w-4 mr-2" />
               Add Employee
             </Button>
-            <Button variant="outline" className="btn-secondary-panthers">
-              <Settings className="h-4 w-4 mr-2" />
-              TeamGrid Settings
-            </Button>
+            <TeamGridSettingsButton variant="outline" />
           </div>}
       </div>
 

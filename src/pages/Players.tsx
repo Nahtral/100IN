@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PlayerForm from '@/components/forms/PlayerForm';
 import PlayerDetailsModal from '@/components/player-details/PlayerDetailsModal';
+import { TeamGridSettingsButton } from '@/components/teamgrid/TeamGridSettingsButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTeamGridSettings } from '@/hooks/useTeamGridSettings';
 
 interface Player {
   id: string;
@@ -60,20 +62,32 @@ const Players = () => {
   const { toast } = useToast();
   const { isSuperAdmin } = useUserRole();
   const { currentUser } = useCurrentUser();
+  const { settings: teamGridSettings } = useTeamGridSettings();
 
   useEffect(() => {
     fetchPlayers();
   }, []);
 
+  // Effect to refetch players when settings change
+  useEffect(() => {
+    if (teamGridSettings) {
+      fetchPlayers();
+    }
+  }, [teamGridSettings]);
+
   const fetchPlayers = async () => {
     try {
       console.log('Fetching players...');
       
-      // First fetch all players
+      // Apply TeamGrid settings for sorting and pagination
+      const sortColumn = teamGridSettings?.sort_by || 'created_at';
+      const sortDirection = teamGridSettings?.sort_direction === 'desc' ? false : true;
+      
+      // First fetch all players with sorting
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order(sortColumn, { ascending: sortDirection });
 
       console.log('Players query result:', { data: playersData, error: playersError });
 
@@ -231,14 +245,16 @@ const Players = () => {
             <h1 className="mobile-title text-foreground">Players</h1>
             <p className="mobile-text text-muted-foreground">Manage your team roster</p>
           </div>
-          {isSuperAdmin && (
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openAddForm} size="lg" className="w-full sm:w-auto">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Add Player
-                </Button>
-              </DialogTrigger>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <TeamGridSettingsButton />
+            {isSuperAdmin && (
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openAddForm} size="lg" className="w-full sm:w-auto">
+                    <Plus className="h-5 w-5 mr-2" />
+                    Add Player
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="mobile-container max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="mobile-subtitle">
@@ -261,7 +277,8 @@ const Players = () => {
               />
             </DialogContent>
           </Dialog>
-          )}
+            )}
+          </div>
         </div>
         
         <Card>

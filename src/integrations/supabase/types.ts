@@ -3892,6 +3892,51 @@ export type Database = {
           },
         ]
       }
+      teamgrid_settings: {
+        Row: {
+          accent_color: string
+          allow_bulk_import: boolean
+          allow_manual_players: boolean
+          created_at: string
+          default_view: string
+          enable_archived_filter: boolean
+          id: string
+          page_size: number
+          sort_by: string
+          sort_direction: string
+          updated_at: string
+          visible_columns: string[]
+        }
+        Insert: {
+          accent_color?: string
+          allow_bulk_import?: boolean
+          allow_manual_players?: boolean
+          created_at?: string
+          default_view?: string
+          enable_archived_filter?: boolean
+          id?: string
+          page_size?: number
+          sort_by?: string
+          sort_direction?: string
+          updated_at?: string
+          visible_columns?: string[]
+        }
+        Update: {
+          accent_color?: string
+          allow_bulk_import?: boolean
+          allow_manual_players?: boolean
+          created_at?: string
+          default_view?: string
+          enable_archived_filter?: boolean
+          id?: string
+          page_size?: number
+          sort_by?: string
+          sort_direction?: string
+          updated_at?: string
+          visible_columns?: string[]
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           age_group: string
