@@ -935,9 +935,9 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {eligibleEmployees.map((employee) => (
+                  {employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
-                      {employee.full_name || `${employee.first_name} ${employee.last_name}`} - {employee.roles.join(', ')}
+                      {employee.profiles?.full_name || `${employee.first_name} ${employee.last_name}`} - {employee.position || 'Employee'}
                     </SelectItem>
                   ))}
                 </SelectContent>
