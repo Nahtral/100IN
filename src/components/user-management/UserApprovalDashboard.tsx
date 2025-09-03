@@ -152,16 +152,20 @@ export const UserApprovalDashboard = () => {
 
   const assignRoleToUser = async (userId: string, role: string, reason: string) => {
     try {
-      // Check if user already has this role
-      const { data: existingRole } = await supabase
+      // Cast role to the expected enum type
+      const roleEnum = role as 'player' | 'parent' | 'coach' | 'staff' | 'medical' | 'partner' | 'super_admin';
+      
+      // Check if user already has this role (don't use .single() as there might be 0 or multiple results)
+      const { data: existingRoles, error: fetchError } = await supabase
         .from('user_roles')
         .select('*')
         .eq('user_id', userId)
-        .eq('role', role as 'player' | 'parent' | 'coach' | 'staff' | 'medical' | 'partner' | 'super_admin')
-        .single();
+        .eq('role', roleEnum);
 
-      if (existingRole) {
-        // Activate existing role
+      if (fetchError) throw fetchError;
+
+      if (existingRoles && existingRoles.length > 0) {
+        // Activate the first existing role record
         const { error: updateError } = await supabase
           .from('user_roles')
           .update({ 
@@ -169,7 +173,7 @@ export const UserApprovalDashboard = () => {
             approved_by: user?.id,
             approved_at: new Date().toISOString()
           })
-          .eq('id', existingRole.id);
+          .eq('id', existingRoles[0].id);
 
         if (updateError) throw updateError;
       } else {
@@ -178,7 +182,7 @@ export const UserApprovalDashboard = () => {
           .from('user_roles')
           .insert({
             user_id: userId,
-            role: role as 'player' | 'parent' | 'coach' | 'staff' | 'medical' | 'partner' | 'super_admin',
+            role: roleEnum,
             is_active: true,
             approved_by: user?.id,
             approved_at: new Date().toISOString()
@@ -199,6 +203,7 @@ export const UserApprovalDashboard = () => {
           });
       } catch (auditError) {
         console.error('Failed to log role assignment:', auditError);
+        // Don't throw, as this is just logging
       }
 
     } catch (error) {
