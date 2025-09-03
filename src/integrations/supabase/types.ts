@@ -1159,13 +1159,6 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "health_wellness_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
-          },
         ]
       }
       injury_reports: {
@@ -2689,13 +2682,6 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "player_medical_insurance_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
-          },
         ]
       }
       player_memberships: {
@@ -2755,13 +2741,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_memberships_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
           },
         ]
       }
@@ -2830,13 +2809,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_performance_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
           },
         ]
       }
@@ -3429,13 +3401,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "shot_analytics_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
-          },
-          {
             foreignKeyName: "shot_analytics_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -3504,13 +3469,6 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "shot_sessions_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
-          },
         ]
       }
       shotiq_messages: {
@@ -3557,13 +3515,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shotiq_messages_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "shotiq_messages_session_id_fkey"
@@ -3675,13 +3626,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shots_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "shots_session_id_fkey"
@@ -4301,24 +4245,6 @@ export type Database = {
           role: string | null
           role_active: boolean | null
           role_display: string | null
-        }
-        Relationships: []
-      }
-      vw_player_membership_usage_secure: {
-        Row: {
-          allocated_classes: number | null
-          allocation_type: string | null
-          days_left: number | null
-          end_date: string | null
-          is_expired: boolean | null
-          membership_type_name: string | null
-          player_id: string | null
-          player_name: string | null
-          remaining_classes: number | null
-          should_deactivate: boolean | null
-          start_date: string | null
-          status: string | null
-          used_classes: number | null
         }
         Relationships: []
       }
