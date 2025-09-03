@@ -121,7 +121,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       .from('employee_schedules')
       .select(`
         *,
-        employees!inner (
+        employees!employee_schedules_employee_id_fkey (
           id,
           first_name,
           last_name,
@@ -142,7 +142,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       .from('schedule_change_requests')
       .select(`
         *,
-        employees!schedule_change_requests_requester_id_fkey (
+        requester:employees!schedule_change_requests_requester_id_fkey (
           first_name,
           last_name,
           position
@@ -170,11 +170,10 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       .from('employees')
       .select(`
         *,
-        profiles!inner(full_name),
+        profiles!employees_user_id_fkey(full_name),
         user_roles!left(role)
       `)
       .eq('employment_status', 'active')
-      .eq('user_roles.is_active', true)
       .order('first_name');
 
     if (error) throw error;
@@ -193,18 +192,12 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
         department,
         email,
         user_id,
-        profiles!inner (
+        profiles!employees_user_id_fkey (
           id,
-          full_name,
-          user_roles!inner (
-            role,
-            is_active
-          )
+          full_name
         )
       `)
       .eq('employment_status', 'active')
-      .eq('profiles.user_roles.is_active', true)
-      .in('profiles.user_roles.role', ['super_admin', 'staff', 'coach'])
       .order('first_name');
 
     if (error) {
@@ -212,30 +205,26 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       return;
     }
 
-    // Process the data to get unique employees with their roles
-    const processedEmployees = data?.reduce((acc: any[], employee: any) => {
-      const existingEmployee = acc.find(e => e.id === employee.id);
-      if (existingEmployee) {
-        if (!existingEmployee.roles.includes(employee.profiles.user_roles.role)) {
-          existingEmployee.roles.push(employee.profiles.user_roles.role);
-        }
-      } else {
-        acc.push({
-          id: employee.id,
-          first_name: employee.first_name,
-          last_name: employee.last_name,
-          position: employee.position,
-          department: employee.department,
-          email: employee.email,
-          user_id: employee.user_id,
-          full_name: employee.profiles.full_name,
-          roles: [employee.profiles.user_roles.role]
+    // Fetch user roles separately for each employee
+    const processedData = [];
+    for (const emp of data || []) {
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', emp.user_id)
+        .eq('is_active', true)
+        .in('role', ['super_admin', 'staff', 'coach']);
+      
+      if (rolesData && rolesData.length > 0) {
+        processedData.push({
+          ...emp,
+          roles: rolesData.map((r: any) => r.role),
+          full_name: (emp.profiles as any)?.full_name || `${emp.first_name} ${emp.last_name}`
         });
       }
-      return acc;
-    }, []) || [];
-
-    setEligibleEmployees(processedEmployees);
+    }
+    
+    setEligibleEmployees(processedData);
   };
 
   const fetchTemplates = async () => {
@@ -283,6 +272,26 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
 
   const handleScheduleSubmit = async () => {
     try {
+      // Validate that employee_id is selected
+      if (!scheduleForm.employee_id || scheduleForm.employee_id.trim() === '') {
+        toast({
+          title: "Error",
+          description: "Please select an employee.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate required fields
+      if (!scheduleForm.shift_date || !scheduleForm.start_time || !scheduleForm.end_time) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (selectedSchedule) {
         const { error } = await supabase
           .from('employee_schedules')
@@ -326,11 +335,11 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       });
       fetchData();
       onStatsUpdate?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving schedule:', error);
       toast({
         title: "Error",
-        description: "Failed to save schedule.",
+        description: error.message || "Failed to save schedule.",
         variant: "destructive",
       });
     }

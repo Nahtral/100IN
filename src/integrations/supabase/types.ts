@@ -3208,6 +3208,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "schedule_change_requests_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "schedule_change_requests_target_employee_id_fkey"
             columns: ["target_employee_id"]
             isOneToOne: false
