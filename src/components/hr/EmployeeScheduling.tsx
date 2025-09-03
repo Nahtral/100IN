@@ -166,18 +166,26 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   };
 
   const fetchEmployees = async () => {
-    const { data, error } = await supabase
-      .from('employees')
-      .select(`
-        *,
-        profiles!employees_user_id_fkey(full_name),
-        user_roles!left(role)
-      `)
-      .eq('employment_status', 'active')
-      .order('first_name');
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select(`
+          *,
+          profiles!employees_user_id_fkey(full_name, email)
+        `)
+        .eq('employment_status', 'active')
+        .order('first_name');
 
-    if (error) throw error;
-    setEmployees(data || []);
+      if (error) {
+        console.error('Error fetching employees:', error);
+        return;
+      }
+
+      console.log('Fetched employees:', data);
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Error in fetchEmployees:', error);
+    }
   };
 
   const fetchEligibleEmployees = async () => {
