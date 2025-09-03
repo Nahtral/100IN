@@ -181,8 +181,18 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
         return;
       }
 
-      console.log('Fetched employees:', data);
-      setEmployees(data || []);
+      console.log('Fetched employees for scheduling:', data);
+      console.log('Employee count:', data?.length);
+      
+      // Ensure we're getting all employee types including staff
+      const allEmployees = data?.map(emp => ({
+        ...emp,
+        display_name: (emp.profiles as any)?.full_name || `${emp.first_name} ${emp.last_name}`,
+        position_display: emp.position || 'Employee'
+      })) || [];
+      
+      console.log('Processed employees:', allEmployees.map(e => `${e.display_name} - ${e.position_display}`));
+      setEmployees(allEmployees);
     } catch (error) {
       console.error('Error in fetchEmployees:', error);
     }
@@ -954,7 +964,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                 <SelectContent>
                   {employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
-                      {employee.profiles?.full_name || `${employee.first_name} ${employee.last_name}`} - {employee.position || 'Employee'}
+                      {employee.display_name || employee.profiles?.full_name || `${employee.first_name} ${employee.last_name}`} - {employee.position_display || employee.position || 'Employee'}
                     </SelectItem>
                   ))}
                 </SelectContent>
