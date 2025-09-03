@@ -3253,12 +3253,15 @@ export type Database = {
       }
       schedules: {
         Row: {
+          archived_at: string | null
           created_at: string | null
           created_by: string
+          deleted_at: string | null
           description: string | null
           end_time: string
           event_type: string
           id: string
+          image_url: string | null
           is_recurring: boolean | null
           location: string
           opponent: string | null
@@ -3267,17 +3270,21 @@ export type Database = {
           recurrence_interval: number | null
           recurrence_pattern: string | null
           start_time: string
+          status: string | null
           team_ids: string[] | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string | null
           created_by: string
+          deleted_at?: string | null
           description?: string | null
           end_time: string
           event_type: string
           id?: string
+          image_url?: string | null
           is_recurring?: boolean | null
           location: string
           opponent?: string | null
@@ -3286,17 +3293,21 @@ export type Database = {
           recurrence_interval?: number | null
           recurrence_pattern?: string | null
           start_time: string
+          status?: string | null
           team_ids?: string[] | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          archived_at?: string | null
           created_at?: string | null
           created_by?: string
+          deleted_at?: string | null
           description?: string | null
           end_time?: string
           event_type?: string
           id?: string
+          image_url?: string | null
           is_recurring?: boolean | null
           location?: string
           opponent?: string | null
@@ -3305,6 +3316,7 @@ export type Database = {
           recurrence_interval?: number | null
           recurrence_pattern?: string | null
           start_time?: string
+          status?: string | null
           team_ids?: string[] | null
           title?: string
           updated_at?: string | null
@@ -4507,6 +4519,15 @@ export type Database = {
           target_user_id: string
         }
         Returns: Json
+      }
+      rpc_duplicate_event: {
+        Args: {
+          copy_teams?: boolean
+          event_id: string
+          new_title?: string
+          shift_days?: number
+        }
+        Returns: string
       }
       rpc_get_employees: {
         Args: { lim?: number; off?: number; q?: string }
