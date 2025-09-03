@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,14 @@ import ScheduleForm from '@/components/forms/ScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
+import { LazyLoadWrapper } from '@/components/ui/LazyLoadWrapper';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce, useDebouncedCallback } from '@/hooks/useDebounce';
+import { useScheduleCache } from '@/hooks/useScheduleCache';
 import { format, isToday, isFuture } from 'date-fns';
 
 interface ScheduleEvent {
@@ -34,8 +37,6 @@ interface ScheduleEvent {
 }
 
 const Schedule = () => {
-  const [events, setEvents] = useState<ScheduleEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -65,32 +66,29 @@ const Schedule = () => {
   const { userRole, isSuperAdmin } = useUserRole();
   const { toast } = useToast();
 
+  // Use cached events with debounced filtering
+  const debouncedFilters = useDebounce(filters, 300);
+  const { 
+    events, 
+    totalCount, 
+    loading, 
+    error: scheduleError, 
+    fetchEvents, 
+    refetch 
+  } = useScheduleCache(debouncedFilters, { 
+    pageSize: 20,
+    page: 1 
+  });
+
+  // Debounced refetch to prevent excessive calls
+  const debouncedRefetch = useDebouncedCallback(() => refetch(), 1000);
+
   // Fetch user's team assignments
   useEffect(() => {
     if (user?.id) {
       fetchUserTeams();
     }
   }, [user?.id]);
-
-  // Fetch events when filters, tab, or user teams change
-  useEffect(() => {
-    fetchEvents();
-  }, [filters, activeTab, userTeamIds]);
-
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('schedule_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'schedules' },
-        () => fetchEvents()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const fetchUserTeams = async () => {
     try {
@@ -118,66 +116,22 @@ const Schedule = () => {
     }
   };
 
-  const fetchEvents = async () => {
-    try {
-      setLoading(true);
-      
-      let query = supabase
-        .from('schedules')
-        .select('*')
-        .order('start_time', { ascending: activeTab === 'upcoming' });
-
-      // Apply team filtering by default
-      if (userTeamIds.length > 0 && !isSuperAdmin && userRole !== 'staff') {
-        query = query.overlaps('team_ids', userTeamIds);
-      }
-
-      // Apply date filtering based on tab
-      const now = new Date().toISOString();
-      if (activeTab === 'upcoming') {
-        query = query.gte('start_time', now);
-      } else {
-        query = query.lt('start_time', now);
-      }
-
-      // Apply additional filters
-      if (filters.event_type) {
-        query = query.eq('event_type', filters.event_type);
-      }
-      
-      if (filters.team_ids && filters.team_ids.length > 0) {
-        query = query.overlaps('team_ids', filters.team_ids);
-      }
-      
-      if (filters.location) {
-        query = query.ilike('location', `%${filters.location}%`);
-      }
-      
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,opponent.ilike.%${filters.search}%`);
-      }
-      
-      if (filters.date_range) {
-        query = query
-          .gte('start_time', filters.date_range.start)
-          .lte('start_time', filters.date_range.end);
-      }
-
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      setEvents(data || []);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load events",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  // Memoized filtered events for better performance
+  const filteredEvents = useMemo(() => {
+    if (!events) return [];
+    
+    let filtered = events;
+    
+    // Apply tab filtering
+    const now = new Date().toISOString();
+    if (activeTab === 'upcoming') {
+      filtered = filtered.filter(event => event.start_time >= now);
+    } else {
+      filtered = filtered.filter(event => event.start_time < now);
     }
-  };
+    
+    return filtered;
+  }, [events, activeTab]);
 
   const handleFormSubmit = async (formData: any) => {
     try {
@@ -224,7 +178,7 @@ const Schedule = () => {
 
       setIsFormOpen(false);
       setEditingEvent(null);
-      fetchEvents();
+      debouncedRefetch();
     } catch (error) {
       console.error('Error saving event:', error);
       toast({
@@ -266,7 +220,7 @@ const Schedule = () => {
       });
       
       setEventDetailsModal({ isOpen: false, event: null });
-      fetchEvents();
+      debouncedRefetch();
     } catch (error) {
       console.error('Error deleting event:', error);
       toast({
@@ -304,7 +258,7 @@ const Schedule = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={fetchEvents}
+              onClick={debouncedRefetch}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -347,7 +301,7 @@ const Schedule = () => {
                   </Card>
                 ))}
               </div>
-            ) : events.length === 0 ? (
+            ) : filteredEvents.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -362,7 +316,8 @@ const Schedule = () => {
               </Card>
             ) : (
               <div className="space-y-4">
-                 {events.map((event) => (
+                 {filteredEvents.map((event) => (
+                   <LazyLoadWrapper key={event.id}>
                    <Card 
                      key={event.id} 
                      className="hover:shadow-md transition-shadow cursor-pointer"
@@ -443,10 +398,11 @@ const Schedule = () => {
                               </Button>
                             )}
                          </div>
-                       </div>
-                     </CardContent>
-                   </Card>
-                 ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                   </LazyLoadWrapper>
+                  ))}
               </div>
             )}
           </TabsContent>
@@ -507,7 +463,7 @@ const Schedule = () => {
             openAttendanceModal(event);
             setEventDetailsModal({ isOpen: false, event: null });
           }}
-          onRefresh={fetchEvents}
+          onRefresh={() => refetch()}
         />
       </div>
     </Layout>
