@@ -1224,6 +1224,33 @@ export type Database = {
         }
         Relationships: []
       }
+      locations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       manual_players: {
         Row: {
           created_at: string
@@ -3236,6 +3263,7 @@ export type Database = {
           image_url: string | null
           is_recurring: boolean | null
           location: string
+          location_id: string | null
           opponent: string | null
           recurrence_days_of_week: number[] | null
           recurrence_end_date: string | null
@@ -3259,6 +3287,7 @@ export type Database = {
           image_url?: string | null
           is_recurring?: boolean | null
           location: string
+          location_id?: string | null
           opponent?: string | null
           recurrence_days_of_week?: number[] | null
           recurrence_end_date?: string | null
@@ -3282,6 +3311,7 @@ export type Database = {
           image_url?: string | null
           is_recurring?: boolean | null
           location?: string
+          location_id?: string | null
           opponent?: string | null
           recurrence_days_of_week?: number[] | null
           recurrence_end_date?: string | null
@@ -3293,7 +3323,15 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "schedules_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shift_templates: {
         Row: {

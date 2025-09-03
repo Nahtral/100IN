@@ -14,6 +14,8 @@ import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import DuplicateEventModal from '@/components/schedule/DuplicateEventModal';
 import EventActionMenu from '@/components/schedule/EventActionMenu';
 import EventImageUpload from '@/components/schedule/EventImageUpload';
+import { LocationsManagement } from '@/components/schedule/LocationsManagement';
+import { EventForm } from '@/components/schedule/EventForm';
 import { LazyLoadWrapper } from '@/components/ui/LazyLoadWrapper';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +33,7 @@ interface ScheduleEvent {
   start_time: string;
   end_time: string;
   location: string;
+  location_id?: string;
   opponent?: string;
   description?: string;
   team_ids?: string[];
@@ -165,25 +168,8 @@ const Schedule = () => {
     return filtered;
   }, [events, activeTab, isSuperAdmin]);
 
-  const handleFormSubmit = async (formData: any) => {
+  const handleNewEventSave = async (eventData: any) => {
     try {
-      const eventData = {
-        title: formData.title,
-        event_type: formData.eventType,
-        start_time: `${formData.startDate}T${formData.startTime}:00`,
-        end_time: `${formData.endDate}T${formData.endTime}:00`,
-        location: formData.location,
-        opponent: formData.opponent || null,
-        description: formData.description || null,
-        team_ids: formData.teamIds || [],
-        is_recurring: Boolean(formData.isRecurring),
-        recurrence_pattern: formData.isRecurring ? formData.recurrencePattern : null,
-        recurrence_end_date: formData.isRecurring ? formData.recurrenceEndDate : null,
-        recurrence_days_of_week: formData.isRecurring ? formData.recurrenceDaysOfWeek : null,
-        status: 'active',
-        created_by: user?.id,
-      };
-
       if (editingEvent) {
         const { error } = await supabase
           .from('schedules')
@@ -199,7 +185,7 @@ const Schedule = () => {
       } else {
         const { error } = await supabase
           .from('schedules')
-          .insert([eventData]);
+          .insert([{ ...eventData, created_by: user?.id }]);
         
         if (error) throw error;
         
@@ -212,11 +198,11 @@ const Schedule = () => {
       setIsFormOpen(false);
       setEditingEvent(null);
       debouncedRefetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving event:', error);
       toast({
         title: "Error",
-        description: "Failed to save event",
+        description: error.message || "Failed to save event",
         variant: "destructive",
       });
     }
@@ -375,6 +361,9 @@ const Schedule = () => {
       meeting: 'bg-yellow-100 text-yellow-800',
       scrimmage: 'bg-purple-100 text-purple-800',
       tournament: 'bg-orange-100 text-orange-800',
+      'FNL': 'bg-red-100 text-red-800',
+      'DBL': 'bg-blue-100 text-blue-800',
+      'Team Building': 'bg-green-100 text-green-800',
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -421,12 +410,20 @@ const Schedule = () => {
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             <TabsTrigger value="past">Past Events</TabsTrigger>
             {isSuperAdmin && (
-              <TabsTrigger value="archived">Archived Events</TabsTrigger>
+              <>
+                <TabsTrigger value="archived">Archived Events</TabsTrigger>
+                <TabsTrigger value="locations">Locations</TabsTrigger>
+              </>
             )}
           </TabsList>
 
-          <TabsContent value={activeTab} className="space-y-4">
-            {loading ? (
+          <TabsContent value="locations" className="space-y-4">
+            <LocationsManagement />
+          </TabsContent>
+
+          <TabsContent value={activeTab} className="space-y-4">{activeTab !== 'locations' && (
+            <>
+              {loading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <Card key={i}>
@@ -545,41 +542,24 @@ const Schedule = () => {
                     </Card>
                    </LazyLoadWrapper>
                   ))}
-              </div>
-            )}
+               </div>
+             )}
+            </>
+           )}
           </TabsContent>
         </Tabs>
 
         {/* Event Form Dialog */}
-        <Dialog open={isFormOpen} onOpenChange={(open) => {
-          setIsFormOpen(open);
-          if (!open) setEditingEvent(null);
-        }}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingEvent ? 'Edit Event' : 'Add New Event'}
-              </DialogTitle>
-            </DialogHeader>
-            <ScheduleForm
-              onSubmit={handleFormSubmit}
-              initialData={editingEvent ? {
-                title: editingEvent.title,
-                eventType: editingEvent.event_type,
-                startDate: editingEvent.start_time.split('T')[0],
-                startTime: editingEvent.start_time.split('T')[1]?.substring(0, 5),
-                endDate: editingEvent.end_time.split('T')[0],
-                endTime: editingEvent.end_time.split('T')[1]?.substring(0, 5),
-                location: editingEvent.location,
-                opponent: editingEvent.opponent,
-                description: editingEvent.description,
-                teamIds: editingEvent.team_ids || [],
-                isRecurring: editingEvent.is_recurring || false,
-                recurrencePattern: editingEvent.recurrence_pattern as 'daily' | 'weekly' | 'monthly',
-              } : undefined}
-            />
-          </DialogContent>
-        </Dialog>
+        <EventForm
+          isOpen={isFormOpen}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingEvent(null);
+          }}
+          onSave={handleNewEventSave}
+          event={editingEvent}
+          isEditing={!!editingEvent}
+        />
 
         {/* Attendance Modal */}
         <AttendanceModal

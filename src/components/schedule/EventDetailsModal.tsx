@@ -141,6 +141,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
       meeting: 'bg-yellow-100 text-yellow-800',
       scrimmage: 'bg-purple-100 text-purple-800',
       tournament: 'bg-orange-100 text-orange-800',
+      'FNL': 'bg-red-100 text-red-800',
+      'DBL': 'bg-blue-100 text-blue-800',
+      'Team Building': 'bg-green-100 text-green-800',
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
