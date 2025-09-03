@@ -41,6 +41,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const [schedules, setSchedules] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [eligibleEmployees, setEligibleEmployees] = useState<any[]>([]); // Employees who are also coaches, staff, or super admin
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -98,6 +99,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
         fetchSchedules(),
         fetchRequests(),
         fetchEmployees(),
+        fetchEligibleEmployees(),
         fetchTemplates()
       ]);
     } catch (error) {
@@ -172,6 +174,63 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
 
     if (error) throw error;
     setEmployees(data || []);
+  };
+
+  const fetchEligibleEmployees = async () => {
+    // Fetch employees who also have coach, staff, or super_admin roles
+    const { data, error } = await supabase
+      .from('employees')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        position,
+        department,
+        email,
+        user_id,
+        profiles!inner (
+          id,
+          full_name,
+          user_roles!inner (
+            role,
+            is_active
+          )
+        )
+      `)
+      .eq('employment_status', 'active')
+      .eq('profiles.user_roles.is_active', true)
+      .in('profiles.user_roles.role', ['super_admin', 'staff', 'coach'])
+      .order('first_name');
+
+    if (error) {
+      console.error('Error fetching eligible employees:', error);
+      return;
+    }
+
+    // Process the data to get unique employees with their roles
+    const processedEmployees = data?.reduce((acc: any[], employee: any) => {
+      const existingEmployee = acc.find(e => e.id === employee.id);
+      if (existingEmployee) {
+        if (!existingEmployee.roles.includes(employee.profiles.user_roles.role)) {
+          existingEmployee.roles.push(employee.profiles.user_roles.role);
+        }
+      } else {
+        acc.push({
+          id: employee.id,
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          position: employee.position,
+          department: employee.department,
+          email: employee.email,
+          user_id: employee.user_id,
+          full_name: employee.profiles.full_name,
+          roles: [employee.profiles.user_roles.role]
+        });
+      }
+      return acc;
+    }, []) || [];
+
+    setEligibleEmployees(processedEmployees);
   };
 
   const fetchTemplates = async () => {
@@ -871,9 +930,9 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} - {emp.position}
+                  {eligibleEmployees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.full_name || `${employee.first_name} ${employee.last_name}`} - {employee.roles.join(', ')}
                     </SelectItem>
                   ))}
                 </SelectContent>
