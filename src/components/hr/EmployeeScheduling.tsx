@@ -22,12 +22,23 @@ import {
   MoreHorizontal,
   CalendarDays,
   Timer,
-  User
+  User,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths, startOfDay, endOfDay } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Employee {
+  employee_id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  role_display: string;
+  phone?: string;
+}
 
 interface EmployeeSchedulingProps {
   onStatsUpdate?: () => void;
@@ -40,7 +51,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const [currentDate, setCurrentDate] = useState(new Date());
   const [schedules, setSchedules] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [eligibleEmployees, setEligibleEmployees] = useState<any[]>([]); // Employees who are also coaches, staff, or super admin
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +98,11 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     reason: '',
     new_schedule_data: {}
   });
+
+  // Additional state for form handling
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -165,44 +181,60 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     setRequests(data || []);
   };
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = async (query: string = '') => {
     try {
-      // Fetch users with super_admin, coach, or staff roles
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          user_roles!inner(
-            role
-          )
-        `)
-        .in('user_roles.role', ['super_admin', 'coach', 'staff'])
-        .eq('user_roles.is_active', true);
+      setIsLoadingEmployees(true);
+      console.log('Fetching employees with query:', query);
+      
+      // Use RPC function as preferred method
+      const { data, error } = await supabase.rpc('rpc_get_employees', {
+        q: query,
+        lim: 50,
+        off: 0
+      });
 
       if (error) {
-        console.error('Error fetching users for scheduling:', error);
+        console.error('RPC call failed, trying fallback:', error);
+        
+        // Fallback to view query
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('employees_v')
+          .select('employee_id, full_name, role, role_display, email, phone')
+          .ilike('full_name', `%${query}%`)
+          .order('full_name')
+          .limit(50);
+
+        if (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          toast({
+            title: "Error",
+            description: `Failed to fetch employees: ${fallbackError.message}`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        console.log('Fallback data:', fallbackData);
+        setEmployees(fallbackData || []);
         return;
       }
 
-      console.log('Fetched users for scheduling:', data);
-      console.log('User count:', data?.length);
-      
-      // Process users for display
-      const eligibleUsers = data?.map(user => ({
-        id: user.id,
-        first_name: user.full_name?.split(' ')[0] || '',
-        last_name: user.full_name?.split(' ').slice(1).join(' ') || '',
-        display_name: user.full_name || user.email,
-        position_display: (user.user_roles as any)?.role || 'Staff',
-        email: user.email
-      })) || [];
-      
-      console.log('Processed users:', eligibleUsers.map(u => `${u.display_name} - ${u.position_display}`));
-      setEmployees(eligibleUsers);
+      console.log('RPC success, fetched employees:', data);
+      console.log('Employee count:', data?.length);
+      setEmployees(data || []);
+
+      if (!data || data.length === 0) {
+        console.log('No employees found for query:', query);
+      }
     } catch (error) {
       console.error('Error in fetchEmployees:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch employees. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingEmployees(false);
     }
   };
 
@@ -297,22 +329,69 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   };
 
   const handleScheduleSubmit = async () => {
-    try {
-      // Validate that employee_id is selected
-      if (!scheduleForm.employee_id || scheduleForm.employee_id.trim() === '') {
-        toast({
-          title: "Error",
-          description: "Please select an employee.",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Validate required fields
+    if (!scheduleForm.employee_id) {
+      toast({
+        title: "Validation Error",
+        description: "Please select an employee.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!scheduleForm.shift_date) {
+      toast({
+        title: "Validation Error", 
+        description: "Please select a date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!scheduleForm.start_time) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a start time.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!scheduleForm.end_time) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter an end time.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      // Validate required fields
-      if (!scheduleForm.shift_date || !scheduleForm.start_time || !scheduleForm.end_time) {
+    // Validate time format and logic
+    const startDateTime = new Date(`1970-01-01T${scheduleForm.start_time}:00`);
+    const endDateTime = new Date(`1970-01-01T${scheduleForm.end_time}:00`);
+    
+    if (endDateTime <= startDateTime) {
+      toast({
+        title: "Validation Error",
+        description: "End time must be after start time.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      console.log('Saving schedule with data:', {
+        ...scheduleForm,
+        break_duration_minutes: Number(scheduleForm.break_duration_minutes)
+      });
+      
+      // Get current user for created_by field
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
         toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
+          title: "Authentication Error",
+          description: "You must be logged in to create schedules.",
           variant: "destructive",
         });
         return;
@@ -327,27 +406,70 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
           })
           .eq('id', selectedSchedule.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating schedule:', error);
+          
+          // Provide specific error messages based on error type
+          let errorMessage = "Failed to update schedule.";
+          if (error.code === '23503') {
+            errorMessage = "Invalid employee selected. Please refresh and try again.";
+          } else if (error.code === '23505') {
+            errorMessage = "A schedule already exists for this employee at this time.";
+          } else if (error.message) {
+            errorMessage = `Database error: ${error.message}`;
+          }
+          
+          toast({
+            title: "Error",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          return;
+        }
+        
         toast({
           title: "Success",
           description: "Schedule updated successfully.",
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('employee_schedules')
           .insert({
             ...scheduleForm,
             break_duration_minutes: Number(scheduleForm.break_duration_minutes),
-            created_by: (await supabase.auth.getUser()).data.user?.id
-          });
+            created_by: user.user.id
+          })
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating schedule:', error);
+          
+          // Provide specific error messages based on error type
+          let errorMessage = "Failed to save schedule.";
+          if (error.code === '23503') {
+            errorMessage = "Invalid employee selected. Please refresh and try again.";
+          } else if (error.code === '23505') {
+            errorMessage = "A schedule already exists for this employee at this time.";
+          } else if (error.message) {
+            errorMessage = `Database error: ${error.message}`;
+          }
+          
+          toast({
+            title: "Error",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        console.log('Schedule created successfully:', data);
         toast({
           title: "Success",
-          description: "Schedule created successfully.",
+          description: "Schedule created successfully!",
         });
       }
 
+      // Reset form and close modal
       setShowScheduleModal(false);
       setSelectedSchedule(null);
       setScheduleForm({
@@ -359,15 +481,19 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
         location: '',
         notes: ''
       });
+      
+      // Refresh data
       fetchData();
       onStatsUpdate?.();
     } catch (error: any) {
-      console.error('Error saving schedule:', error);
+      console.error('Error in handleScheduleSubmit:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save schedule.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -962,21 +1088,40 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="employee">Employee</Label>
-              <Select 
-                value={scheduleForm.employee_id} 
-                onValueChange={(value) => setScheduleForm({...scheduleForm, employee_id: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.display_name || employee.profiles?.full_name || `${employee.first_name} ${employee.last_name}`} - {employee.position_display || employee.position || 'Employee'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Input
+                  placeholder="Search employees..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="mb-2"
+                />
+                <Select 
+                  value={scheduleForm.employee_id} 
+                  onValueChange={(value) => setScheduleForm({...scheduleForm, employee_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingEmployees ? (
+                      <div className="p-2">
+                        <Skeleton className="h-4 w-full mb-2" />
+                        <Skeleton className="h-4 w-3/4" />
+                      </div>
+                    ) : employees.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground">
+                        No active employees found
+                      </div>
+                    ) : (
+                      employees.map((employee) => (
+                        <SelectItem key={employee.employee_id} value={employee.employee_id}>
+                          {employee.full_name} - {employee.role_display}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -1035,11 +1180,26 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
           </div>
           
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setShowScheduleModal(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowScheduleModal(false)}
+              disabled={isSaving}
+            >
               Cancel
             </Button>
-            <Button onClick={handleScheduleSubmit} className="btn-panthers">
-              {selectedSchedule ? 'Update' : 'Create'} Schedule
+            <Button 
+              onClick={handleScheduleSubmit} 
+              className="btn-panthers"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {selectedSchedule ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                `${selectedSchedule ? 'Update' : 'Create'} Schedule`
+              )}
             </Button>
           </div>
         </DialogContent>
