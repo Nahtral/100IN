@@ -35,15 +35,15 @@ export const useReliableUserRole = () => {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching user role for:', user.email, 'User ID:', user.id);
+      console.log('🔄 Fetching user role for:', user.email, 'User ID:', user.id);
 
-      // Use direct queries instead of views that depend on auth.uid()
+      // Use direct queries with better error handling
       const [profileQuery, rolesQuery] = await Promise.all([
         supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, full_name, approval_status')
           .eq('id', user.id)
-          .single(),
+          .maybeSingle(),
         supabase
           .from('user_roles')
           .select('role, is_active')
@@ -52,18 +52,24 @@ export const useReliableUserRole = () => {
       ]);
 
       if (profileQuery.error) {
-        console.error('Error fetching user profile:', profileQuery.error);
+        console.error('❌ Error fetching user profile:', profileQuery.error);
         setError(profileQuery.error.message);
         return;
       }
 
       if (rolesQuery.error) {
-        console.error('Error fetching user roles:', rolesQuery.error);
+        console.error('❌ Error fetching user roles:', rolesQuery.error);
         setError(rolesQuery.error.message);
         return;
       }
 
       const profile = profileQuery.data;
+      if (!profile) {
+        console.error('❌ No profile found for user:', user.id);
+        setError('User profile not found');
+        return;
+      }
+
       const roles = rolesQuery.data || [];
       const roleStrings = roles.map(r => r.role);
       
@@ -78,7 +84,7 @@ export const useReliableUserRole = () => {
         all_roles: roleStrings
       };
 
-      console.log('✅ User role data loaded:', userData);
+      console.log('✅ Reliable user role data loaded:', userData);
       setUserData(userData);
     } catch (err) {
       console.error('Unexpected error fetching user role:', err);
@@ -94,24 +100,30 @@ export const useReliableUserRole = () => {
     fetchUserRole();
   }, [fetchUserRole]);
 
-  // Subscribe to auth state changes and refetch immediately
+  // Subscribe to auth state changes with debouncing
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed, refetching role:', event);
+        console.log('🔄 Auth state changed, refetching role:', event);
         
-        // Clear current data and fetch fresh
+        // Clear current data
         setUserData(null);
         setError(null);
         
-        // Small delay to ensure session is set
-        setTimeout(() => {
+        // Debounce the refetch to prevent rapid calls
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
           fetchUserRole(true);
-        }, 50);
+        }, 100);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+    };
   }, [fetchUserRole]);
 
   // Helper functions

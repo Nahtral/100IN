@@ -77,13 +77,18 @@ const RoleProtectedRoute = ({
     );
   }
 
-  // Super admins can access everything
-  if (isSuperAdmin()) {
-    console.log('✅ Super admin access granted to:', allowedRoles.join(', '));
+  // Super admins can access everything - this is CRITICAL for admin routes
+  if (isSuperAdmin() && isApproved()) {
+    console.log('✅ SUPER ADMIN ACCESS GRANTED:', {
+      route: allowedRoles.join(', '),
+      user: userData?.email,
+      isApproved: isApproved(),
+      isSuperAdmin: isSuperAdmin()
+    });
     return <>{children}</>;
   }
 
-  // Check role permissions
+  // Check role permissions for non-super-admins
   const hasPermission = requireAll 
     ? allowedRoles.every(role => hasRole(role))
     : allowedRoles.some(role => hasRole(role));
@@ -93,11 +98,21 @@ const RoleProtectedRoute = ({
     allowedRoles,
     userRoles: userData?.all_roles,
     isSuperAdmin: isSuperAdmin(),
+    isApproved: isApproved(),
     hasPermission,
-    requireAll
+    requireAll,
+    decision: hasPermission ? 'GRANTED' : 'DENIED'
   });
 
-  if (!hasPermission) {
+  if (!hasPermission && !isSuperAdmin()) {
+    console.log('❌ ACCESS DENIED:', {
+      user: userData?.email,
+      userRoles: userData?.all_roles,
+      requiredRoles: allowedRoles,
+      isApproved: isApproved(),
+      isSuperAdmin: isSuperAdmin()
+    });
+    
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -111,6 +126,8 @@ const RoleProtectedRoute = ({
               <div className="mt-4 p-3 bg-muted rounded-md text-sm">
                 <p><strong>Your roles:</strong> {userData?.all_roles?.join(', ') || 'None'}</p>
                 <p><strong>Required:</strong> {allowedRoles.join(requireAll ? ' AND ' : ' OR ')}</p>
+                <p><strong>Super Admin:</strong> {isSuperAdmin() ? 'Yes' : 'No'}</p>
+                <p><strong>Approved:</strong> {isApproved() ? 'Yes' : 'No'}</p>
               </div>
             </div>
           </CardContent>

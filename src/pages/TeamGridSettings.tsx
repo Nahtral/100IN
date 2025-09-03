@@ -12,8 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Settings, Save, RotateCcw, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useSuperAdminGuard } from '@/hooks/useSuperAdminGuard';
 
 interface TeamGridSettings {
   id: string;
@@ -68,12 +67,11 @@ const TeamGridSettings = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { currentUser } = useCurrentUser();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin, isApproved, loading: authLoading, error: authError } = useSuperAdminGuard();
 
   // Redirect if not super admin
   useEffect(() => {
-    if (currentUser && !isSuperAdmin) {
+    if (!authLoading && (!isSuperAdmin || !isApproved)) {
       navigate('/');
       toast({
         title: 'Access Denied',
@@ -81,13 +79,13 @@ const TeamGridSettings = () => {
         variant: 'destructive'
       });
     }
-  }, [currentUser, isSuperAdmin, navigate, toast]);
+  }, [authLoading, isSuperAdmin, isApproved, navigate, toast]);
 
   useEffect(() => {
-    if (isSuperAdmin) {
+    if (isSuperAdmin && isApproved && !authLoading) {
       fetchSettings();
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, isApproved, authLoading]);
 
   const fetchSettings = async () => {
     try {
@@ -177,13 +175,13 @@ const TeamGridSettings = () => {
     });
   };
 
-  if (!isSuperAdmin) {
-    return null; // Will redirect
+  if (authLoading || !isSuperAdmin || !isApproved) {
+    return null; // Will redirect or still loading
   }
 
   if (loading) {
     return (
-      <Layout currentUser={currentUser}>
+      <Layout currentUser={{ name: 'Super Admin', role: 'Super Admin', avatar: 'SA' }}>
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/')}>
@@ -206,9 +204,9 @@ const TeamGridSettings = () => {
     );
   }
 
-  if (error) {
+  if (error || authError) {
     return (
-      <Layout currentUser={currentUser}>
+      <Layout currentUser={{ name: 'Super Admin', role: 'Super Admin', avatar: 'SA' }}>
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/')}>
@@ -222,7 +220,7 @@ const TeamGridSettings = () => {
           </div>
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-red-600 mb-4">{error}</p>
+              <p className="text-red-600 mb-4">{error || authError}</p>
               <Button onClick={fetchSettings}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Retry
@@ -237,7 +235,7 @@ const TeamGridSettings = () => {
   if (!settings) return null;
 
   return (
-    <Layout currentUser={currentUser}>
+    <Layout currentUser={{ name: 'Super Admin', role: 'Super Admin', avatar: 'SA' }}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
