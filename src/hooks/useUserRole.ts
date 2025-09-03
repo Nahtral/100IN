@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOptimizedCache } from '@/hooks/useOptimizedCache';
+import { useSimpleCache } from '@/hooks/useSimpleCache';
 import { RateLimiter } from '@/utils/rateLimiter';
 
 export const useUserRole = () => {
@@ -11,7 +11,7 @@ export const useUserRole = () => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const { user } = useAuth();
-  const { get, set } = useOptimizedCache();
+  const { get, set } = useSimpleCache();
   const lastFetchRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -38,11 +38,11 @@ export const useUserRole = () => {
 
       // Check cache first
       const cacheKey = `user_role_${user.id}`;
-      const cachedData = get<{
+      const cachedData = get(cacheKey) as {
         userRole: string | null;
         userRoles: string[];
         isSuperAdmin: boolean;
-      }>(cacheKey);
+      } | null;
       if (cachedData && initialized) {
         setUserRole(cachedData.userRole);
         setUserRoles(cachedData.userRoles);
