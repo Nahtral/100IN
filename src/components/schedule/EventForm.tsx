@@ -82,12 +82,14 @@ export const EventForm: React.FC<EventFormProps> = ({
     recurrence_pattern: 'weekly',
     recurrence_interval: 1,
     recurrence_days_of_week: [],
+    recurrence_end_date: '',
     image_url: ''
   });
 
   const [date, setDate] = useState<Date>();
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date>();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
@@ -123,6 +125,10 @@ export const EventForm: React.FC<EventFormProps> = ({
         const endDate = new Date(event.end_time);
         setEndTime(format(endDate, 'HH:mm'));
       }
+      
+      if (event.recurrence_end_date) {
+        setRecurrenceEndDate(new Date(event.recurrence_end_date));
+      }
     } else if (isOpen) {
       // Reset form for new event
       setFormData({
@@ -138,11 +144,13 @@ export const EventForm: React.FC<EventFormProps> = ({
         recurrence_pattern: 'weekly',
         recurrence_interval: 1,
         recurrence_days_of_week: [],
+        recurrence_end_date: '',
         image_url: ''
       });
       setDate(undefined);
       setStartTime('');
       setEndTime('');
+      setRecurrenceEndDate(undefined);
       setErrors({});
     }
   }, [event, isOpen]);
@@ -207,6 +215,7 @@ export const EventForm: React.FC<EventFormProps> = ({
         ...formData,
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
+        recurrence_end_date: recurrenceEndDate ? format(recurrenceEndDate, 'yyyy-MM-dd') : undefined,
       };
 
       // Remove location field as we're using location_id
@@ -441,20 +450,51 @@ export const EventForm: React.FC<EventFormProps> = ({
                     </Select>
                   </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="recurrence_interval">Repeat Every</Label>
+                      <Input
+                        id="recurrence_interval"
+                        type="number"
+                        min="1"
+                        value={formData.recurrence_interval || 1}
+                        onChange={(e) => setFormData({ ...formData, recurrence_interval: parseInt(e.target.value) || 1 })}
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="recurrence_interval">Repeat Every</Label>
-                    <Input
-                      id="recurrence_interval"
-                      type="number"
-                      min="1"
-                      value={formData.recurrence_interval || 1}
-                      onChange={(e) => setFormData({ ...formData, recurrence_interval: parseInt(e.target.value) || 1 })}
-                    />
+                    <Label>End Date (Optional)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !recurrenceEndDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {recurrenceEndDate ? format(recurrenceEndDate, "PPP") : <span>Select end date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={recurrenceEndDate}
+                          onSelect={setRecurrenceEndDate}
+                          initialFocus
+                          className="pointer-events-auto"
+                          disabled={(date) => date < new Date()}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-sm text-muted-foreground">
+                      Leave blank for indefinite recurrence
+                    </p>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
         </div>
 
         <DialogFooter>
