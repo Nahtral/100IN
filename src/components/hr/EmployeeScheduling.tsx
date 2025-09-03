@@ -168,8 +168,13 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const fetchEmployees = async () => {
     const { data, error } = await supabase
       .from('employees')
-      .select('*')
+      .select(`
+        *,
+        profiles!inner(full_name),
+        user_roles!left(role)
+      `)
       .eq('employment_status', 'active')
+      .eq('user_roles.is_active', true)
       .order('first_name');
 
     if (error) throw error;
