@@ -27,15 +27,18 @@ export class PerformanceMonitoring {
       console.debug('Performance observer not supported:', error);
     }
 
-    // Track memory usage periodically
+    // Track memory usage periodically (reduced frequency to prevent overhead)
     if ('memory' in performance) {
-      setInterval(() => {
+      const memoryInterval = setInterval(() => {
         const memory = (performance as PerformanceEntry).memory;
         if (memory) {
           this.recordMetric('memory_used_heap', memory.usedJSHeapSize);
           this.recordMetric('memory_total_heap', memory.totalJSHeapSize);
         }
-      }, 30000); // Every 30 seconds
+      }, 60000); // Reduced to every 60 seconds
+      
+      // Store interval for cleanup
+      this.observers.push({ disconnect: () => clearInterval(memoryInterval) } as any);
     }
 
     // Track route changes
@@ -47,9 +50,12 @@ export class PerformanceMonitoring {
       }
     };
     
-    // Use both popstate and interval for route change detection
+    // Use both popstate and interval for route change detection (reduced frequency)
     window.addEventListener('popstate', checkRouteChange);
-    setInterval(checkRouteChange, 1000);
+    const routeInterval = setInterval(checkRouteChange, 5000); // Reduced to every 5 seconds
+    
+    // Store interval for cleanup
+    this.observers.push({ disconnect: () => clearInterval(routeInterval) } as any);
   }
 
   static recordMetric(name: string, value: number) {

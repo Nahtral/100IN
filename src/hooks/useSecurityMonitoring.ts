@@ -137,8 +137,8 @@ export const useSecurityMonitoring = () => {
     if (user && !isMonitoring) {
       setIsMonitoring(true);
       
-      // Check for suspicious activity every 5 minutes
-      const interval = setInterval(checkSuspiciousActivity, 300000);
+      // Check for suspicious activity every 10 minutes (reduced frequency)
+      const interval = setInterval(checkSuspiciousActivity, 600000);
       
       return () => {
         clearInterval(interval);
