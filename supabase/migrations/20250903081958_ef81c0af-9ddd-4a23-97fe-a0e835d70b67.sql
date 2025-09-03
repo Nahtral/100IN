@@ -1,0 +1,177 @@
+-- Fix notifications system and add comprehensive features
+
+-- First, ensure we have proper RLS policies for notifications
+DROP POLICY IF EXISTS "Users can view their own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can update their own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can delete their own notifications" ON public.notifications;
+
+-- Create comprehensive RLS policies for notifications
+CREATE POLICY "Users can view their own notifications" 
+ON public.notifications 
+FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own notifications" 
+ON public.notifications 
+FOR UPDATE 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own notifications" 
+ON public.notifications 
+FOR DELETE 
+USING (auth.uid() = user_id);
+
+-- Create notification_preferences table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.notification_preferences (
+  id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid NOT NULL,
+  sound_enabled boolean NOT NULL DEFAULT true,
+  desktop_push_enabled boolean NOT NULL DEFAULT true,
+  mute_until timestamp with time zone,
+  severity_filters text[] NOT NULL DEFAULT ARRAY['low', 'normal', 'high', 'urgent'],
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  UNIQUE(user_id)
+);
+
+-- Enable RLS on notification_preferences
+ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for notification_preferences
+CREATE POLICY "Users can manage their own notification preferences"
+ON public.notification_preferences
+FOR ALL
+USING (auth.uid() = user_id);
+
+-- Improved mark notification read function
+CREATE OR REPLACE FUNCTION public.mark_notification_read(notification_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+BEGIN
+  UPDATE public.notifications 
+  SET 
+    is_read = true, 
+    read_at = now(),
+    updated_at = now()
+  WHERE id = notification_id AND user_id = auth.uid();
+  
+  -- Return true if a row was updated
+  RETURN FOUND;
+END;
+$$;
+
+-- Mark notification unread function
+CREATE OR REPLACE FUNCTION public.mark_notification_unread(notification_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+BEGIN
+  UPDATE public.notifications 
+  SET 
+    is_read = false, 
+    read_at = null,
+    updated_at = now()
+  WHERE id = notification_id AND user_id = auth.uid();
+  
+  -- Return true if a row was updated
+  RETURN FOUND;
+END;
+$$;
+
+-- Delete notification function
+CREATE OR REPLACE FUNCTION public.delete_notification(notification_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+BEGIN
+  DELETE FROM public.notifications 
+  WHERE id = notification_id AND user_id = auth.uid();
+  
+  -- Return true if a row was deleted
+  RETURN FOUND;
+END;
+$$;
+
+-- Get paginated notifications function
+CREATE OR REPLACE FUNCTION public.get_notifications_paginated(
+  page_offset integer DEFAULT 0,
+  page_limit integer DEFAULT 25
+)
+RETURNS TABLE(
+  id uuid,
+  user_id uuid,
+  type_id uuid,
+  title text,
+  message text,
+  data jsonb,
+  read_at timestamp with time zone,
+  is_read boolean,
+  priority text,
+  action_url text,
+  related_entity_type text,
+  related_entity_id uuid,
+  created_at timestamp with time zone,
+  expires_at timestamp with time zone,
+  type_name text,
+  type_description text,
+  type_category text,
+  type_icon text
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+  SELECT 
+    n.id,
+    n.user_id,
+    n.type_id,
+    n.title,
+    n.message,
+    n.data,
+    n.read_at,
+    n.is_read,
+    n.priority,
+    n.action_url,
+    n.related_entity_type,
+    n.related_entity_id,
+    n.created_at,
+    n.expires_at,
+    nt.name as type_name,
+    nt.description as type_description,
+    nt.category as type_category,
+    nt.icon as type_icon
+  FROM public.notifications n
+  LEFT JOIN public.notification_types nt ON n.type_id = nt.id
+  WHERE n.user_id = auth.uid()
+    AND (n.expires_at IS NULL OR n.expires_at > now())
+  ORDER BY n.created_at DESC
+  LIMIT page_limit
+  OFFSET page_offset;
+$$;
+
+-- Update updated_at trigger for notification_preferences
+CREATE TRIGGER update_notification_preferences_updated_at
+BEFORE UPDATE ON public.notification_preferences
+FOR EACH ROW
+EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Add indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_created_at ON public.notifications(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_is_read ON public.notifications(user_id, is_read);
+
+-- Insert default notification preferences for existing users
+INSERT INTO public.notification_preferences (user_id)
+SELECT DISTINCT p.id
+FROM public.profiles p
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.notification_preferences np 
+  WHERE np.user_id = p.id
+)
+ON CONFLICT (user_id) DO NOTHING;
