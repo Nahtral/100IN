@@ -24,6 +24,10 @@ interface ScheduleEvent {
   recurrence_end_date?: string;
   recurrence_pattern?: string;
   recurrence_days_of_week?: number[];
+  status?: string | null;
+  image_url?: string | null;
+  archived_at?: string | null;
+  deleted_at?: string | null;
 }
 
 interface ScheduleFilters {

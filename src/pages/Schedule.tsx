@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Calendar, Clock, MapPin, Users, Eye, RefreshCw } from 'lucide-react';
+import { Plus, Calendar, Clock, MapPin, Users, Eye, RefreshCw, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ScheduleForm from '@/components/forms/ScheduleForm';
 import AttendanceModal from '@/components/attendance/AttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
+import DuplicateEventModal from '@/components/schedule/DuplicateEventModal';
+import EventActionMenu from '@/components/schedule/EventActionMenu';
+import EventImageUpload from '@/components/schedule/EventImageUpload';
 import { LazyLoadWrapper } from '@/components/ui/LazyLoadWrapper';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,6 +37,10 @@ interface ScheduleEvent {
   created_by: string;
   is_recurring?: boolean;
   recurrence_pattern?: string;
+  status?: string | null;
+  image_url?: string | null;
+  archived_at?: string | null;
+  deleted_at?: string | null;
 }
 
 const Schedule = () => {
@@ -54,6 +61,20 @@ const Schedule = () => {
     teamIds: []
   });
   const [eventDetailsModal, setEventDetailsModal] = useState<{
+    isOpen: boolean;
+    event: ScheduleEvent | null;
+  }>({
+    isOpen: false,
+    event: null
+  });
+  const [duplicateModal, setDuplicateModal] = useState<{
+    isOpen: boolean;
+    event: ScheduleEvent | null;
+  }>({
+    isOpen: false,
+    event: null
+  });
+  const [imageUploadModal, setImageUploadModal] = useState<{
     isOpen: boolean;
     event: ScheduleEvent | null;
   }>({
@@ -117,18 +138,32 @@ const Schedule = () => {
   const filteredEvents = useMemo(() => {
     if (!events) return [];
     
-    let filtered = events;
+    let filtered = events.filter(event => {
+      // Filter out deleted events unless super admin
+      if (event.status === 'deleted' && !isSuperAdmin) {
+        return false;
+      }
+      return true;
+    });
     
     // Apply tab filtering
     const now = new Date().toISOString();
     if (activeTab === 'upcoming') {
-      filtered = filtered.filter(event => event.start_time >= now);
-    } else {
-      filtered = filtered.filter(event => event.start_time < now);
+      filtered = filtered.filter(event => 
+        event.start_time >= now && 
+        (!event.status || event.status === 'active')
+      );
+    } else if (activeTab === 'past') {
+      filtered = filtered.filter(event => 
+        event.start_time < now && 
+        (!event.status || event.status === 'active')
+      );
+    } else if (activeTab === 'archived') {
+      filtered = filtered.filter(event => event.status === 'archived');
     }
     
     return filtered;
-  }, [events, activeTab]);
+  }, [events, activeTab, isSuperAdmin]);
 
   const handleFormSubmit = async (formData: any) => {
     try {
@@ -145,6 +180,7 @@ const Schedule = () => {
         recurrence_pattern: formData.isRecurring ? formData.recurrencePattern : null,
         recurrence_end_date: formData.isRecurring ? formData.recurrenceEndDate : null,
         recurrence_days_of_week: formData.isRecurring ? formData.recurrenceDaysOfWeek : null,
+        status: 'active',
         created_by: user?.id,
       };
 
@@ -202,19 +238,38 @@ const Schedule = () => {
     });
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
+  const handleDeleteEvent = async (eventId: string, isHardDelete = false) => {
     try {
-      const { error } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('id', eventId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Event deleted successfully",
-      });
+      if (isHardDelete) {
+        // Hard delete - permanently remove
+        const { error } = await supabase
+          .from('schedules')
+          .delete()
+          .eq('id', eventId);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Event permanently deleted",
+        });
+      } else {
+        // Soft delete - mark as deleted
+        const { error } = await supabase
+          .from('schedules')
+          .update({ 
+            status: 'deleted', 
+            deleted_at: new Date().toISOString() 
+          })
+          .eq('id', eventId);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Event deleted successfully",
+        });
+      }
       
       setEventDetailsModal({ isOpen: false, event: null });
       debouncedRefetch();
@@ -223,6 +278,90 @@ const Schedule = () => {
       toast({
         title: "Error",
         description: "Failed to delete event",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleArchiveEvent = async (eventId: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .update({ 
+          status: 'archived', 
+          archived_at: new Date().toISOString() 
+        })
+        .eq('id', eventId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Event archived successfully",
+      });
+      
+      debouncedRefetch();
+    } catch (error) {
+      console.error('Error archiving event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to archive event",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnarchiveEvent = async (eventId: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .update({ 
+          status: 'active', 
+          archived_at: null 
+        })
+        .eq('id', eventId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Event unarchived successfully",
+      });
+      
+      debouncedRefetch();
+    } catch (error) {
+      console.error('Error unarchiving event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unarchive event",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDuplicateEvent = async (eventId: string, options: { shiftDays: number; copyTeams: boolean; newTitle?: string }) => {
+    try {
+      const { data, error } = await supabase.rpc('rpc_duplicate_event', {
+        event_id: eventId,
+        shift_days: options.shiftDays,
+        copy_teams: options.copyTeams,
+        new_title: options.newTitle
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Event duplicated successfully",
+      });
+      
+      setDuplicateModal({ isOpen: false, event: null });
+      debouncedRefetch();
+    } catch (error) {
+      console.error('Error duplicating event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to duplicate event",
         variant: "destructive",
       });
     }
@@ -281,6 +420,9 @@ const Schedule = () => {
           <TabsList>
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             <TabsTrigger value="past">Past Events</TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="archived">Archived Events</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value={activeTab} className="space-y-4">
@@ -316,25 +458,37 @@ const Schedule = () => {
                  {filteredEvents.map((event) => (
                    <LazyLoadWrapper key={event.id}>
                    <Card 
-                     key={event.id} 
-                     className="hover:shadow-md transition-shadow cursor-pointer"
-                     onClick={() => openEventDetails(event)}
-                   >
-                     <CardContent className="p-6">
-                       <div className="flex items-start justify-between">
-                         <div className="space-y-2 flex-1">
-                           <div className="flex items-center gap-2 flex-wrap">
-                             <h3 className="text-lg font-semibold">{event.title}</h3>
-                             <Badge className={getEventTypeColor(event.event_type)}>
-                               {event.event_type}
-                             </Badge>
-                             {event.is_recurring && (
-                               <Badge variant="outline">Recurring</Badge>
-                             )}
-                             {isToday(new Date(event.start_time)) && (
-                               <Badge variant="default">Today</Badge>
-                             )}
-                           </div>
+                      key={event.id} 
+                      className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                      onClick={() => openEventDetails(event)}
+                    >
+                      {event.image_url && (
+                        <div className="w-full h-32 overflow-hidden">
+                          <img 
+                            src={event.image_url} 
+                            alt={event.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-lg font-semibold">{event.title}</h3>
+                              <Badge className={getEventTypeColor(event.event_type)}>
+                                {event.event_type}
+                              </Badge>
+                              {event.is_recurring && (
+                                <Badge variant="outline">Recurring</Badge>
+                              )}
+                              {event.status === 'archived' && (
+                                <Badge variant="secondary">Archived</Badge>
+                              )}
+                              {isToday(new Date(event.start_time)) && (
+                                <Badge variant="default">Today</Badge>
+                              )}
+                            </div>
                            
                            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                              <div className="flex items-center gap-1">
@@ -367,34 +521,25 @@ const Schedule = () => {
                            )}
                          </div>
 
-                         <div className="flex items-center gap-2 ml-4">
-                           {canManageAttendance && (
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 openAttendanceModal(event);
-                               }}
-                             >
-                               <Users className="h-4 w-4 mr-1" />
-                               Attendance
-                             </Button>
-                           )}
-                            {isSuperAdmin && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                          <div className="flex items-center gap-2 ml-4">
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <EventActionMenu
+                                event={event}
+                                onEdit={() => {
                                   setEditingEvent(event);
                                   setIsFormOpen(true);
                                 }}
-                              >
-                                Edit
-                              </Button>
-                            )}
-                         </div>
+                                onDuplicate={() => setDuplicateModal({ isOpen: true, event })}
+                                onArchive={() => handleArchiveEvent(event.id)}
+                                onUnarchive={() => handleUnarchiveEvent(event.id)}
+                                onDelete={() => handleDeleteEvent(event.id)}
+                                onAttendance={() => openAttendanceModal(event)}
+                                onImageUpload={() => setImageUploadModal({ isOpen: true, event })}
+                                isSuperAdmin={isSuperAdmin}
+                                canManageAttendance={canManageAttendance}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -455,13 +600,59 @@ const Schedule = () => {
             setIsFormOpen(true);
             setEventDetailsModal({ isOpen: false, event: null });
           }}
-          onDelete={handleDeleteEvent}
+          onDelete={(eventId, isHardDelete) => handleDeleteEvent(eventId, isHardDelete)}
           onAttendance={(event) => {
             openAttendanceModal(event);
             setEventDetailsModal({ isOpen: false, event: null });
           }}
+          onDuplicate={(event) => {
+            setDuplicateModal({ isOpen: true, event });
+            setEventDetailsModal({ isOpen: false, event: null });
+          }}
+          onArchive={(eventId) => handleArchiveEvent(eventId)}
+          onUnarchive={(eventId) => handleUnarchiveEvent(eventId)}
           onRefresh={() => refetch()}
         />
+
+        {/* Duplicate Event Modal */}
+        <DuplicateEventModal
+          isOpen={duplicateModal.isOpen}
+          onClose={() => setDuplicateModal({ isOpen: false, event: null })}
+          onDuplicate={(options) => {
+            if (duplicateModal.event) {
+              handleDuplicateEvent(duplicateModal.event.id, options);
+            }
+          }}
+          eventTitle={duplicateModal.event?.title || ''}
+        />
+
+        {/* Image Upload Modal */}
+        <Dialog open={imageUploadModal.isOpen} onOpenChange={(open) => {
+          if (!open) setImageUploadModal({ isOpen: false, event: null });
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Event Image
+              </DialogTitle>
+            </DialogHeader>
+            {imageUploadModal.event && (
+              <EventImageUpload
+                eventId={imageUploadModal.event.id}
+                currentImageUrl={imageUploadModal.event.image_url}
+                onImageUpdate={(imageUrl) => {
+                  // Update the event in state
+                  if (imageUploadModal.event) {
+                    const updatedEvent = { ...imageUploadModal.event, image_url: imageUrl };
+                    setImageUploadModal({ isOpen: false, event: null });
+                    debouncedRefetch(); // Refresh to show updated image
+                  }
+                }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

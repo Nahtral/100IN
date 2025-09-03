@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, MapPin, Users, Edit, Archive, Trash2, Copy, UserPlus } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Edit, Archive, Trash2, Copy, UserPlus, Image as ImageIcon, ArchiveRestore } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +26,10 @@ interface ScheduleEvent {
   recurrence_pattern?: string;
   created_at?: string;
   updated_at?: string;
+  status?: string | null;
+  image_url?: string | null;
+  archived_at?: string | null;
+  deleted_at?: string | null;
 }
 
 interface Team {
@@ -50,8 +54,11 @@ interface EventDetailsModalProps {
   onClose: () => void;
   event: ScheduleEvent | null;
   onEdit: (event: ScheduleEvent) => void;
-  onDelete: (eventId: string) => void;
+  onDelete: (eventId: string, isHardDelete?: boolean) => void;
   onAttendance: (event: ScheduleEvent) => void;
+  onDuplicate: (event: ScheduleEvent) => void;
+  onArchive: (eventId: string) => void;
+  onUnarchive: (eventId: string) => void;
   onRefresh: () => void;
 }
 
@@ -62,6 +69,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   onEdit,
   onDelete,
   onAttendance,
+  onDuplicate,
+  onArchive,
+  onUnarchive,
   onRefresh
 }) => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -120,71 +130,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     }
   };
 
-  const handleArchive = async () => {
-    if (!event) return;
-
-    try {
-      const { error } = await supabase
-        .from('schedules')
-        .update({ archived: true, updated_at: new Date().toISOString() })
-        .eq('id', event.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Event archived successfully",
-      });
-      onRefresh();
-      onClose();
-    } catch (error) {
-      console.error('Error archiving event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to archive event",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDuplicate = async () => {
-    if (!event) return;
-
-    try {
-      const duplicateData = {
-        title: `${event.title} (Copy)`,
-        event_type: event.event_type,
-        start_time: event.start_time,
-        end_time: event.end_time,
-        location: event.location,
-        opponent: event.opponent,
-        description: event.description,
-        team_ids: event.team_ids,
-        is_recurring: false, // Don't duplicate recurring settings
-        created_by: event.created_by,
-      };
-
-      const { error } = await supabase
-        .from('schedules')
-        .insert([duplicateData]);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Event duplicated successfully",
-      });
-      onRefresh();
-      onClose();
-    } catch (error) {
-      console.error('Error duplicating event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to duplicate event",
-        variant: "destructive",
-      });
-    }
-  };
+  // These functions are now handled by parent component
+  // Remove the local handleArchive and handleDuplicate functions
 
   const getEventTypeColor = (type: string) => {
     const colors = {
@@ -214,6 +161,17 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Event Image */}
+          {event.image_url && (
+            <Card className="overflow-hidden">
+              <img
+                src={event.image_url}
+                alt={event.title}
+                className="w-full h-48 object-cover"
+              />
+            </Card>
+          )}
+
           {/* Event Header */}
           <Card>
             <CardHeader>
@@ -226,6 +184,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     </Badge>
                     {event.is_recurring && (
                       <Badge variant="outline">Recurring</Badge>
+                    )}
+                    {event.status === 'archived' && (
+                      <Badge variant="secondary">Archived</Badge>
                     )}
                   </div>
                   
@@ -261,19 +222,30 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleDuplicate}
+                      onClick={() => onDuplicate(event)}
                     >
                       <Copy className="h-4 w-4 mr-1" />
                       Duplicate
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleArchive}
-                    >
-                      <Archive className="h-4 w-4 mr-1" />
-                      Archive
-                    </Button>
+                    {event.status === 'archived' ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onUnarchive(event.id)}
+                      >
+                        <ArchiveRestore className="h-4 w-4 mr-1" />
+                        Unarchive
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onArchive(event.id)}
+                      >
+                        <Archive className="h-4 w-4 mr-1" />
+                        Archive
+                      </Button>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
@@ -294,7 +266,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => onDelete(event.id)}
+                            onClick={() => onDelete(event.id, false)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
                             Delete
