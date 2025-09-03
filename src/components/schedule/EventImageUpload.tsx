@@ -52,9 +52,10 @@ const EventImageUpload: React.FC<EventImageUploadProps> = ({
     try {
       // Delete old image if it exists
       if (currentImageUrl) {
-        const oldPath = currentImageUrl.split('/').pop();
-        if (oldPath) {
-          await supabase.storage.from('event-images').remove([oldPath]);
+        const urlParts = currentImageUrl.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        if (fileName) {
+          await supabase.storage.from('event-images').remove([fileName]);
         }
       }
 
@@ -109,7 +110,8 @@ const EventImageUpload: React.FC<EventImageUploadProps> = ({
 
     try {
       // Delete from storage
-      const fileName = imageUrl.split('/').pop();
+      const urlParts = imageUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
       if (fileName) {
         await supabase.storage.from('event-images').remove([fileName]);
       }

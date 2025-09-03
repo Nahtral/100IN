@@ -465,6 +465,10 @@ const Schedule = () => {
                             src={event.image_url} 
                             alt={event.title}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Failed to load image:', event.image_url);
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         </div>
                       )}
