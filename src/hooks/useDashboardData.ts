@@ -1,5 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { RateLimiter } from '@/utils/rateLimiter';
+import { OptimizedCache } from '@/hooks/useOptimizedCache';
+
+const RATE_LIMIT_CONFIG = { maxRequests: 10, windowMs: 60000 }; // 10 requests per minute
 
 export interface DashboardStats {
   totalUsers: number;
@@ -21,6 +25,22 @@ export const useDashboardData = () => {
     let abortController: AbortController | null = null;
     
     return async () => {
+      // Check cache first
+      const cacheKey = 'dashboard-stats';
+      const cached = OptimizedCache.get<DashboardStats>(cacheKey);
+      if (cached) {
+        setStats(cached);
+        setLoading(false);
+        return;
+      }
+
+      // Rate limiting
+      if (!RateLimiter.check('dashboard-requests', RATE_LIMIT_CONFIG)) {
+        setError('Rate limit exceeded. Please try again later.');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -31,10 +51,10 @@ export const useDashboardData = () => {
         }
         abortController = new AbortController();
 
-        // Get current user with timeout
+        // Get current user with reduced timeout
         const userPromise = supabase.auth.getUser();
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Auth request timeout')), 10000)
+          setTimeout(() => reject(new Error('Auth request timeout')), 5000) // Reduced from 10s
         );
         
         const { data: { user } } = await Promise.race([userPromise, timeoutPromise]) as any;
@@ -135,7 +155,7 @@ export const useDashboardData = () => {
         // Get real system alerts count
         const systemAlerts = alertsResult?.count || 0;
 
-        setStats({
+        const dashboardStats = {
           totalUsers,
           totalPlayers,
           totalTeams,
@@ -144,7 +164,12 @@ export const useDashboardData = () => {
           pendingTasks: systemAlerts, // Use alerts as pending tasks
           revenue,
           upcomingEvents
-        });
+        };
+
+        // Cache the result for 5 minutes
+        OptimizedCache.set(cacheKey, dashboardStats, 300000);
+        
+        setStats(dashboardStats);
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           console.error('Error fetching dashboard data:', err);
