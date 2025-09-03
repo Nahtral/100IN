@@ -233,6 +233,13 @@ export type Database = {
             foreignKeyName: "chats_archived_by_fkey"
             columns: ["archived_by"]
             isOneToOne: false
+            referencedRelation: "employees_v"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "chats_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1770,6 +1777,13 @@ export type Database = {
             foreignKeyName: "messages_recalled_by_fkey"
             columns: ["recalled_by"]
             isOneToOne: false
+            referencedRelation: "employees_v"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "messages_recalled_by_fkey"
+            columns: ["recalled_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2234,6 +2248,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "employees_v"
+            referencedColumns: ["employee_id"]
+          },
           {
             foreignKeyName: "payments_payer_id_fkey"
             columns: ["payer_id"]
@@ -2944,6 +2965,13 @@ export type Database = {
           weight?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_players_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "employees_v"
+            referencedColumns: ["employee_id"]
+          },
           {
             foreignKeyName: "fk_players_profiles"
             columns: ["user_id"]
@@ -4250,6 +4278,20 @@ export type Database = {
       }
     }
     Views: {
+      employees_v: {
+        Row: {
+          approval_status: string | null
+          created_at: string | null
+          email: string | null
+          employee_id: string | null
+          full_name: string | null
+          phone: string | null
+          role: string | null
+          role_active: boolean | null
+          role_display: string | null
+        }
+        Relationships: []
+      }
       vw_player_membership_usage_secure: {
         Row: {
           allocated_classes: number | null
@@ -4465,6 +4507,17 @@ export type Database = {
           target_user_id: string
         }
         Returns: Json
+      }
+      rpc_get_employees: {
+        Args: { lim?: number; off?: number; q?: string }
+        Returns: {
+          email: string
+          employee_id: string
+          full_name: string
+          phone: string
+          role: string
+          role_display: string
+        }[]
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }
