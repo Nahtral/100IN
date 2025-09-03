@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOptimizedCache } from '@/hooks/useOptimizedCache';
+import { RateLimiter } from '@/utils/rateLimiter';
 
 export const useUserRole = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -9,6 +11,8 @@ export const useUserRole = () => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const { user } = useAuth();
+  const { get, set } = useOptimizedCache();
+  const lastFetchRef = useRef<string | null>(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -21,31 +25,45 @@ export const useUserRole = () => {
         return;
       }
 
+      // Prevent excessive re-fetching for same user
+      if (lastFetchRef.current === user.id && initialized) {
+        return;
+      }
+
+      // Rate limiting - max 3 requests per minute per user
+      if (!RateLimiter.check(`role_fetch_${user.id}`, { maxRequests: 3, windowMs: 60000 })) {
+        console.warn('⚡ Rate limited: role fetch for user', user.id);
+        return;
+      }
+
+      // Check cache first
+      const cacheKey = `user_role_${user.id}`;
+      const cachedData = get<{
+        userRole: string | null;
+        userRoles: string[];
+        isSuperAdmin: boolean;
+      }>(cacheKey);
+      if (cachedData && initialized) {
+        setUserRole(cachedData.userRole);
+        setUserRoles(cachedData.userRoles);
+        setIsSuperAdmin(cachedData.isSuperAdmin);
+        setLoading(false);
+        setInitialized(true);
+        return;
+      }
+
       setLoading(true);
       setInitialized(false);
 
       try {
-        console.log('🔍 Fetching user role for user:', user.id);
-        
-        // Check super admin status first with detailed logging
-        console.log('📡 Checking super admin status...');
+        // Check super admin status
         const { data: superAdminResult, error: superAdminError } = await supabase
           .rpc('is_super_admin', { _user_id: user.id });
 
-        console.log('✅ Super admin check result:', { 
-          result: superAdminResult, 
-          error: superAdminError?.message || 'none',
-          code: superAdminError?.code || 'none'
-        });
-
         if (superAdminError) {
-          console.error('❌ Error checking super admin status:', superAdminError);
-          
-          // Handle network connectivity issues
           if (superAdminError.message?.includes('Failed to fetch') || 
               superAdminError.message?.includes('network') ||
               superAdminError.code === 'PGRST301') {
-            console.warn('🌐 Network connectivity issue detected. User may need to refresh.');
             setIsSuperAdmin(false);
             setUserRoles([]);
             setUserRole('connection_error');
@@ -54,21 +72,24 @@ export const useUserRole = () => {
           setIsSuperAdmin(false);
         } else {
           const isSuper = superAdminResult || false;
-          console.log('🔐 Setting super admin status:', isSuper);
           setIsSuperAdmin(isSuper);
           
-          // If user is super admin, set that immediately
           if (isSuper) {
-            setUserRoles(['super_admin']);
+            const roleData = {
+              userRole: 'super_admin',
+              userRoles: ['super_admin'],
+              isSuperAdmin: true
+            };
             setUserRole('super_admin');
-            console.log('👑 Super admin detected, roles set to: ["super_admin"]');
-            return; // Exit early for super admins
+            setUserRoles(['super_admin']);
+            set(cacheKey, roleData, 300000); // Cache for 5 minutes
+            lastFetchRef.current = user.id;
+            return;
           }
         }
 
-        // Only fetch additional roles if not super admin
+        // Fetch additional roles if not super admin
         if (!superAdminResult) {
-          console.log('📋 Fetching additional user roles...');
           const { data: roles, error: rolesError } = await supabase
             .from('user_roles')
             .select('role')
@@ -76,60 +97,49 @@ export const useUserRole = () => {
             .eq('is_active', true);
 
           if (rolesError) {
-            console.error('❌ Error fetching user roles:', rolesError);
             setUserRoles([]);
             setUserRole(null);
           } else {
             const rolesList = roles?.map(r => r.role) || [];
+            const roleData = {
+              userRole: roles?.[0]?.role || null,
+              userRoles: rolesList,
+              isSuperAdmin: false
+            };
             setUserRoles(rolesList);
             setUserRole(roles?.[0]?.role || null);
-            console.log('👤 Non-super admin roles set to:', rolesList);
+            set(cacheKey, roleData, 300000); // Cache for 5 minutes
           }
         }
-      } catch (error) {
-        console.error('💥 Critical error in fetchUserRole:', error);
         
-        // Check if it's a network error
+        lastFetchRef.current = user.id;
+      } catch (error) {
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-          console.error('🌐 Network connectivity issue detected. Please check your internet connection and refresh.');
           setUserRole('connection_error');
         } else {
           setUserRole(null);
         }
-        
         setIsSuperAdmin(false);
         setUserRoles([]);
       } finally {
         setLoading(false);
         setInitialized(true);
-        console.log('🏁 Role fetch complete. Final state:', {
-          userRole: userRole,
-          userRoles: userRoles,
-          isSuperAdmin: isSuperAdmin,
-          initialized: true
-        });
       }
     };
 
     fetchUserRole();
-  }, [user]);
+  }, [user, get, set, initialized]);
 
   const hasRole = (role: string) => {
-    const result = userRoles.includes(role);
-    console.log(`🔍 hasRole("${role}"):`, result, 'from roles:', userRoles);
-    return result;
+    return userRoles.includes(role);
   };
 
   const canAccessMedical = () => {
-    const result = isSuperAdmin || hasRole('medical');
-    console.log('🏥 canAccessMedical:', result);
-    return result;
+    return isSuperAdmin || hasRole('medical');
   };
 
   const canAccessPartners = () => {
-    const result = isSuperAdmin || hasRole('partner');
-    console.log('🤝 canAccessPartners:', result);
-    return result;
+    return isSuperAdmin || hasRole('partner');
   };
 
   return { 
