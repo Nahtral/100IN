@@ -24,7 +24,7 @@ export const useReliableUserRole = () => {
   const { user, session } = useAuth();
 
   const fetchUserRole = useCallback(async (force = false) => {
-    if (!user || !session) {
+    if (!user?.id || !session) {
       setUserData(null);
       setLoading(false);
       setError(null);
@@ -35,23 +35,51 @@ export const useReliableUserRole = () => {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching user role for:', user.email);
+      console.log('Fetching user role for:', user.email, 'User ID:', user.id);
 
-      // Always fetch fresh data from database - no caching
-      const { data, error: fetchError } = await supabase
-        .from('current_user_v')
-        .select('*')
-        .single();
+      // Use direct queries instead of views that depend on auth.uid()
+      const [profileQuery, rolesQuery] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('user_roles')
+          .select('role, is_active')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+      ]);
 
-      if (fetchError) {
-        console.error('Error fetching user role:', fetchError);
-        setError(fetchError.message);
-        setUserData(null);
+      if (profileQuery.error) {
+        console.error('Error fetching user profile:', profileQuery.error);
+        setError(profileQuery.error.message);
         return;
       }
 
-      console.log('User role data:', data);
-      setUserData(data);
+      if (rolesQuery.error) {
+        console.error('Error fetching user roles:', rolesQuery.error);
+        setError(rolesQuery.error.message);
+        return;
+      }
+
+      const profile = profileQuery.data;
+      const roles = rolesQuery.data || [];
+      const roleStrings = roles.map(r => r.role);
+      
+      const userData: UserRoleData = {
+        id: profile.id,
+        email: profile.email,
+        full_name: profile.full_name,
+        approval_status: profile.approval_status,
+        primary_role: roleStrings[0] || 'player',
+        role_active: roles.length > 0,
+        is_super_admin: roleStrings.includes('super_admin'),
+        all_roles: roleStrings
+      };
+
+      console.log('✅ User role data loaded:', userData);
+      setUserData(userData);
     } catch (err) {
       console.error('Unexpected error fetching user role:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');

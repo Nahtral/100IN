@@ -4367,8 +4367,29 @@ export type Database = {
           id: string | null
           is_super_admin: boolean | null
           primary_role: string | null
-          role_active: boolean | null
           updated_at: string | null
+        }
+        Insert: {
+          all_roles?: never
+          approval_status?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_super_admin?: never
+          primary_role?: never
+          updated_at?: string | null
+        }
+        Update: {
+          all_roles?: never
+          approval_status?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_super_admin?: never
+          primary_role?: never
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -4427,6 +4448,10 @@ export type Database = {
       current_user_has_role: {
         Args: { check_role: string }
         Returns: boolean
+      }
+      debug_current_user: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       delete_notification: {
         Args: { notification_id: string }

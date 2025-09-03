@@ -24,7 +24,7 @@ export const useRequireRole = (requiredRole: string) => {
   const { toast } = useToast();
 
   const checkUserRole = useCallback(async () => {
-    if (!user || !session) {
+    if (!user?.id || !session) {
       setLoading(false);
       setAuthorized(false);
       navigate('/auth');
@@ -34,46 +34,68 @@ export const useRequireRole = (requiredRole: string) => {
     try {
       setLoading(true);
 
-      // Use RPC call to check role directly
-      const { data: hasRole, error: roleError } = await supabase
-        .rpc('current_user_has_role', { check_role: requiredRole });
+      console.log('🔍 Checking role for user:', user.email, 'Required role:', requiredRole);
 
-      if (roleError) {
-        console.error('Error checking user role:', roleError);
-        throw roleError;
+      // Use direct database queries instead of functions that rely on auth.uid()
+      const [profileQuery, roleQuery] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('user_roles')
+          .select('role, is_active')
+          .eq('user_id', user.id)
+          .eq('role', requiredRole as any) // Cast to avoid enum type issues
+          .eq('is_active', true)
+          .maybeSingle()
+      ]);
+
+      if (profileQuery.error) {
+        console.error('Error checking user profile:', profileQuery.error);
+        throw profileQuery.error;
       }
 
-      // Also get full user data for additional context
-      const { data: currentUserData, error: userError } = await supabase
-        .from('current_user_v')
-        .select('*')
-        .single();
-
-      if (userError && userError.code !== 'PGRST116') {
-        console.error('Error fetching current user data:', userError);
-        // Don't throw here, just log - role check is more important
+      if (roleQuery.error && roleQuery.error.code !== 'PGRST116') {
+        console.error('Error checking user role:', roleQuery.error);
+        throw roleQuery.error;
       }
 
-      console.log('Role check result:', { 
-        requiredRole, 
-        hasRole, 
-        userData: currentUserData 
+      const profile = profileQuery.data;
+      const hasRequiredRole = roleQuery.data?.is_active === true;
+
+      console.log('🔐 Role check result:', {
+        userId: user.id,
+        email: user.email,
+        requiredRole,
+        hasRequiredRole,
+        approvalStatus: profile.approval_status,
+        roleData: roleQuery.data
       });
 
-      if (hasRole && currentUserData?.approval_status === 'approved') {
+      if (hasRequiredRole && profile.approval_status === 'approved') {
         setAuthorized(true);
-        setUserData(currentUserData);
+        setUserData({
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+          approval_status: profile.approval_status,
+          primary_role: requiredRole,
+          role_active: true,
+          is_super_admin: requiredRole === 'super_admin',
+          all_roles: [requiredRole]
+        });
       } else {
         setAuthorized(false);
         
-        // Show appropriate error message
-        if (!hasRole) {
+        if (!hasRequiredRole) {
           toast({
             title: "Access Denied",
             description: `You need the '${requiredRole}' role to access this page.`,
             variant: "destructive",
           });
-        } else if (currentUserData?.approval_status !== 'approved') {
+        } else if (profile.approval_status !== 'approved') {
           toast({
             title: "Account Pending",
             description: "Your account is pending approval. Please contact an administrator.",
@@ -81,7 +103,6 @@ export const useRequireRole = (requiredRole: string) => {
           });
         }
 
-        // Redirect to home
         navigate('/');
       }
     } catch (error) {
