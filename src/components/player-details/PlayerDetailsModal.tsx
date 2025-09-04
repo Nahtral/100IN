@@ -77,11 +77,13 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const { isSuperAdmin, hasRole } = useUserRole();
   const { user } = useAuth();
   
-  // Only fetch membership data if user has permission to view it
-  const shouldFetchMembership = isSuperAdmin || hasRole('staff') || hasRole('coach') || user?.id === player?.user_id;
-  const { summary: membershipSummary, loading: membershipLoading, refetch: refetchMembership } = useMembershipSummary(shouldFetchMembership ? (player?.id || '') : '');
+  // Always call hooks consistently - prevent conditional hook usage
+  const { summary: membershipSummary, loading: membershipLoading, refetch: refetchMembership } = useMembershipSummary(player?.id || '');
   const { toggleOverride } = useToggleOverride();
   const { sendReminder } = useSendMembershipReminder();
+  
+  // Only show membership data if user has permission to view it
+  const shouldShowMembership = isSuperAdmin || hasRole('staff') || hasRole('coach') || user?.id === player?.user_id;
 
   useEffect(() => {
     if (player) {
@@ -594,34 +596,40 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
               {canViewSensitiveData && (
                 <>
                   <TabsContent value="membership" className="space-y-6 mt-6">
-                    <div className="space-y-4">
-                      {isSuperAdmin && (
-                        <Button 
-                          onClick={() => setShowMembershipAssignment(true)}
-                          className="w-full"
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          Assign New Membership
-                        </Button>
-                      )}
-                      
-                      {membershipSummary ? (
-                        <MembershipCard
-                          summary={membershipSummary}
-                          loading={membershipLoading}
-                          showAdminControls={isSuperAdmin}
-                          onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
-                          onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
-                          onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
-                        />
-                      ) : membershipLoading ? (
-                        <div className="text-center py-4">Loading membership data...</div>
-                      ) : (
-                        <div className="text-center py-4 text-muted-foreground">
-                          No membership data found
-                        </div>
-                      )}
-                    </div>
+                    {shouldShowMembership ? (
+                      <div className="space-y-4">
+                        {isSuperAdmin && (
+                          <Button 
+                            onClick={() => setShowMembershipAssignment(true)}
+                            className="w-full"
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            Assign New Membership
+                          </Button>
+                        )}
+                        
+                        {membershipSummary ? (
+                          <MembershipCard
+                            summary={membershipSummary}
+                            loading={membershipLoading}
+                            showAdminControls={isSuperAdmin}
+                            onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
+                            onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
+                            onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
+                          />
+                        ) : membershipLoading ? (
+                          <div className="text-center py-4">Loading membership data...</div>
+                        ) : (
+                          <div className="text-center py-4 text-muted-foreground">
+                            No membership data found
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>You don't have permission to view membership information.</p>
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="medical" className="space-y-6 mt-6">

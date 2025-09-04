@@ -47,11 +47,13 @@ export const useMembershipSummary = (playerId: string) => {
   const { toast } = useToast();
 
   const fetchSummary = async () => {
-    if (!playerId) {
+    if (!playerId || playerId.trim() === '') {
+      setSummary(null);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .rpc('fn_get_membership_summary', { target_player_id: playerId });
@@ -65,6 +67,7 @@ export const useMembershipSummary = (playerId: string) => {
         description: "Failed to load membership information",
         variant: "destructive",
       });
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -72,7 +75,7 @@ export const useMembershipSummary = (playerId: string) => {
 
   useEffect(() => {
     fetchSummary();
-  }, [playerId, toast]);
+  }, [playerId]);
 
   return { summary, loading, refetch: fetchSummary };
 };

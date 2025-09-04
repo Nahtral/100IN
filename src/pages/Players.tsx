@@ -83,10 +83,24 @@ const Players = () => {
       const sortColumn = teamGridSettings?.sort_by || 'created_at';
       const sortDirection = teamGridSettings?.sort_direction === 'desc' ? false : true;
       
-      // First fetch all players with sorting
+      // First fetch all players with their profiles (only approved users)
       const { data: playersData, error: playersError } = await supabase
         .from('players')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner(
+            id,
+            full_name,
+            email,
+            phone,
+            approval_status
+          ),
+          teams(
+            name,
+            season
+          )
+        `)
+        .eq('profiles.approval_status', 'approved')
         .order(sortColumn, { ascending: sortDirection });
 
       console.log('Players query result:', { data: playersData, error: playersError });
@@ -97,44 +111,13 @@ const Players = () => {
       }
 
       if (!playersData || playersData.length === 0) {
-        console.log('No players data found');
+        console.log('No approved players found');
         setPlayers([]);
         return;
       }
 
-      // Get all unique user_ids
-      const userIds = [...new Set(playersData.map(player => player.user_id))];
-      console.log('User IDs to fetch profiles for:', userIds);
-
-      // Fetch profiles for these users - only get safe profile info
-      // This respects RLS policies and only returns data the current user is authorized to see
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name')  // Only fetch non-sensitive data
-        .in('id', userIds);
-
-      console.log('Profiles query result:', { data: profilesData, error: profilesError });
-
-      if (profilesError) {
-        console.error('Profiles fetch error:', profilesError);
-        // Don't throw error for profiles - some users might not have permission to see all profiles
-        console.warn('Some profile data may not be accessible due to permissions');
-      }
-
-      // Create a map of user_id to profile
-      const profilesMap = new Map();
-      profilesData?.forEach(profile => {
-        profilesMap.set(profile.id, profile);
-      });
-
-      // Combine players with their profiles
-      const playersWithProfiles = playersData.map(player => ({
-        ...player,
-        profiles: profilesMap.get(player.user_id) || null
-      }));
-
-      console.log('Final players with profiles:', playersWithProfiles);
-      setPlayers(playersWithProfiles);
+      console.log('Final players with profiles:', playersData);
+      setPlayers(playersData);
     } catch (error) {
       console.error('Error fetching players:', error);
       toast({
