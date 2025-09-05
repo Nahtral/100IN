@@ -3302,7 +3302,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_recurring: boolean | null
-          location: string
+          location: string | null
           location_id: string | null
           opponent: string | null
           recurrence_days_of_week: number[] | null
@@ -3326,7 +3326,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_recurring?: boolean | null
-          location: string
+          location?: string | null
           location_id?: string | null
           opponent?: string | null
           recurrence_days_of_week?: number[] | null
@@ -3350,7 +3350,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_recurring?: boolean | null
-          location?: string
+          location?: string | null
           location_id?: string | null
           opponent?: string | null
           recurrence_days_of_week?: number[] | null

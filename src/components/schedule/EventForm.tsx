@@ -111,7 +111,9 @@ export const EventForm: React.FC<EventFormProps> = ({
     if (event && isOpen) {
       setFormData({
         ...event,
-        team_ids: event.team_ids || []
+        team_ids: event.team_ids || [],
+        // For backward compatibility with existing events that have location instead of location_id
+        location_id: event.location_id || ''
       });
       
       // Parse date and times from start_time
