@@ -249,24 +249,44 @@ export const UserApprovalDashboard = () => {
       // Cast role to the expected enum type
       const roleEnum = role as 'player' | 'parent' | 'coach' | 'staff' | 'medical' | 'partner' | 'super_admin';
       
-      // Use proper UPSERT with ON CONFLICT
-      const { error: upsertError } = await supabase
+      // First, try to update existing record
+      const { data: updateData, error: updateError } = await supabase
         .from('user_roles')
-        .upsert({
-          user_id: userId,
-          role: roleEnum,
-          is_active: true,
+        .update({ 
+          is_active: true, 
           approved_by: user?.id,
-          approved_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,role',
-          ignoreDuplicates: false
-        });
+          approved_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('role', roleEnum)
+        .select();
 
-      if (upsertError) {
-        console.error('Role assignment error details:', upsertError);
-        throw new Error(`Failed to assign role: ${upsertError.message}`);
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw new Error(`Failed to update existing role: ${updateError.message}`);
+      }
+
+      // If no records were updated, insert a new one
+      if (!updateData || updateData.length === 0) {
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: roleEnum,
+            is_active: true,
+            approved_by: user?.id,
+            approved_at: new Date().toISOString()
+            // created_at will use default value
+          });
+
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          throw new Error(`Failed to insert new role: ${insertError.message}`);
+        }
+        
+        console.log(`Inserted new role ${roleEnum} for user ${userId}`);
+      } else {
+        console.log(`Updated existing role ${roleEnum} for user ${userId}`);
       }
 
       // Log the role assignment if audit table is available
