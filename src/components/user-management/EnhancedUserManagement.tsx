@@ -100,13 +100,20 @@ const EnhancedUserManagement = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Batch fetch critical data first, then load less important data
       await Promise.all([
         fetchUsers(),
-        fetchPermissions(),
-        fetchRoleTemplates(),
-        fetchApprovalRequests(),
-        fetchUserStatuses()
+        fetchPermissions()
       ]);
+      
+      // Load remaining data in background
+      setTimeout(() => {
+        Promise.all([
+          fetchRoleTemplates(),
+          fetchApprovalRequests(),
+          fetchUserStatuses()
+        ]).catch(console.error);
+      }, 100);
     } finally {
       setLoading(false);
     }

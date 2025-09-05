@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LazyTabContent } from "@/components/ui/LazyTabContent";
+import { DashboardSkeleton } from "@/components/ui/DashboardSkeleton";
 import { 
   Users, 
   UserCheck, 
@@ -20,20 +22,22 @@ import {
   Clock,
   AlertCircle
 } from "lucide-react";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import { useOptimizedDashboard } from "@/hooks/useOptimizedDashboard";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { UserApprovalDashboard } from "@/components/user-management/UserApprovalDashboard";
-import { PermissionsManagement } from "@/components/admin/PermissionsManagement";
-import { ParentsManagement } from "@/components/admin/ParentsManagement";
-import { CoachesManagement } from "@/components/admin/CoachesManagement";
-import { StaffManagement } from "@/components/admin/StaffManagement";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLogger } from '@/hooks/useActivityLogger';
+
+// Lazy load heavy components
+const UserApprovalDashboard = lazy(() => import("@/components/user-management/UserApprovalDashboard").then(m => ({ default: m.UserApprovalDashboard })));
+const PermissionsManagement = lazy(() => import("@/components/admin/PermissionsManagement").then(m => ({ default: m.PermissionsManagement })));
+const ParentsManagement = lazy(() => import("@/components/admin/ParentsManagement").then(m => ({ default: m.ParentsManagement })));
+const CoachesManagement = lazy(() => import("@/components/admin/CoachesManagement").then(m => ({ default: m.CoachesManagement })));
+const StaffManagement = lazy(() => import("@/components/admin/StaffManagement").then(m => ({ default: m.StaffManagement })));
 
 interface PendingRequest {
   id: string;
@@ -46,8 +50,8 @@ interface PendingRequest {
 
 const SuperAdminDashboard = () => {
   const { user } = useAuth();
-  const { userRole } = useUserRole();
-  const { stats, loading, error } = useDashboardData();
+  const { userRole, loading: roleLoading } = useUserRole();
+  const { stats, loading, error } = useOptimizedDashboard();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('approvals');
@@ -56,8 +60,11 @@ const SuperAdminDashboard = () => {
   const { logUserAction } = useActivityLogger();
 
   useEffect(() => {
-    fetchPendingRequests();
-  }, []);
+    // Only fetch on tab change or initial load
+    if (!roleLoading && activeTab === 'approvals') {
+      fetchPendingRequests();
+    }
+  }, [activeTab, roleLoading]);
 
   const fetchPendingRequests = async () => {
     setLoadingRequests(true);
@@ -136,8 +143,16 @@ const SuperAdminDashboard = () => {
     }
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
+  if (loading || roleLoading) {
+    return (
+      <Layout currentUser={{ 
+        name: user?.user_metadata?.full_name || 'User',
+        role: userRole || 'Super Admin',
+        avatar: '' 
+      }}>
+        <DashboardSkeleton />
+      </Layout>
+    );
   }
 
   if (error) {
@@ -220,153 +235,175 @@ const SuperAdminDashboard = () => {
 
           {/* Approvals Tab */}
           <TabsContent value="approvals" className="space-y-6">
-            <UserApprovalDashboard />
+            <LazyTabContent isActive={activeTab === 'approvals'}>
+              <UserApprovalDashboard />
+            </LazyTabContent>
           </TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => {
-                  navigate('/user-management');
-                  toast({
-                    title: "User Management",
-                    description: "Accessing production-ready user management system",
-                  });
-                }} className="w-full">
-                  <Users className="h-4 w-4 mr-2" />
-                  Open User Management
-                </Button>
-              </CardContent>
-            </Card>
+            <LazyTabContent isActive={activeTab === 'users'}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => {
+                    navigate('/user-management');
+                    toast({
+                      title: "User Management",
+                      description: "Accessing production-ready user management system",
+                    });
+                  }} className="w-full">
+                    <Users className="h-4 w-4 mr-2" />
+                    Open User Management
+                  </Button>
+                </CardContent>
+              </Card>
+            </LazyTabContent>
           </TabsContent>
 
           {/* Permissions Tab */}
           <TabsContent value="permissions">
-            <PermissionsManagement />
+            <LazyTabContent isActive={activeTab === 'permissions'}>
+              <PermissionsManagement />
+            </LazyTabContent>
           </TabsContent>
 
           {/* Parents Tab */}
           <TabsContent value="parents">
-            <ParentsManagement />
+            <LazyTabContent isActive={activeTab === 'parents'}>
+              <ParentsManagement />
+            </LazyTabContent>
           </TabsContent>
 
           {/* Coaches Tab */}
           <TabsContent value="coaches">
-            <CoachesManagement />
+            <LazyTabContent isActive={activeTab === 'coaches'}>
+              <CoachesManagement />
+            </LazyTabContent>
           </TabsContent>
 
           {/* Teams Tab */}
           <TabsContent value="teams">
-            <Card>
-              <CardHeader>
-                <CardTitle>Team Management</CardTitle>
-                <CardDescription>Create and manage teams, player assignments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => navigate('/teams')} className="w-full">
-                  <Trophy className="h-4 w-4 mr-2" />
-                  Open Team Management
-                </Button>
-              </CardContent>
-            </Card>
+            <LazyTabContent isActive={activeTab === 'teams'}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Team Management</CardTitle>
+                  <CardDescription>Create and manage teams, player assignments</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/teams')} className="w-full">
+                    <Trophy className="h-4 w-4 mr-2" />
+                    Open Team Management
+                  </Button>
+                </CardContent>
+              </Card>
+            </LazyTabContent>
           </TabsContent>
 
           {/* Schedule Tab */}
           <TabsContent value="schedule">
-            <Card>
-              <CardHeader>
-                <CardTitle>Schedule Management</CardTitle>
-                <CardDescription>Manage events, practices, and games</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => navigate('/schedule')} className="w-full">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Open Schedule Management
-                </Button>
-              </CardContent>
-            </Card>
+            <LazyTabContent isActive={activeTab === 'schedule'}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Schedule Management</CardTitle>
+                  <CardDescription>Manage events, practices, and games</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/schedule')} className="w-full">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Open Schedule Management
+                  </Button>
+                </CardContent>
+              </Card>
+            </LazyTabContent>
           </TabsContent>
 
           {/* Security Tab */}
           <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Management</CardTitle>
-                <CardDescription>Monitor system security and access logs</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => navigate('/security')} className="w-full">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Open Security Dashboard
-                </Button>
-              </CardContent>
-            </Card>
+            <LazyTabContent isActive={activeTab === 'security'}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Security Management</CardTitle>
+                  <CardDescription>Monitor system security and access logs</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/security')} className="w-full">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Open Security Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
+            </LazyTabContent>
           </TabsContent>
 
           {/* Medical Tab */}
           <TabsContent value="medical">
-            <Card>
-              <CardHeader>
-                <CardTitle>Medical Management</CardTitle>
-                <CardDescription>Manage medical staff, health records, and medical protocols</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Button onClick={() => navigate('/medical')} className="w-full">
-                    <BriefcaseMedical className="h-4 w-4 mr-2" />
-                    Open Medical Dashboard
-                  </Button>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" size="sm">
-                      <Heart className="h-4 w-4 mr-2" />
-                      Health Records
+            <LazyTabContent isActive={activeTab === 'medical'}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Medical Management</CardTitle>
+                  <CardDescription>Manage medical staff, health records, and medical protocols</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Button onClick={() => navigate('/medical')} className="w-full">
+                      <BriefcaseMedical className="h-4 w-4 mr-2" />
+                      Open Medical Dashboard
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Medical Staff
-                    </Button>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button variant="outline" size="sm">
+                        <Heart className="h-4 w-4 mr-2" />
+                        Health Records
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Medical Staff
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </LazyTabContent>
           </TabsContent>
 
           {/* Partners Tab */}
           <TabsContent value="partners">
-            <Card>
-              <CardHeader>
-                <CardTitle>Partnership Management</CardTitle>
-                <CardDescription>Manage business partnerships, sponsorships, and collaborations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Button onClick={() => navigate('/partners')} className="w-full">
-                    <Handshake className="h-4 w-4 mr-2" />
-                    Open Partnership Dashboard
-                  </Button>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" size="sm">
-                      <Trophy className="h-4 w-4 mr-2" />
-                      Sponsorships
+            <LazyTabContent isActive={activeTab === 'partners'}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Partnership Management</CardTitle>
+                  <CardDescription>Manage business partnerships, sponsorships, and collaborations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Button onClick={() => navigate('/partners')} className="w-full">
+                      <Handshake className="h-4 w-4 mr-2" />
+                      Open Partnership Dashboard
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <Users className="h-4 w-4 mr-2" />
-                      Partner Accounts
-                    </Button>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button variant="outline" size="sm">
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Sponsorships
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Users className="h-4 w-4 mr-2" />
+                        Partner Accounts
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </LazyTabContent>
           </TabsContent>
 
           {/* Staff Tab */}
           <TabsContent value="staff">
-            <StaffManagement />
+            <LazyTabContent isActive={activeTab === 'staff'}>
+              <StaffManagement />
+            </LazyTabContent>
           </TabsContent>
         </Tabs>
       </div>
