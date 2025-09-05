@@ -218,9 +218,10 @@ export const UserApprovalDashboard = () => {
       resetForm();
     } catch (error) {
       console.error('Error processing approval:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Error",
-        description: "Failed to process user approval",
+        description: `Failed to process user approval: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -239,43 +240,33 @@ export const UserApprovalDashboard = () => {
 
   const assignRoleToUser = async (userId: string, role: string, reason: string) => {
     try {
+      // Validate role enum
+      const validRoles = ['super_admin', 'staff', 'coach', 'player', 'parent', 'medical', 'partner'];
+      if (!validRoles.includes(role)) {
+        throw new Error(`Invalid role: ${role}. Must be one of: ${validRoles.join(', ')}`);
+      }
+
       // Cast role to the expected enum type
       const roleEnum = role as 'player' | 'parent' | 'coach' | 'staff' | 'medical' | 'partner' | 'super_admin';
       
-      // Check if user already has this role (don't use .single() as there might be 0 or multiple results)
-      const { data: existingRoles, error: fetchError } = await supabase
+      // Use proper UPSERT with ON CONFLICT
+      const { error: upsertError } = await supabase
         .from('user_roles')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('role', roleEnum);
+        .upsert({
+          user_id: userId,
+          role: roleEnum,
+          is_active: true,
+          approved_by: user?.id,
+          approved_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,role',
+          ignoreDuplicates: false
+        });
 
-      if (fetchError) throw fetchError;
-
-      if (existingRoles && existingRoles.length > 0) {
-        // Activate the first existing role record
-        const { error: updateError } = await supabase
-          .from('user_roles')
-          .update({ 
-            is_active: true, 
-            approved_by: user?.id,
-            approved_at: new Date().toISOString()
-          })
-          .eq('id', existingRoles[0].id);
-
-        if (updateError) throw updateError;
-      } else {
-        // Insert new role
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: userId,
-            role: roleEnum,
-            is_active: true,
-            approved_by: user?.id,
-            approved_at: new Date().toISOString()
-          });
-
-        if (insertError) throw insertError;
+      if (upsertError) {
+        console.error('Role assignment error details:', upsertError);
+        throw new Error(`Failed to assign role: ${upsertError.message}`);
       }
 
       // Log the role assignment if audit table is available
@@ -295,7 +286,12 @@ export const UserApprovalDashboard = () => {
 
     } catch (error) {
       console.error('Error assigning role:', error);
-      throw error;
+      // Re-throw with more context
+      if (error instanceof Error) {
+        throw new Error(`Role assignment failed: ${error.message}`);
+      } else {
+        throw new Error('Role assignment failed with unknown error');
+      }
     }
   };
 
