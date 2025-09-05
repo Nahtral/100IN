@@ -148,6 +148,11 @@ export function AppSidebar() {
       icon: Brain,
     },
     {
+      title: 'Tryout Rubric',
+      href: '/admin/tryouts',
+      icon: Trophy,
+    },
+    {
       title: 'News Manager',
       href: '/news-manager',
       icon: Newspaper,

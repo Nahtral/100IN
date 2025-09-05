@@ -3009,6 +3009,11 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          latest_tryout_date: string | null
+          latest_tryout_placement:
+            | Database["public"]["Enums"]["tryout_team"]
+            | null
+          latest_tryout_total: number | null
           phone: string | null
           rejection_reason: string | null
           updated_at: string | null
@@ -3022,6 +3027,11 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          latest_tryout_date?: string | null
+          latest_tryout_placement?:
+            | Database["public"]["Enums"]["tryout_team"]
+            | null
+          latest_tryout_total?: number | null
           phone?: string | null
           rejection_reason?: string | null
           updated_at?: string | null
@@ -3035,6 +3045,11 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          latest_tryout_date?: string | null
+          latest_tryout_placement?:
+            | Database["public"]["Enums"]["tryout_team"]
+            | null
+          latest_tryout_total?: number | null
           phone?: string | null
           rejection_reason?: string | null
           updated_at?: string | null
@@ -4175,6 +4190,72 @@ export type Database = {
         }
         Relationships: []
       }
+      tryout_evaluations: {
+        Row: {
+          athleticism: number
+          ball_handling: number
+          created_at: string | null
+          defense: number
+          evaluator_id: string
+          event_name: string | null
+          id: string
+          iq: number
+          notes: string | null
+          placement: Database["public"]["Enums"]["tryout_team"] | null
+          player_id: string
+          shooting: number
+          total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          athleticism: number
+          ball_handling: number
+          created_at?: string | null
+          defense: number
+          evaluator_id: string
+          event_name?: string | null
+          id?: string
+          iq: number
+          notes?: string | null
+          placement?: Database["public"]["Enums"]["tryout_team"] | null
+          player_id: string
+          shooting: number
+          total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          athleticism?: number
+          ball_handling?: number
+          created_at?: string | null
+          defense?: number
+          evaluator_id?: string
+          event_name?: string | null
+          id?: string
+          iq?: number
+          notes?: string | null
+          placement?: Database["public"]["Enums"]["tryout_team"] | null
+          player_id?: string
+          shooting?: number
+          total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tryout_evaluations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "employees_v"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "tryout_evaluations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_approval_requests: {
         Row: {
           id: string
@@ -4406,6 +4487,29 @@ export type Database = {
         Args: { _x: number; _y: number }
         Returns: string
       }
+      export_tryout_evaluations: {
+        Args: {
+          end_date?: string
+          evaluator_filter?: string
+          event_filter?: string
+          placement_filter?: string
+          start_date?: string
+        }
+        Returns: {
+          athleticism: number
+          ball_handling: number
+          defense: number
+          evaluation_date: string
+          evaluator_name: string
+          event_name: string
+          iq: number
+          notes: string
+          placement: string
+          player_name: string
+          shooting: number
+          total: number
+        }[]
+      }
       fn_auto_deactivate_players: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -4423,6 +4527,17 @@ export type Database = {
         Returns: {
           id: string
           name: string
+        }[]
+      }
+      get_approved_players: {
+        Args: { search_term?: string }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          latest_tryout_date: string
+          latest_tryout_placement: Database["public"]["Enums"]["tryout_team"]
+          latest_tryout_total: number
         }[]
       }
       get_benefit_cost_analysis: {
@@ -4638,6 +4753,7 @@ export type Database = {
       }
     }
     Enums: {
+      tryout_team: "Gold" | "Black" | "White"
       user_role:
         | "super_admin"
         | "staff"
@@ -4773,6 +4889,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      tryout_team: ["Gold", "Black", "White"],
       user_role: [
         "super_admin",
         "staff",

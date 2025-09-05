@@ -35,6 +35,7 @@ const MedicalManagement = React.lazy(() => import("./pages/MedicalManagement"));
 const ShotIQ = React.lazy(() => import("./pages/ShotIQ"));
 const Security = React.lazy(() => import("./pages/Security"));
 const TeamGridSettings = React.lazy(() => import("./pages/TeamGridSettings"));
+const TryoutRubric = React.lazy(() => import("./pages/TryoutRubric"));
 const NotificationSettings = React.lazy(() => import("./pages/NotificationSettings"));
 const MembershipTypes = React.lazy(() => import("./pages/MembershipTypes"));
 
@@ -185,6 +186,11 @@ const App = () => (
         <Route path="/membership-types" element={
           <RoleProtectedRoute allowedRoles={['super_admin']}>
             <MembershipTypes />
+          </RoleProtectedRoute>
+        } />
+        <Route path="/admin/tryouts" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <TryoutRubric />
           </RoleProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />
