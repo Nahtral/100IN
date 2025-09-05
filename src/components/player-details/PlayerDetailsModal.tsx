@@ -73,6 +73,8 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const [showTeamManagement, setShowTeamManagement] = useState(false);
   const [showMembershipAssignment, setShowMembershipAssignment] = useState(false);
   const [editedPlayer, setEditedPlayer] = useState<Partial<Player>>({});
+  const [isTeammate, setIsTeammate] = useState(false);
+  
   const { toast } = useToast();
   const { isSuperAdmin, hasRole } = useUserRole();
   const { user } = useAuth();
@@ -100,6 +102,31 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
       });
     }
   }, [player]);
+
+  // Check teammate status effect - moved here to ensure consistent hook ordering
+  useEffect(() => {
+    const checkTeammate = async () => {
+      if (!user?.id || !player?.team_id || isSuperAdmin || hasRole('staff') || hasRole('coach') || user?.id === player?.user_id) {
+        return;
+      }
+      
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('team_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        
+        setIsTeammate(data?.team_id === player.team_id);
+        console.log('Teammate check result:', { isTeammate: data?.team_id === player.team_id });
+      } catch (error) {
+        console.error('Error checking teammate status:', error);
+      }
+    };
+    
+    checkTeammate();
+  }, [user?.id, player?.team_id, isSuperAdmin, hasRole, player?.user_id]);
 
   const handleSave = async () => {
     if (!player) return;
@@ -208,7 +235,10 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
     }
   };
 
-  if (!player) return null;
+  // Handle null player case in the render, not with early return
+  if (!player) {
+    return null;
+  }
 
   // Check if current user can manage players (super admin, staff, or coach)
   const canManagePlayer = isSuperAdmin || hasRole('staff') || hasRole('coach');
@@ -218,9 +248,6 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   
   // Players can only see their own sensitive data or basic teammate info
   const canViewSensitiveData = canManagePlayer || isOwnProfile;
-  
-  // Check if player is on same team (for teammate visibility)
-  const [isTeammate, setIsTeammate] = useState(false);
   
   // Add debugging logs
   console.log('PlayerDetailsModal Debug:', {
@@ -233,30 +260,6 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
     hasStaffRole: hasRole('staff'),
     hasCoachRole: hasRole('coach')
   });
-  
-  useEffect(() => {
-    const checkTeammate = async () => {
-      if (!user?.id || !player.team_id || canManagePlayer || isOwnProfile) {
-        return;
-      }
-      
-      try {
-        const { data } = await supabase
-          .from('players')
-          .select('team_id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .single();
-        
-        setIsTeammate(data?.team_id === player.team_id);
-        console.log('Teammate check result:', { isTeammate: data?.team_id === player.team_id });
-      } catch (error) {
-        console.error('Error checking teammate status:', error);
-      }
-    };
-    
-    checkTeammate();
-  }, [user?.id, player.team_id, canManagePlayer, isOwnProfile]);
 
   return (
     <>
