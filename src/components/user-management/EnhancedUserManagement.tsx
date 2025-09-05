@@ -14,11 +14,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus } from 'lucide-react';
+import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus, Shield } from 'lucide-react';
 import UserActionsDropdown from './UserActionsDropdown';
 import UserDetailsView from './UserDetailsView';
 import { UserApprovalDashboard } from './UserApprovalDashboard';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
+import PermissionManager from './PermissionManager';
 
 interface UserProfile {
   id: string;
@@ -86,6 +87,8 @@ const EnhancedUserManagement = () => {
   const [editMode, setEditMode] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [grantReason, setGrantReason] = useState('');
+  const [permissionManagerOpen, setPermissionManagerOpen] = useState(false);
+  const [permissionManagerUser, setPermissionManagerUser] = useState<UserProfile | null>(null);
   const { logUserAction, logRoleChange, logPermissionChange } = useActivityLogger();
 
   useEffect(() => {
@@ -664,6 +667,18 @@ const EnhancedUserManagement = () => {
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setPermissionManagerUser(user);
+                            setPermissionManagerOpen(true);
+                          }}
+                          className="text-primary"
+                        >
+                          <Shield className="w-4 h-4 mr-1" />
+                          Permissions
+                        </Button>
                         <Dialog open={editDialogOpen && selectedUser?.id === user.id} onOpenChange={setEditDialogOpen}>
                           <DialogTrigger asChild>
                             <Button 
@@ -870,6 +885,21 @@ const EnhancedUserManagement = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Permission Manager Modal */}
+      {permissionManagerUser && (
+        <PermissionManager
+          isOpen={permissionManagerOpen}
+          onClose={() => {
+            setPermissionManagerOpen(false);
+            setPermissionManagerUser(null);
+            fetchUsers(); // Refresh users after permission changes
+          }}
+          userId={permissionManagerUser.id}
+          userName={permissionManagerUser.full_name}
+          userRole={permissionManagerUser.roles.find(r => r.is_active)?.role || 'No Active Role'}
+        />
+      )}
     </div>
   );
 };
