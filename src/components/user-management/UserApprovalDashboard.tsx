@@ -117,13 +117,29 @@ export const UserApprovalDashboard = () => {
   };
 
   const fetchTeams = async () => {
-    console.log('Teams fetching temporarily disabled due to TypeScript issue');
-    // Temporary workaround: Set empty array until TypeScript issue is resolved
-    setAvailableTeams([]);
-    
-    // TODO: Fix TypeScript "Type instantiation is excessively deep" error
-    // The issue is with Supabase's generated types for the teams table
-    // causing infinite recursion in TypeScript's type checker
+    try {
+      // Use explicit typing to avoid TypeScript deep instantiation issues
+      const { data: teamsData, error } = await supabase
+        .from('teams')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name') as {
+          data: Array<{ id: string; name: string }> | null;
+          error: any;
+        };
+
+      if (error) throw error;
+      
+      const teams: TeamOption[] = (teamsData || []).map((team) => ({
+        id: team.id,
+        name: team.name
+      }));
+      
+      setAvailableTeams(teams);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+      setAvailableTeams([]);
+    }
   };
 
   const fetchPlayers = async () => {
