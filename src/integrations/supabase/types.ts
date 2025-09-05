@@ -233,13 +233,6 @@ export type Database = {
             foreignKeyName: "chats_archived_by_fkey"
             columns: ["archived_by"]
             isOneToOne: false
-            referencedRelation: "current_user_v"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chats_archived_by_fkey"
-            columns: ["archived_by"]
-            isOneToOne: false
             referencedRelation: "employees_v"
             referencedColumns: ["employee_id"]
           },
@@ -1804,13 +1797,6 @@ export type Database = {
             foreignKeyName: "messages_recalled_by_fkey"
             columns: ["recalled_by"]
             isOneToOne: false
-            referencedRelation: "current_user_v"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_recalled_by_fkey"
-            columns: ["recalled_by"]
-            isOneToOne: false
             referencedRelation: "employees_v"
             referencedColumns: ["employee_id"]
           },
@@ -2294,13 +2280,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "payments_payer_id_fkey"
-            columns: ["payer_id"]
-            isOneToOne: false
-            referencedRelation: "current_user_v"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "payments_payer_id_fkey"
             columns: ["payer_id"]
@@ -2997,13 +2976,6 @@ export type Database = {
           weight?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_players_profiles"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "current_user_v"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_players_profiles"
             columns: ["user_id"]
@@ -4357,42 +4329,6 @@ export type Database = {
       }
     }
     Views: {
-      current_user_v: {
-        Row: {
-          all_roles: string[] | null
-          approval_status: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          id: string | null
-          is_super_admin: boolean | null
-          primary_role: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          all_roles?: never
-          approval_status?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_super_admin?: never
-          primary_role?: never
-          updated_at?: string | null
-        }
-        Update: {
-          all_roles?: never
-          approval_status?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_super_admin?: never
-          primary_role?: never
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       employees_v: {
         Row: {
           approval_status: string | null
@@ -4481,6 +4417,13 @@ export type Database = {
       generate_payslips_for_period: {
         Args: { period_id: string }
         Returns: Json
+      }
+      get_active_teams: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+        }[]
       }
       get_benefit_cost_analysis: {
         Args: { report_end_date?: string; report_start_date?: string }
