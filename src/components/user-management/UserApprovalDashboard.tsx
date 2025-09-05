@@ -118,19 +118,16 @@ export const UserApprovalDashboard = () => {
 
   const fetchTeams = async () => {
     try {
-      // Use explicit typing to avoid TypeScript deep instantiation issues
-      const { data: teamsData, error } = await supabase
-        .from('teams')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name') as {
-          data: Array<{ id: string; name: string }> | null;
-          error: any;
-        };
-
-      if (error) throw error;
+      // Simple approach to avoid TypeScript deep instantiation issues
+      const response = await supabase.rpc('get_active_teams');
       
-      const teams: TeamOption[] = (teamsData || []).map((team) => ({
+      if (response.error) {
+        console.error('Error fetching teams:', response.error);
+        setAvailableTeams([]);
+        return;
+      }
+      
+      const teams: TeamOption[] = (response.data || []).map((team: any) => ({
         id: team.id,
         name: team.name
       }));

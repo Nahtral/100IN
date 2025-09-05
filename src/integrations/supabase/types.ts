@@ -4426,6 +4426,15 @@ export type Database = {
         }
         Returns: Json
       }
+      check_api_rate_limit: {
+        Args: {
+          endpoint_name: string
+          max_requests?: number
+          time_window_minutes?: number
+          user_uuid: string
+        }
+        Returns: boolean
+      }
       cleanup_old_notifications: {
         Args: Record<PropertyKey, never>
         Returns: undefined
