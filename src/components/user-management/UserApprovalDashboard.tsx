@@ -118,13 +118,8 @@ export const UserApprovalDashboard = () => {
 
   const fetchTeams = async () => {
     try {
-      // Direct query without complex typing to avoid TypeScript issues
-      const teamsQuery = supabase
-        .from('teams')
-        .select('id, name')
-        .order('name');
-      
-      const { data: teamsData, error } = await teamsQuery;
+      // Use the RPC function to avoid TypeScript issues
+      const { data: teamsData, error } = await supabase.rpc('get_active_teams');
 
       if (error) {
         console.error('Error fetching teams:', error);
