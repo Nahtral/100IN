@@ -22,7 +22,14 @@ import {
 
 const TryoutRubricDashboard = () => {
   const { toast } = useToast();
-  const { loading, saving, fetchPlayers, fetchEvaluations, saveEvaluation, exportEvaluations } = useTryoutEvaluations();
+  const { 
+    loading, 
+    saving, 
+    fetchPlayers: hookFetchPlayers, 
+    fetchEvaluations: hookFetchEvaluations, 
+    saveEvaluation: hookSaveEvaluation, 
+    exportEvaluations: hookExportEvaluations 
+  } = useTryoutEvaluations();
   
   // State management
   const [players, setPlayers] = useState<Player[]>([]);
@@ -51,12 +58,12 @@ const TryoutRubricDashboard = () => {
   const isFormValid = evaluation.ball_handling > 0 && evaluation.shooting > 0 && evaluation.defense > 0 && evaluation.iq > 0 && evaluation.athleticism > 0;
 
   const loadPlayers = async () => {
-    const result = await fetchPlayers(searchTerm);
+    const result = await hookFetchPlayers(searchTerm);
     setPlayers(result);
   };
 
   const loadEvaluations = async () => {
-    const result = await fetchEvaluations();
+    const result = await hookFetchEvaluations();
     setEvaluations(result);
   };
 
@@ -70,7 +77,7 @@ const TryoutRubricDashboard = () => {
       return;
     }
 
-    const success = await saveEvaluation(
+    const success = await hookSaveEvaluation(
       selectedPlayer.id, 
       evaluation, 
       editingEvaluation?.id
@@ -98,11 +105,11 @@ const TryoutRubricDashboard = () => {
   };
 
   useEffect(() => {
-    fetchPlayers();
+    loadPlayers();
   }, [searchTerm]);
 
   useEffect(() => {
-    fetchEvaluations();
+    loadEvaluations();
   }, []);
 
   // Handle player selection
@@ -128,129 +135,28 @@ const TryoutRubricDashboard = () => {
     setEditingEvaluation(null);
   };
 
-  // Save evaluation
-  const saveEvaluation = async (saveAndNext = false) => {
-    if (!selectedPlayer || !isFormValid) {
-      toast({
-        title: 'Invalid Form',
-        description: 'Please select a player and fill in all scoring fields (1-5).',
-        variant: 'destructive'
-      });
-      return;
-    }
+  // Export to CSV using hook
+  const handleExportToCsv = async () => {
+    const data = await hookExportEvaluations();
+    if (!data) return;
 
-    try {
-      setSaving(true);
-      
-      const evaluationData = {
-        player_id: selectedPlayer.id,
-        evaluator_id: (await supabase.auth.getUser()).data.user?.id,
-        ball_handling: evaluation.ball_handling,
-        shooting: evaluation.shooting,
-        defense: evaluation.defense,
-        iq: evaluation.iq,
-        athleticism: evaluation.athleticism,
-        notes: evaluation.notes || null,
-        event_name: evaluation.event_name
-      };
+    // Convert to CSV
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+    ].join('\n');
 
-      let result;
-      if (editingEvaluation) {
-        // Update existing evaluation
-        result = await supabase
-          .from('tryout_evaluations')
-          .update(evaluationData)
-          .eq('id', editingEvaluation.id);
-      } else {
-        // Insert new evaluation
-        result = await supabase
-          .from('tryout_evaluations')
-          .insert([evaluationData]);
-      }
-
-      if (result.error) throw result.error;
-
-      toast({
-        title: 'Success',
-        description: `Evaluation ${editingEvaluation ? 'updated' : 'saved'} successfully!`,
-      });
-
-      // Refresh data
-      await Promise.all([fetchPlayers(), fetchEvaluations()]);
-      
-      if (saveAndNext && !editingEvaluation) {
-        // Auto-advance to next player
-        const currentIndex = players.findIndex(p => p.id === selectedPlayer.id);
-        const nextPlayer = players[currentIndex + 1];
-        if (nextPlayer) {
-          handlePlayerSelect(nextPlayer);
-        } else {
-          resetForm();
-          setSelectedPlayer(null);
-        }
-      } else {
-        resetForm();
-        if (editingEvaluation) {
-          setSelectedPlayer(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error saving evaluation:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save evaluation. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Export to CSV
-  const exportToCsv = async () => {
-    try {
-      const { data, error } = await supabase.rpc('export_tryout_evaluations');
-      
-      if (error) throw error;
-      
-      if (!data || data.length === 0) {
-        toast({
-          title: 'No Data',
-          description: 'No evaluations found to export.',
-        });
-        return;
-      }
-
-      // Convert to CSV
-      const headers = Object.keys(data[0]);
-      const csvContent = [
-        headers.join(','),
-        ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
-      ].join('\n');
-
-      // Download file
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `tryout-evaluations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: 'Export Complete',
-        description: `Exported ${data.length} evaluations to CSV.`,
-      });
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      toast({
-        title: 'Export Failed',
-        description: 'Failed to export data. Please try again.',
-        variant: 'destructive'
-      });
-    }
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tryout-evaluations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   // Edit evaluation
@@ -272,7 +178,7 @@ const TryoutRubricDashboard = () => {
   };
 
   // Render scoring dropdown
-  const renderScoreSelect = (field: keyof Pick<EvaluationForm, 'ball_handling' | 'shooting' | 'defense' | 'iq' | 'athleticism'>, label: string) => (
+  const renderScoreSelect = (field: keyof Pick<EvaluationFormData, 'ball_handling' | 'shooting' | 'defense' | 'iq' | 'athleticism'>, label: string) => (
     <div className="space-y-2">
       <Label htmlFor={field}>{label}</Label>
       <Select
@@ -450,7 +356,7 @@ const TryoutRubricDashboard = () => {
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2">
                     <Button
-                      onClick={() => saveEvaluation(false)}
+                      onClick={() => handleSaveEvaluation(false)}
                       disabled={!isFormValid || saving}
                       className="flex items-center gap-2"
                     >
@@ -460,7 +366,7 @@ const TryoutRubricDashboard = () => {
                     
                     {!editingEvaluation && (
                       <Button
-                        onClick={() => saveEvaluation(true)}
+                        onClick={() => handleSaveEvaluation(true)}
                         disabled={!isFormValid || saving}
                         variant="secondary"
                         className="flex items-center gap-2"
@@ -480,7 +386,7 @@ const TryoutRubricDashboard = () => {
                     </Button>
                     
                     <Button
-                      onClick={exportToCsv}
+                      onClick={handleExportToCsv}
                       variant="outline"
                       className="flex items-center gap-2"
                     >
