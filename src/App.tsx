@@ -36,6 +36,7 @@ const ShotIQ = React.lazy(() => import("./pages/ShotIQ"));
 const Security = React.lazy(() => import("./pages/Security"));
 const TeamGridSettings = React.lazy(() => import("./pages/TeamGridSettings"));
 const NotificationSettings = React.lazy(() => import("./pages/NotificationSettings"));
+const MembershipTypes = React.lazy(() => import("./pages/MembershipTypes"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -180,6 +181,11 @@ const App = () => (
           <ProtectedRoute>
             <NotificationSettings />
           </ProtectedRoute>
+        } />
+        <Route path="/membership-types" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <MembershipTypes />
+          </RoleProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />
             </Routes>

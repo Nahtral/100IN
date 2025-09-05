@@ -14,7 +14,8 @@ import {
   Brain,
   Newspaper,
   MessageCircle,
-  Target
+  Target,
+  CreditCard
 } from 'lucide-react';
 import {
   Sidebar,
@@ -150,6 +151,11 @@ export function AppSidebar() {
       title: 'News Manager',
       href: '/news-manager',
       icon: Newspaper,
+    },
+    {
+      title: 'Membership Types',
+      href: '/membership-types',
+      icon: CreditCard,
     },
   ];
 
