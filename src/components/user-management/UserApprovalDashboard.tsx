@@ -118,19 +118,30 @@ export const UserApprovalDashboard = () => {
 
   const fetchTeams = async () => {
     try {
-      // Simple approach to avoid TypeScript deep instantiation issues
-      const response = await supabase.rpc('get_active_teams');
+      // Direct query without complex typing to avoid TypeScript issues
+      const teamsQuery = supabase
+        .from('teams')
+        .select('id, name')
+        .order('name');
       
-      if (response.error) {
-        console.error('Error fetching teams:', response.error);
+      const { data: teamsData, error } = await teamsQuery;
+
+      if (error) {
+        console.error('Error fetching teams:', error);
         setAvailableTeams([]);
         return;
       }
       
-      const teams: TeamOption[] = (response.data || []).map((team: any) => ({
-        id: team.id,
-        name: team.name
-      }));
+      // Simple mapping without complex type inference
+      const teams: TeamOption[] = [];
+      if (teamsData && Array.isArray(teamsData)) {
+        teamsData.forEach((team: any) => {
+          teams.push({
+            id: team.id,
+            name: team.name
+          });
+        });
+      }
       
       setAvailableTeams(teams);
     } catch (error) {
