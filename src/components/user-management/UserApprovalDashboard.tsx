@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
-import { Check, X, UserCheck, UserX, Eye, Calendar, Mail, User, Shield, Settings } from 'lucide-react';
+import { Check, X, UserCheck, UserX, Eye, Calendar, Mail, User, Shield, Settings, Users, UserPlus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import UserDetailsView from './UserDetailsView';
 
@@ -34,6 +34,17 @@ interface UserRole {
   approved_at: string | null;
 }
 
+interface TeamOption {
+  id: string;
+  name: string;
+}
+
+interface PlayerOption {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
 export const UserApprovalDashboard = () => {
   const { isSuperAdmin } = useUserRole();
   const { user } = useAuth();
@@ -46,10 +57,20 @@ export const UserApprovalDashboard = () => {
   const [viewDetailsUser, setViewDetailsUser] = useState<PendingUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [roleAssignmentReason, setRoleAssignmentReason] = useState('');
+  
+  // Team assignment state (for players)
+  const [availableTeams, setAvailableTeams] = useState<TeamOption[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<Array<{teamId: string, role: string}>>([]);
+  
+  // Parent-child connection state (for parents)
+  const [availablePlayers, setAvailablePlayers] = useState<PlayerOption[]>([]);
+  const [selectedChildren, setSelectedChildren] = useState<Array<{playerId: string, relationshipType: string}>>([]);
 
   useEffect(() => {
     if (isSuperAdmin) {
       fetchPendingUsers();
+      fetchTeams();
+      fetchPlayers();
     }
   }, [isSuperAdmin]);
 
@@ -66,7 +87,7 @@ export const UserApprovalDashboard = () => {
 
       // Get requested roles for each user
       const usersWithRoles = await Promise.all(
-        (profiles || []).map(async (profile) => {
+        (profiles || []).map(async (profile: any) => {
           const { data: roles } = await supabase
             .from('user_roles')
             .select('role, is_active')
@@ -95,6 +116,48 @@ export const UserApprovalDashboard = () => {
     }
   };
 
+  const fetchTeams = async () => {
+    try {
+      const result = await supabase
+        .from('teams')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+
+      if (result.error) throw result.error;
+      
+      const teams: TeamOption[] = (result.data || []).map((team: any) => ({
+        id: team.id,
+        name: team.name
+      }));
+      
+      setAvailableTeams(teams);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+    }
+  };
+
+  const fetchPlayers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('id, profiles!inner(id, full_name, email)')
+        .eq('is_active', true);
+
+      if (error) throw error;
+      
+      const players: PlayerOption[] = (data as any[] || []).map((player: any) => ({
+        id: player.id,
+        full_name: player.profiles?.full_name || '',
+        email: player.profiles?.email || ''
+      }));
+      
+      setAvailablePlayers(players);
+    } catch (error) {
+      console.error('Error fetching players:', error);
+    }
+  };
+
   const handleApproval = async (userId: string, approved: boolean) => {
     setActionLoading(userId);
     try {
@@ -114,9 +177,19 @@ export const UserApprovalDashboard = () => {
 
       if (error) throw error;
 
-      // If approved and role is selected, activate the role
+      // If approved and role is selected, proceed with role assignment and additional setup
       if (approved && selectedRole) {
         await assignRoleToUser(userId, selectedRole, roleAssignmentReason || 'Role assigned during approval process');
+        
+        // Handle team assignments for players
+        if (selectedRole === 'player' && selectedTeams.length > 0) {
+          await assignPlayerToTeams(userId, selectedTeams);
+        }
+        
+        // Handle parent-child relationships for parents
+        if (selectedRole === 'parent' && selectedChildren.length > 0) {
+          await createParentChildRelationships(userId, selectedChildren);
+        }
       }
 
       toast({
@@ -134,10 +207,7 @@ export const UserApprovalDashboard = () => {
       }
 
       fetchPendingUsers();
-      setRejectionReason('');
-      setSelectedUser(null);
-      setSelectedRole('');
-      setRoleAssignmentReason('');
+      resetForm();
     } catch (error) {
       console.error('Error processing approval:', error);
       toast({
@@ -148,6 +218,15 @@ export const UserApprovalDashboard = () => {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const resetForm = () => {
+    setRejectionReason('');
+    setSelectedUser(null);
+    setSelectedRole('');
+    setRoleAssignmentReason('');
+    setSelectedTeams([]);
+    setSelectedChildren([]);
   };
 
   const assignRoleToUser = async (userId: string, role: string, reason: string) => {
@@ -208,6 +287,101 @@ export const UserApprovalDashboard = () => {
 
     } catch (error) {
       console.error('Error assigning role:', error);
+      throw error;
+    }
+  };
+
+  const assignPlayerToTeams = async (userId: string, teamAssignments: Array<{teamId: string, role: string}>) => {
+    try {
+      // First, get the player record for this user
+      const { data: playerData, error: playerFetchError } = await supabase
+        .from('players')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (playerFetchError) {
+        // If no player record exists, create one first
+        const { data: newPlayerData, error: playerCreateError } = await supabase
+          .from('players')
+          .insert({
+            user_id: userId,
+            is_active: true
+          })
+          .select('id')
+          .single();
+
+        if (playerCreateError) throw playerCreateError;
+        
+        const playerId = newPlayerData.id;
+        
+        // Create team assignments
+        const teamInserts = teamAssignments.map(assignment => ({
+          player_id: playerId,
+          team_id: assignment.teamId,
+          role_on_team: assignment.role,
+          assigned_by: user?.id
+        }));
+
+        const { error: teamAssignError } = await supabase
+          .from('player_teams')
+          .insert(teamInserts);
+
+        if (teamAssignError) throw teamAssignError;
+      } else {
+        // Player exists, create team assignments
+        const playerId = playerData.id;
+        
+        const teamInserts = teamAssignments.map(assignment => ({
+          player_id: playerId,
+          team_id: assignment.teamId,
+          role_on_team: assignment.role,
+          assigned_by: user?.id
+        }));
+
+        const { error: teamAssignError } = await supabase
+          .from('player_teams')
+          .insert(teamInserts);
+
+        if (teamAssignError) throw teamAssignError;
+      }
+    } catch (error) {
+      console.error('Error assigning player to teams:', error);
+      throw error;
+    }
+  };
+
+  const createParentChildRelationships = async (parentUserId: string, childRelationships: Array<{playerId: string, relationshipType: string}>) => {
+    try {
+      // Get child user IDs from player IDs
+      const playerIds = childRelationships.map(rel => rel.playerId);
+      const { data: playersData, error: playersError } = await supabase
+        .from('players')
+        .select('id, user_id')
+        .in('id', playerIds);
+
+      if (playersError) throw playersError;
+
+      const relationshipInserts = childRelationships.map(rel => {
+        const player = playersData?.find((p: any) => p.id === rel.playerId);
+        if (!player) return null;
+        
+        return {
+          parent_id: parentUserId,
+          child_id: player.user_id,
+          relationship_type: rel.relationshipType
+        };
+      }).filter(Boolean);
+
+      if (relationshipInserts.length > 0) {
+        const { error: relationshipError } = await supabase
+          .from('parent_child_relationships')
+          .insert(relationshipInserts);
+
+        if (relationshipError) throw relationshipError;
+      }
+    } catch (error) {
+      console.error('Error creating parent-child relationships:', error);
       throw error;
     }
   };
@@ -322,6 +496,8 @@ export const UserApprovalDashboard = () => {
                                 setSelectedUser(user);
                                 setSelectedRole(user.requested_role || 'player');
                                 setRoleAssignmentReason(`Approved as ${getRoleDisplayName(user.requested_role || 'player')}`);
+                                setSelectedTeams([]);
+                                setSelectedChildren([]);
                               }}
                             >
                               <Check className="h-4 w-4 mr-1" />
@@ -366,6 +542,173 @@ export const UserApprovalDashboard = () => {
                                 )}
                               </div>
 
+                              {/* Team Assignment Section - Only for Players */}
+                              {selectedRole === 'player' && (
+                                <div className="space-y-3 p-4 border rounded-lg bg-blue-50/50">
+                                  <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4 text-blue-600" />
+                                    <Label className="text-sm font-medium text-blue-800">Team Assignment</Label>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Assign this player to teams (optional)
+                                  </p>
+                                  
+                                  {availableTeams.length > 0 ? (
+                                    <div className="space-y-2">
+                                      <div className="flex gap-2">
+                                        <Select 
+                                          value="" 
+                                          onValueChange={(teamId) => {
+                                            if (teamId && !selectedTeams.some(t => t.teamId === teamId)) {
+                                              setSelectedTeams([...selectedTeams, { teamId, role: 'player' }]);
+                                            }
+                                          }}
+                                        >
+                                          <SelectTrigger className="flex-1">
+                                            <SelectValue placeholder="Select a team to add" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {availableTeams
+                                              .filter(team => !selectedTeams.some(st => st.teamId === team.id))
+                                              .map((team) => (
+                                                <SelectItem key={team.id} value={team.id}>
+                                                  {team.name}
+                                                </SelectItem>
+                                              ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+
+                                      {selectedTeams.length > 0 && (
+                                        <div className="space-y-2">
+                                          {selectedTeams.map((assignment, index) => {
+                                            const team = availableTeams.find(t => t.id === assignment.teamId);
+                                            return (
+                                              <div key={assignment.teamId} className="flex items-center gap-2 p-2 bg-white border rounded">
+                                                <span className="flex-1 text-sm">{team?.name}</span>
+                                                <Select 
+                                                  value={assignment.role} 
+                                                  onValueChange={(role) => {
+                                                    const updated = [...selectedTeams];
+                                                    updated[index].role = role;
+                                                    setSelectedTeams(updated);
+                                                  }}
+                                                >
+                                                  <SelectTrigger className="w-32">
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="player">Player</SelectItem>
+                                                    <SelectItem value="captain">Captain</SelectItem>
+                                                    <SelectItem value="co_captain">Co-Captain</SelectItem>
+                                                    <SelectItem value="substitute">Substitute</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() => setSelectedTeams(selectedTeams.filter(t => t.teamId !== assignment.teamId))}
+                                                >
+                                                  <X className="h-3 w-3" />
+                                                </Button>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground">No teams available</p>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Parent-Child Connection Section - Only for Parents */}
+                              {selectedRole === 'parent' && (
+                                <div className="space-y-3 p-4 border rounded-lg bg-green-50/50">
+                                  <div className="flex items-center gap-2">
+                                    <UserPlus className="h-4 w-4 text-green-600" />
+                                    <Label className="text-sm font-medium text-green-800">Parent-Child Connection</Label>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Connect this parent to their children (optional)
+                                  </p>
+                                  
+                                  {availablePlayers.length > 0 ? (
+                                    <div className="space-y-2">
+                                      <div className="flex gap-2">
+                                        <Select 
+                                          value="" 
+                                          onValueChange={(playerId) => {
+                                            if (playerId && !selectedChildren.some(c => c.playerId === playerId)) {
+                                              setSelectedChildren([...selectedChildren, { playerId, relationshipType: 'parent' }]);
+                                            }
+                                          }}
+                                        >
+                                          <SelectTrigger className="flex-1">
+                                            <SelectValue placeholder="Select a player to connect" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {availablePlayers
+                                              .filter(player => !selectedChildren.some(sc => sc.playerId === player.id))
+                                              .map((player) => (
+                                                <SelectItem key={player.id} value={player.id}>
+                                                  <div className="flex flex-col">
+                                                    <span className="font-medium">{player.full_name}</span>
+                                                    <span className="text-xs text-muted-foreground">{player.email}</span>
+                                                  </div>
+                                                </SelectItem>
+                                              ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+
+                                      {selectedChildren.length > 0 && (
+                                        <div className="space-y-2">
+                                          {selectedChildren.map((connection, index) => {
+                                            const player = availablePlayers.find(p => p.id === connection.playerId);
+                                            return (
+                                              <div key={connection.playerId} className="flex items-center gap-2 p-2 bg-white border rounded">
+                                                <div className="flex-1">
+                                                  <div className="text-sm font-medium">{player?.full_name}</div>
+                                                  <div className="text-xs text-muted-foreground">{player?.email}</div>
+                                                </div>
+                                                <Select 
+                                                  value={connection.relationshipType} 
+                                                  onValueChange={(type) => {
+                                                    const updated = [...selectedChildren];
+                                                    updated[index].relationshipType = type;
+                                                    setSelectedChildren(updated);
+                                                  }}
+                                                >
+                                                  <SelectTrigger className="w-24">
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="parent">Parent</SelectItem>
+                                                    <SelectItem value="guardian">Guardian</SelectItem>
+                                                    <SelectItem value="relative">Relative</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() => setSelectedChildren(selectedChildren.filter(c => c.playerId !== connection.playerId))}
+                                                >
+                                                  <X className="h-3 w-3" />
+                                                </Button>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground">No players available</p>
+                                  )}
+                                </div>
+                              )}
+
                               <div className="space-y-2">
                                 <Label htmlFor="role-reason">Role Assignment Reason</Label>
                                 <Textarea
@@ -379,11 +722,7 @@ export const UserApprovalDashboard = () => {
                             </div>
 
                             <AlertDialogFooter>
-                              <AlertDialogCancel onClick={() => {
-                                setSelectedUser(null);
-                                setSelectedRole('');
-                                setRoleAssignmentReason('');
-                              }}>
+                              <AlertDialogCancel onClick={resetForm}>
                                 Cancel
                               </AlertDialogCancel>
                               <AlertDialogAction
