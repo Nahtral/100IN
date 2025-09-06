@@ -7,7 +7,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Shield, Eye, AlertTriangle, Lock, User, Database, Plus, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import SecurityEventModal from './SecurityEventModal';
 import SecurityMetricsModal from './SecurityMetricsModal';
 

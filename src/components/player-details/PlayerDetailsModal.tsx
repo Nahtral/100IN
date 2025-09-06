@@ -20,7 +20,6 @@ import { useMembershipSummary, useToggleOverride, useActivatePlayer, useSendMemb
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Player {

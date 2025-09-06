@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import EmployeeForm from './EmployeeForm';
 
 interface SecureEmployee {

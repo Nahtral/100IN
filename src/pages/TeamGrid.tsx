@@ -11,7 +11,6 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { TeamGridSettingsButton } from '@/components/teamgrid/TeamGridSettingsButton';
-import { TeamGridSettingsButton } from '@/components/teamgrid/TeamGridSettingsButton';
 import SecureEmployeeList from '@/components/hr/SecureEmployeeList';
 import TimeTracking from '@/components/hr/TimeTracking';
 import TimeOffManagement from '@/components/hr/TimeOffManagement';
