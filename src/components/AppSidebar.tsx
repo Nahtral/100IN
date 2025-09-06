@@ -38,14 +38,14 @@ export function AppSidebar() {
   const { state, isMobile } = useSidebar();
   const location = useLocation();
   const { trackUserAction } = useAnalytics();
-  const { isSuperAdmin, hasRole, canAccessMedical, canAccessPartners, loading, initialized } = useUserRole();
+  const { isSuperAdmin, hasRole, loading, initialized } = useOptimizedAuth();
   const { isTestMode, effectiveIsSuperAdmin, testHasRole, testCanAccessMedical, testCanAccessPartners } = useRoleSwitcher();
 
   // Use effective permissions based on test mode
   const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
   const actualHasRole = (role: string) => isTestMode ? testHasRole(role) : hasRole(role);
-  const actualCanAccessMedical = () => isTestMode ? testCanAccessMedical() : canAccessMedical();
-  const actualCanAccessPartners = () => isTestMode ? testCanAccessPartners() : canAccessPartners();
+  const actualCanAccessMedical = () => isTestMode ? testCanAccessMedical() : (isSuperAdmin() || hasRole('medical'));
+  const actualCanAccessPartners = () => isTestMode ? testCanAccessPartners() : (isSuperAdmin() || hasRole('partner'));
 
   const navItems = [
     {

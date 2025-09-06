@@ -31,7 +31,7 @@ export const useTeamGridSettings = () => {
   const [settings, setSettings] = useState<TeamGridSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
 
   const fetchSettings = async () => {
     try {

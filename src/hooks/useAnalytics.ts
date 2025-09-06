@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface AnalyticsEvent {
   event: string;
@@ -11,7 +11,7 @@ interface AnalyticsEvent {
 
 export const useAnalytics = () => {
   const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { primaryRole } = useOptimizedAuth();
 
   const track = (eventName: string, properties?: Record<string, any>) => {
     const event: AnalyticsEvent = {
@@ -26,7 +26,7 @@ export const useAnalytics = () => {
         }
       },
       userId: user?.id,
-      userRole: userRole || undefined,
+      userRole: primaryRole || undefined,
       timestamp: new Date().toISOString()
     };
 

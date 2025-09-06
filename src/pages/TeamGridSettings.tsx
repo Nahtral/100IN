@@ -67,7 +67,7 @@ const TeamGridSettings = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isSuperAdmin, isApproved, loading: authLoading, error: authError } = useSuperAdminGuard();
+  const { isSuperAdmin, isApproved, loading: authLoading, error: authError } = useOptimizedAuth();
 
   // Redirect if not super admin
   useEffect(() => {

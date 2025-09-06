@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { BarChart3, TrendingUp, Users, Trophy, AlertTriangle, Target } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useTranslation, Language } from '@/lib/i18n';
 
 interface DashboardProps {
@@ -13,7 +13,7 @@ interface DashboardProps {
 
 export const EvaluationDashboard: React.FC<DashboardProps> = ({ evaluations, language }) => {
   const { t } = useTranslation(language);
-  const { userRole, isSuperAdmin } = useUserRole();
+  const { primaryRole, isSuperAdmin } = useOptimizedAuth();
 
   // Calculate KPIs based on role
   const getKPIs = () => {

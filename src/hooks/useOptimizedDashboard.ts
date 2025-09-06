@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PerformanceOptimizer } from '@/utils/performanceOptimizer';
 import { OptimizedCache } from '@/hooks/useOptimizedCache';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface OptimizedDashboardData {
   stats: any;
@@ -22,12 +22,12 @@ export const useOptimizedDashboard = () => {
     loading: true,
     error: null
   });
-  const { isSuperAdmin, userRole, loading: roleLoading } = useUserRole();
+  const { isSuperAdmin, primaryRole, loading: roleLoading } = useOptimizedAuth();
 
   const fetchDashboardData = useCallback(async () => {
     if (roleLoading) return;
 
-    const cacheKey = `${CACHE_KEYS.DASHBOARD}_${userRole || 'guest'}`;
+    const cacheKey = `${CACHE_KEYS.DASHBOARD}_${primaryRole || 'guest'}`;
     
     try {
       const result = await PerformanceOptimizer.dedupeRequest(
@@ -59,7 +59,7 @@ export const useOptimizedDashboard = () => {
 
             return {
               userTeams: userTeams.data?.length || 0,
-              role: userRole || 'user'
+              role: primaryRole || 'user'
             };
           }
         }
@@ -77,7 +77,7 @@ export const useOptimizedDashboard = () => {
         error: error instanceof Error ? error.message : 'Failed to load dashboard data'
       });
     }
-  }, [isSuperAdmin, userRole, roleLoading]);
+  }, [isSuperAdmin, primaryRole, roleLoading]);
 
   const debouncedFetch = useMemo(
     () => PerformanceOptimizer.debounce(fetchDashboardData, 300),

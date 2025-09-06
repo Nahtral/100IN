@@ -21,7 +21,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 const PlayerDashboard = () => {
   const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { primaryRole } = useOptimizedAuth();
   const [playerData, setPlayerData] = useState<any>(null);
   const [playerStats, setPlayerStats] = useState<any>(null);
   const [developmentGoals, setDevelopmentGoals] = useState<any[]>([]);

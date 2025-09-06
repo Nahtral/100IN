@@ -21,7 +21,7 @@ import { useUpcomingSchedule } from "@/hooks/useDashboardData";
 
 const CoachDashboard = () => {
   const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { primaryRole } = useOptimizedAuth();
   const [coachData, setCoachData] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const { schedule } = useUpcomingSchedule();

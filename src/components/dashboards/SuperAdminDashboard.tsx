@@ -50,7 +50,7 @@ interface PendingRequest {
 
 const SuperAdminDashboard = () => {
   const { user } = useAuth();
-  const { userRole, loading: roleLoading } = useUserRole();
+  const { primaryRole, loading: roleLoading } = useOptimizedAuth();
   const { stats, loading, error } = useBatchedDashboard('super_admin');
   const navigate = useNavigate();
   const { toast } = useToast();

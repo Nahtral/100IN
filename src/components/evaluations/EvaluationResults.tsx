@@ -17,7 +17,7 @@ import {
   TrendingUp,
   TrendingDown
 } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { EvaluationDashboard } from './EvaluationDashboard';
 import { PlayerReports } from './PlayerReports';
@@ -33,7 +33,7 @@ interface EvaluationResultsProps {
 }
 
 export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluations, players }) => {
-  const { isSuperAdmin, hasRole, canAccessMedical } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const { isTestMode, effectiveIsSuperAdmin, testHasRole, testCanAccessMedical } = useRoleSwitcher();
   const [language, setLanguage] = useState<Language>('en');
   const { t } = useTranslation(language);
@@ -44,7 +44,7 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
   // Use effective roles when in test mode
   const currentIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
   const currentHasRole = (role: string) => isTestMode ? testHasRole(role) : hasRole(role);
-  const currentCanAccessMedical = isTestMode ? testCanAccessMedical() : canAccessMedical();
+  const currentCanAccessMedical = isTestMode ? testCanAccessMedical() : (isSuperAdmin() || hasRole('medical'));
 
   useEffect(() => {
     fetchGameLogs();

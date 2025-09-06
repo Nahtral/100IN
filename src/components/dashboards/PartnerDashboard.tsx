@@ -46,7 +46,7 @@ interface TeamPerformance {
 
 const PartnerDashboard = () => {
   const { currentUser } = useCurrentUser();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);

@@ -25,7 +25,7 @@ import MedicalReportGenerator from "@/components/health/MedicalReportGenerator";
 
 const MedicalDashboard = () => {
   const { currentUser } = useCurrentUser();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const [medicalData, setMedicalData] = useState<any>({});
   const [loading, setLoading] = useState(true);
   

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
 import CoachDashboard from '@/components/dashboards/CoachDashboard';
 import PlayerDashboard from '@/components/dashboards/PlayerDashboard';
@@ -33,7 +33,7 @@ const quickActionItems = [
 
 export function CourtVision() {
   const { currentUser } = useCurrentUser();
-  const { userRole } = useUserRole();
+  const { primaryRole } = useOptimizedAuth();
   const [activeSection, setActiveSection] = useState('overview');
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -54,16 +54,16 @@ export function CourtVision() {
   const renderDashboardContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        if (userRole === 'super_admin') return <SuperAdminDashboard />;
-        if (userRole === 'coach') return <CoachDashboard />;
-        if (userRole === 'player') return <PlayerDashboard />;
-        if (userRole === 'staff') return <StaffDashboard />;
-        if (userRole === 'parent') return <ParentDashboard />;
-        if (userRole === 'medical') return <MedicalDashboard />;
-        if (userRole === 'partner') return <PartnerDashboard />;
+        if (primaryRole === 'super_admin') return <SuperAdminDashboard />;
+        if (primaryRole === 'coach') return <CoachDashboard />;
+        if (primaryRole === 'player') return <PlayerDashboard />;
+        if (primaryRole === 'staff') return <StaffDashboard />;
+        if (primaryRole === 'parent') return <ParentDashboard />;
+        if (primaryRole === 'medical') return <MedicalDashboard />;
+        if (primaryRole === 'partner') return <PartnerDashboard />;
         return <SuperAdminDashboard />;
       case 'health':
-        return <HealthDashboard userRole={userRole} isSuperAdmin={userRole === 'super_admin'} />;
+        return <HealthDashboard userRole={primaryRole} isSuperAdmin={primaryRole === 'super_admin'} />;
       case 'hr':
         return <PayrollDashboard onStatsUpdate={() => {}} />;
       default:
@@ -151,7 +151,7 @@ export function CourtVision() {
               </p>
               {currentUser && (
                 <Badge variant="secondary" className="mt-2">
-                  {currentUser.name} • {userRole}
+                  {currentUser.name} • {primaryRole}
                 </Badge>
               )}
             </div>

@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const ParentDashboard = () => {
   const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { primaryRole } = useOptimizedAuth();
   const [childData, setChildData] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
