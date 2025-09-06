@@ -86,7 +86,7 @@ const EnhancedScheduleForm: React.FC<EnhancedScheduleFormProps> = ({
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { primaryRole } = useOptimizedAuth();
+  const { primaryRole: userRole } = useOptimizedAuth();
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),

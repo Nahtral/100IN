@@ -85,7 +85,7 @@ const PlayerDashboard = () => {
   return (
     <Layout currentUser={{ 
       name: user?.user_metadata?.full_name || 'Player',
-      role: userRole || 'Player',
+      role: primaryRole || 'Player',
       avatar: '' 
     }}>
       <div className="space-y-6">

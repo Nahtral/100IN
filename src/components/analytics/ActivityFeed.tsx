@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useRealAnalytics } from '@/hooks/useRealAnalytics';
 import { Clock, RefreshCw, Activity, User } from 'lucide-react';
 
 interface ActivityFeedProps {

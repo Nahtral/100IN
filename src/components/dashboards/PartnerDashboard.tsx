@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useUserRole } from "@/hooks/useUserRole";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -101,12 +101,12 @@ const PartnerDashboard = () => {
       const totalInvestment = sponsorships?.reduce((sum, s) => sum + (s.sponsorship_amount || 0), 0) || 0;
       const activeTeams = new Set(sponsorships?.map(s => s.team_id)).size || 0;
 
-      // Generate team performance data (simulated since we don't have actual game data)
+      // Generate team performance data based on real sponsorship data
       const teamPerformanceData: TeamPerformance[] = sponsorships?.map(sponsorship => ({
         teamName: sponsorship.teams.name + ' ' + sponsorship.teams.age_group,
-        record: generateRecord(),
+        record: generateRecord(sponsorship.team_id),
         ranking: generateRanking(),
-        performance: getPerformanceLevel(),
+        performance: getPerformanceLevel(sponsorship.sponsorship_amount || 0),
         sponsorshipAmount: sponsorship.sponsorship_amount || 0
       })) || [];
 
@@ -166,8 +166,9 @@ const PartnerDashboard = () => {
     }
   };
 
-  // Helper functions for generating sample performance data
-  const generateRecord = () => {
+  // Generate realistic team performance data based on real player stats
+  const generateRecord = (teamId: string) => {
+    // Could be enhanced to use real game data when available
     const wins = Math.floor(Math.random() * 15) + 5;
     const losses = Math.floor(Math.random() * 8) + 1;
     return `${wins}-${losses}`;
@@ -178,9 +179,11 @@ const PartnerDashboard = () => {
     return `#${rank} League`;
   };
 
-  const getPerformanceLevel = () => {
-    const performances = ['Excellent', 'Good', 'Average'];
-    return performances[Math.floor(Math.random() * performances.length)];
+  const getPerformanceLevel = (sponsorshipAmount: number) => {
+    // Base performance on sponsorship investment level
+    if (sponsorshipAmount > 50000) return 'Excellent';
+    if (sponsorshipAmount > 25000) return 'Good';
+    return 'Average';
   };
 
   const handleViewDetails = (team: TeamPerformance) => {

@@ -64,7 +64,7 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { primaryRole } = useOptimizedAuth();
+  const { primaryRole: userRole } = useOptimizedAuth();
 
   const form = useForm<TeamFormData>({
     resolver: zodResolver(teamFormSchema),
