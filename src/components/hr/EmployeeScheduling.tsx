@@ -194,28 +194,12 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       });
 
       if (error) {
-        console.error('RPC call failed, trying fallback:', error);
-        
-        // Fallback to view query
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('employees_v')
-          .select('employee_id, full_name, role, role_display, email, phone')
-          .ilike('full_name', `%${query}%`)
-          .order('full_name')
-          .limit(50);
-
-        if (fallbackError) {
-          console.error('Fallback query also failed:', fallbackError);
-          toast({
-            title: "Error",
-            description: `Failed to fetch employees: ${fallbackError.message}`,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        console.log('Fallback data:', fallbackData);
-        setEmployees(fallbackData || []);
+        console.error('RPC call failed:', error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch employees: ${error.message}`,
+          variant: "destructive",
+        });
         return;
       }
 

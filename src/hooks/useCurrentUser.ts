@@ -1,14 +1,14 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useReliableUserRole } from '@/hooks/useReliableUserRole';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 
 export const useCurrentUser = () => {
   const { user } = useAuth();
-  const { userRole, isSuperAdmin, loading, initialized } = useUserRole();
+  const { primaryRole, isSuperAdmin, loading } = useReliableUserRole();
   const { isTestMode, effectiveRole, effectiveIsSuperAdmin } = useRoleSwitcher();
 
-  // Don't process role data until roles are fully initialized
-  if (!initialized || loading) {
+  // Don't process role data until roles are fully loaded
+  if (loading) {
     return { 
       currentUser: {
         name: user?.user_metadata?.full_name || user?.email || 'User',
@@ -23,11 +23,11 @@ export const useCurrentUser = () => {
 
   // For role display: Only show test role if super admin is actively testing
   // Otherwise, always show the true role to prevent confusion
-  const displayRole = isSuperAdmin 
+  const displayRole = isSuperAdmin() 
     ? (isTestMode && effectiveRole ? `Super Admin (Testing: ${effectiveRole})` : 'Super Admin')
-    : userRole === 'connection_error' 
+    : primaryRole === 'connection_error' 
       ? 'Connection Error - Please Refresh'
-      : (userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User');
+      : (primaryRole ? primaryRole.charAt(0).toUpperCase() + primaryRole.slice(1) : 'User');
   
   const currentUser = {
     name: user?.user_metadata?.full_name || user?.email || 'User',
