@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,7 @@ import QuickCheckIn from '@/components/health/QuickCheckIn';
 
 const HealthWellness = () => {
   const { user } = useAuth();
-  const { userRole, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { primaryRole, isSuperAdmin, loading: roleLoading } = useOptimizedAuth();
   const { currentUser } = useCurrentUser();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');

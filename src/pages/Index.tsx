@@ -5,12 +5,11 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
-import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Shield, 
+  Shield,
   Users, 
   UserCheck, 
   Activity, 

@@ -28,7 +28,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 

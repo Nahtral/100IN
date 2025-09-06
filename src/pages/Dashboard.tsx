@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,13 +34,13 @@ import PartnerDashboard from '@/components/dashboards/PartnerDashboard';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { isSuperAdmin, userRole, loading: roleLoading } = useUserRole();
+  const { isSuperAdmin, primaryRole, loading: roleLoading } = useOptimizedAuth();
   const { isTestMode, effectiveRole, effectiveIsSuperAdmin } = useRoleSwitcher();
   const { currentUser } = useCurrentUser();
   const { stats, loading, error } = useDashboardData();
 
   // Use effective role and admin status based on test mode
-  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
+  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin();
   const actualUserRole = isTestMode ? effectiveRole : userRole;
 
   // Fetch recent activities

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import { NewsModal } from '@/components/news/NewsModal';
 const Home = () => {
   const { user } = useAuth();
   const { currentUser } = useCurrentUser();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const [selectedNews, setSelectedNews] = useState<any>(null);
   
   // Fetch recent news (limited for home page)

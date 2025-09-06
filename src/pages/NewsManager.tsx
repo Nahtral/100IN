@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ interface MediaUpload {
 
 const NewsManager = () => {
   const { user } = useAuth();
-  const { isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { isSuperAdmin, loading: roleLoading } = useOptimizedAuth();
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);

@@ -23,7 +23,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce, useDebouncedCallback } from '@/hooks/useDebounce';
-import { useDebounce, useDebouncedCallback } from '@/hooks/useDebounce';
+import { useScheduleCache } from '@/hooks/useScheduleCache';
 import { useScheduleCache } from '@/hooks/useScheduleCache';
 import { format, isToday, isFuture } from 'date-fns';
 
