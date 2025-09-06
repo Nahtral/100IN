@@ -233,13 +233,6 @@ export type Database = {
             foreignKeyName: "chats_archived_by_fkey"
             columns: ["archived_by"]
             isOneToOne: false
-            referencedRelation: "employees_v"
-            referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "chats_archived_by_fkey"
-            columns: ["archived_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1797,13 +1790,6 @@ export type Database = {
             foreignKeyName: "messages_recalled_by_fkey"
             columns: ["recalled_by"]
             isOneToOne: false
-            referencedRelation: "employees_v"
-            referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "messages_recalled_by_fkey"
-            columns: ["recalled_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2280,13 +2266,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "payments_payer_id_fkey"
-            columns: ["payer_id"]
-            isOneToOne: false
-            referencedRelation: "employees_v"
-            referencedColumns: ["employee_id"]
-          },
           {
             foreignKeyName: "payments_payer_id_fkey"
             columns: ["payer_id"]
@@ -2976,13 +2955,6 @@ export type Database = {
           weight?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_players_profiles"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "employees_v"
-            referencedColumns: ["employee_id"]
-          },
           {
             foreignKeyName: "fk_players_profiles"
             columns: ["user_id"]
@@ -4244,13 +4216,6 @@ export type Database = {
             foreignKeyName: "tryout_evaluations_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "employees_v"
-            referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "tryout_evaluations_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4410,20 +4375,7 @@ export type Database = {
       }
     }
     Views: {
-      employees_v: {
-        Row: {
-          approval_status: string | null
-          created_at: string | null
-          email: string | null
-          employee_id: string | null
-          full_name: string | null
-          phone: string | null
-          role: string | null
-          role_active: boolean | null
-          role_display: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       assign_user_permission: {
