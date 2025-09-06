@@ -242,18 +242,44 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
             </label>
           </div>
           
-          <Button
-            onClick={convertUsersToPlayers}
-            disabled={selectedUsers.length === 0 || processing}
-            size="sm"
-          >
-            {processing ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Users className="h-4 w-4 mr-2" />
-            )}
-            Convert to Players
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={async () => {
+                // One-click process all: select all users and convert them
+                const allUserIds = users.map(user => user.id);
+                setSelectedUsers(allUserIds);
+                
+                // Small delay to show selection, then process
+                setTimeout(() => {
+                  convertUsersToPlayers();
+                }, 100);
+              }}
+              disabled={users.length === 0 || processing}
+              variant="default"
+              size="sm"
+            >
+              {processing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Users className="h-4 w-4 mr-2" />
+              )}
+              Process All ({users.length})
+            </Button>
+            
+            <Button
+              onClick={convertUsersToPlayers}
+              disabled={selectedUsers.length === 0 || processing}
+              variant="outline"
+              size="sm"
+            >
+              {processing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Users className="h-4 w-4 mr-2" />
+              )}
+              Convert Selected ({selectedUsers.length})
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2 max-h-96 overflow-y-auto">
