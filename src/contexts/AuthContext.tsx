@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { useReliableAuth } from '@/hooks/useReliableAuth';
 import { ApprovalRequired } from '@/components/ApprovalRequired';
 
 interface AuthContextType {
@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   isApproved: boolean | null;
   signOut: () => Promise<void>;
+  refetch: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isApproved: null,
   signOut: async () => {},
+  refetch: () => {},
 });
 
 export const useAuth = () => {
@@ -32,87 +34,21 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isApproved, setIsApproved] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Check approval status when user logs in
-        if (session?.user) {
-          setTimeout(() => {
-            checkApprovalStatus(session.user.id);
-          }, 0);
-        } else {
-          setIsApproved(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await checkApprovalStatus(session.user.id);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkApprovalStatus = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('approval_status')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error checking approval status:', error);
-        setIsApproved(false);
-        return;
-      }
-
-      setIsApproved(data.approval_status === 'approved');
-    } catch (error) {
-      console.error('Error checking approval status:', error);
-      setIsApproved(false);
-    }
-  };
-
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
-    }
-    setIsApproved(null);
-  };
+  const authState = useReliableAuth();
 
   const value = {
-    user,
-    session,
-    loading,
-    isApproved,
-    signOut,
+    user: authState.user,
+    session: authState.session,
+    loading: authState.loading,
+    isApproved: authState.isApproved,
+    signOut: authState.signOut,
+    refetch: authState.refetch,
   };
 
   return (
     <AuthContext.Provider value={value}>
       {/* Show approval screen for authenticated but unapproved users */}
-      {user && isApproved === false ? <ApprovalRequired /> : children}
+      {authState.user && authState.isApproved === false ? <ApprovalRequired /> : children}
     </AuthContext.Provider>
   );
 };
