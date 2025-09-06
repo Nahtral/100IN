@@ -7,6 +7,7 @@ import { Users, Clock, Calendar, FileText, DollarSign, Plus, Settings, BarChart3
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';

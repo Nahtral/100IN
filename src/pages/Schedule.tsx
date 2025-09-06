@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce, useDebouncedCallback } from '@/hooks/useDebounce';
 import { useScheduleCache } from '@/hooks/useScheduleCache';
@@ -368,8 +369,8 @@ const Schedule = () => {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const canManageEvents = isSuperAdmin || userRole === 'staff';
-  const canManageAttendance = isSuperAdmin || userRole === 'staff' || userRole === 'coach';
+  const canManageEvents = isSuperAdmin() || userRole === 'staff';
+  const canManageAttendance = isSuperAdmin() || userRole === 'staff' || userRole === 'coach';
 
   return (
     <Layout currentUser={currentUser}>
@@ -536,7 +537,7 @@ const Schedule = () => {
                                 onDelete={() => handleDeleteEvent(event.id)}
                                 onAttendance={() => openAttendanceModal(event)}
                                 onImageUpload={() => setImageUploadModal({ isOpen: true, event })}
-                                isSuperAdmin={isSuperAdmin}
+                                isSuperAdmin={isSuperAdmin()}
                                 canManageAttendance={canManageAttendance}
                               />
                             </div>
