@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { useReliableAuth } from '@/hooks/useReliableAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { ApprovalRequired } from '@/components/ApprovalRequired';
 
 interface AuthContextType {
@@ -34,13 +34,13 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const authState = useReliableAuth();
+  const authState = useOptimizedAuth();
 
   const value = {
     user: authState.user,
     session: authState.session,
     loading: authState.loading,
-    isApproved: authState.isApproved,
+    isApproved: authState.isApproved(),
     signOut: authState.signOut,
     refetch: authState.refetch,
   };
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   return (
     <AuthContext.Provider value={value}>
       {/* Show approval screen for authenticated but unapproved users */}
-      {authState.user && authState.isApproved === false ? <ApprovalRequired /> : children}
+      {authState.user && !authState.isApproved() ? <ApprovalRequired /> : children}
     </AuthContext.Provider>
   );
 };

@@ -4587,6 +4587,10 @@ export type Database = {
         Args: { user_uuid?: string }
         Returns: number
       }
+      get_user_auth_data_secure: {
+        Args: { target_user_id?: string }
+        Returns: Json
+      }
       get_user_permissions: {
         Args: { _user_id: string }
         Returns: {

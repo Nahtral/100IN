@@ -1,11 +1,9 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { useReliableUserRole } from '@/hooks/useReliableUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 
 export const useCurrentUser = () => {
-  const { user } = useAuth();
-  const { primaryRole, isSuperAdmin, loading } = useReliableUserRole();
-  const { isTestMode, effectiveRole, effectiveIsSuperAdmin } = useRoleSwitcher();
+  const { user, primaryRole, isSuperAdmin, loading } = useOptimizedAuth();
+  const { isTestMode, effectiveRole } = useRoleSwitcher();
 
   // Don't process role data until roles are fully loaded
   if (loading) {

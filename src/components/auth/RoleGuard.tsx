@@ -77,7 +77,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
                 </p>
                 {userData && (
                   <div className="mt-4 p-3 bg-muted rounded-md text-sm">
-                    <p><strong>Your role:</strong> {userData.primary_role}</p>
+                    <p><strong>Your role:</strong> {userData.primaryRole}</p>
                     <p><strong>Required:</strong> {requiredRole}</p>
                   </div>
                 )}

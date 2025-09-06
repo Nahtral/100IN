@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useUserRole } from './useUserRole';
+import { useOptimizedAuth } from './useOptimizedAuth';
 
 export type TestRole = 'super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medical' | 'partner';
 
 export const useRoleSwitcher = () => {
-  const { isSuperAdmin, userRole } = useUserRole();
+  const { isSuperAdmin, primaryRole } = useOptimizedAuth();
   const [testRole, setTestRole] = useState<TestRole | null>(null);
   const [isTestMode, setIsTestMode] = useState(false);
 
   // Only super admins can use role switching
-  const canSwitchRoles = isSuperAdmin;
+  const canSwitchRoles = isSuperAdmin();
 
   // Reset test mode when user is not super admin
   useEffect(() => {
-    if (!isSuperAdmin) {
+    if (!isSuperAdmin()) {
       setTestRole(null);
       setIsTestMode(false);
     }
@@ -31,8 +31,8 @@ export const useRoleSwitcher = () => {
   };
 
   // Return effective role for testing (but preserve super admin status in display)
-  const effectiveRole = isTestMode && testRole ? testRole : userRole;
-  const effectiveIsSuperAdmin = isTestMode ? testRole === 'super_admin' : isSuperAdmin;
+  const effectiveRole = isTestMode && testRole ? testRole : primaryRole;
+  const effectiveIsSuperAdmin = isTestMode ? testRole === 'super_admin' : isSuperAdmin();
 
   // Mock role checking functions for test mode
   const testHasRole = (role: string) => {

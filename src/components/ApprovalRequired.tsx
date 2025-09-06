@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import { AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export const ApprovalRequired = () => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,9 +34,9 @@ export const ApprovalRequired = () => {
 
       setApprovalStatus(data.approval_status as ApprovalStatus);
       
-      // If approved, redirect to main app
+      // If approved, redirect to main app using React Router
       if (data.approval_status === 'approved') {
-        window.location.href = '/';
+        navigate('/', { replace: true });
       }
     } catch (error) {
       console.error('Error checking approval status:', error);
@@ -45,7 +47,7 @@ export const ApprovalRequired = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.href = '/auth';
+    navigate('/auth', { replace: true });
   };
 
   if (loading) {
