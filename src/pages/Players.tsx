@@ -80,8 +80,10 @@ const Players = () => {
     try {
       console.log('Fetching players...');
       
-      // Apply TeamGrid settings for sorting and pagination
-      const sortColumn = teamGridSettings?.sort_by || 'created_at';
+      // Apply TeamGrid settings for sorting and pagination - only use valid columns
+      const validSortColumns = ['created_at', 'updated_at', 'jersey_number', 'position', 'height', 'weight'];
+      const requestedSortColumn = teamGridSettings?.sort_by || 'created_at';
+      const sortColumn = validSortColumns.includes(requestedSortColumn) ? requestedSortColumn : 'created_at';
       const sortDirection = teamGridSettings?.sort_direction === 'desc' ? false : true;
       
       // First fetch all players with their profiles (only approved users)
