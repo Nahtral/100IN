@@ -22,7 +22,7 @@ import {
   Clock,
   AlertCircle
 } from "lucide-react";
-import { useOptimizedDashboard } from "@/hooks/useOptimizedDashboard";
+import { useBatchedDashboard } from "@/hooks/useBatchedDashboard";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +51,7 @@ interface PendingRequest {
 const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const { userRole, loading: roleLoading } = useUserRole();
-  const { stats, loading, error } = useOptimizedDashboard();
+  const { stats, loading, error } = useBatchedDashboard('super_admin');
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('approvals');
