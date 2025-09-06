@@ -37,7 +37,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface Player {
   id: string;
@@ -59,7 +58,7 @@ interface ShotAnalysis {
 
 const ShotIQ = () => {
   const { toast } = useToast();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);

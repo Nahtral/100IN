@@ -14,8 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTeamGridSettings } from '@/hooks/useTeamGridSettings';
 import { useTeamGridSettings } from '@/hooks/useTeamGridSettings';
 import BulkUserManagement from '@/components/admin/BulkUserManagement';
 
@@ -62,7 +62,7 @@ const Players = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const { currentUser } = useCurrentUser();
   const { settings: teamGridSettings } = useTeamGridSettings();
 
@@ -232,7 +232,7 @@ const Players = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <TeamGridSettingsButton />
-            {isSuperAdmin && (
+            {isSuperAdmin() && (
               <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={openAddForm} size="lg" className="w-full sm:w-auto">
@@ -316,7 +316,7 @@ const Players = () => {
                         </div>
                         
                         {/* Action buttons for mobile */}
-                        {isSuperAdmin && (
+                        {isSuperAdmin() && (
                           <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
@@ -346,7 +346,7 @@ const Players = () => {
                       
                       <div className="mobile-list-content">
                         {/* Email (only for authorized users) */}
-                        {(isSuperAdmin || player.user_id === user?.id) && player.profiles?.email && (
+                        {(isSuperAdmin() || player.user_id === user?.id) && player.profiles?.email && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <span className="mobile-text-sm">{player.profiles.email}</span>
                           </div>
@@ -378,7 +378,7 @@ const Players = () => {
                         )}
                         
                         {/* Emergency contact (only for authorized users) */}
-                        {(isSuperAdmin || player.user_id === user?.id) && (player.emergency_contact_name || player.emergency_contact_phone) && (
+                        {(isSuperAdmin() || player.user_id === user?.id) && (player.emergency_contact_name || player.emergency_contact_phone) && (
                           <div className="mobile-text-sm text-muted-foreground">
                             <span>Emergency: </span>
                             {player.emergency_contact_name && <span>{player.emergency_contact_name}</span>}
@@ -394,7 +394,7 @@ const Players = () => {
         </Card>
 
         {/* Bulk User Management - Super Admin Only */}
-        {isSuperAdmin && (
+        {isSuperAdmin() && (
           <BulkUserManagement onPlayerCreated={fetchPlayers} />
         )}
 

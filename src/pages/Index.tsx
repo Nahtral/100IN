@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
-import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
+import Layout from "@/components/layout/Layout";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,19 +31,19 @@ type UserRole = 'super_admin' | 'staff' | 'coach' | 'player' | 'parent' | 'medic
 const Index = () => {
   const { user } = useAuth();
   const { currentUser, loading: userLoading } = useCurrentUser();
-  const { userRole, userRoles, isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { primaryRole, userRoles, isSuperAdmin, loading: roleLoading } = useOptimizedAuth();
   const [currentRole, setCurrentRole] = useState<UserRole>('super_admin');
   
   const loading = userLoading || roleLoading;
 
   useEffect(() => {
     // Set the initial role for demo switcher based on actual user role
-    if (isSuperAdmin) {
+    if (isSuperAdmin()) {
       setCurrentRole('super_admin');
-    } else if (userRole) {
-      setCurrentRole(userRole as UserRole);
+    } else if (primaryRole) {
+      setCurrentRole(primaryRole as UserRole);
     }
-  }, [userRole, isSuperAdmin]);
+  }, [primaryRole, isSuperAdmin]);
   
   const roleConfigs = {
     super_admin: { 

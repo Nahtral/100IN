@@ -13,8 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTeamsCache } from '@/hooks/useTeamsCache';
 import { useTeamsCache } from '@/hooks/useTeamsCache';
 import { ErrorLogger } from '@/utils/errorLogger';
 
@@ -45,13 +45,13 @@ const Teams = () => {
   
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isSuperAdmin, hasRole } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const { currentUser } = useCurrentUser();
   const { teams, loading, error, fetchTeams, invalidateCache } = useTeamsCache();
 
   // Permission checks based on custom instructions
-  const canManageTeams = isSuperAdmin || hasRole('staff');
-  const canViewTeams = isSuperAdmin || hasRole('staff') || hasRole('coach');
+  const canManageTeams = isSuperAdmin() || hasRole('staff');
+  const canViewTeams = isSuperAdmin() || hasRole('staff') || hasRole('coach');
 
   // Filter and sort teams
   const filteredAndSortedTeams = useMemo(() => {

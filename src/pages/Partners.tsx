@@ -28,7 +28,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -69,7 +69,7 @@ interface Team {
 }
 
 const Partners = () => {
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const { currentUser } = useCurrentUser();
   const { toast } = useToast();
   
@@ -86,7 +86,7 @@ const Partners = () => {
   const [showSponsorshipDialog, setShowSponsorshipDialog] = useState(false);
 
   useEffect(() => {
-    if (isSuperAdmin) {
+    if (isSuperAdmin()) {
       fetchData();
     }
   }, [isSuperAdmin]);
@@ -221,7 +221,7 @@ const Partners = () => {
   );
 
   // Show dashboard for partner role, management interface for super admin
-  if (!isSuperAdmin) {
+  if (!isSuperAdmin()) {
     return (
       <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
         <Layout>

@@ -7,9 +7,9 @@ import { Users, Clock, Calendar, FileText, DollarSign, Plus, Settings, BarChart3
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuth } from '@/contexts/AuthContext';
+import Layout from '@/components/layout/Layout';
 import Layout from '@/components/layout/Layout';
 import { TeamGridSettingsButton } from '@/components/teamgrid/TeamGridSettingsButton';
 import SecureEmployeeList from '@/components/hr/SecureEmployeeList';
@@ -35,7 +35,7 @@ const TeamGrid = () => {
   const {
     isSuperAdmin,
     hasRole
-  } = useUserRole();
+  } = useOptimizedAuth();
   const {
     currentUser
   } = useCurrentUser();
@@ -54,7 +54,7 @@ const TeamGrid = () => {
   const [isEmployee, setIsEmployee] = useState(false);
   
   const checkEmployeeStatus = useCallback(async () => {
-    if (!isSuperAdmin && !hasRole('staff') && !hasRole('coach') && user) {
+    if (!isSuperAdmin() && !hasRole('staff') && !hasRole('coach') && user) {
       try {
         const {
           data
@@ -129,7 +129,7 @@ const TeamGrid = () => {
       fetchStats();
       checkEmployeeStatus();
       // Set appropriate default tab for non-super admins
-      if (!isSuperAdmin && activeTab === 'dashboard') {
+      if (!isSuperAdmin() && activeTab === 'dashboard') {
         setActiveTab('timetracking');
       }
     } else {
@@ -182,7 +182,7 @@ const TeamGrid = () => {
   }, [employees, toast]);
   const renderHRView = () => {
     // Only super admins have access to full TeamGrid dashboard
-    if (isSuperAdmin) {
+    if (isSuperAdmin()) {
       return renderFullHRManagement();
     } else if (hasRole('coach') || hasRole('staff') || isEmployee) {
       // Coaches, staff, and employees only get self-service features
@@ -203,7 +203,7 @@ const TeamGrid = () => {
           <p className="text-muted-foreground">Employee management system
         </p>
         </div>
-        {isSuperAdmin && <div className="flex gap-2">
+        {isSuperAdmin() && <div className="flex gap-2">
             <Button onClick={() => setActiveTab('employees')} className="btn-panthers">
               <UserPlus className="h-4 w-4 mr-2" />
               Add Employee
@@ -213,13 +213,13 @@ const TeamGrid = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-8' : 'grid-cols-4'}`}>
-          {isSuperAdmin && <TabsTrigger value="dashboard">Dashboard</TabsTrigger>}
-          {isSuperAdmin && <TabsTrigger value="employees">Employees</TabsTrigger>}
+        <TabsList className={`grid w-full ${isSuperAdmin() ? 'grid-cols-8' : 'grid-cols-4'}`}>
+          {isSuperAdmin() && <TabsTrigger value="dashboard">Dashboard</TabsTrigger>}
+          {isSuperAdmin() && <TabsTrigger value="employees">Employees</TabsTrigger>}
           <TabsTrigger value="timetracking">Time Tracking</TabsTrigger>
           <TabsTrigger value="timeoff">Time Off</TabsTrigger>
-          {isSuperAdmin && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
-          {isSuperAdmin && <TabsTrigger value="benefits">Benefits</TabsTrigger>}
+          {isSuperAdmin() && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
+          {isSuperAdmin() && <TabsTrigger value="benefits">Benefits</TabsTrigger>}
           <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
           <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
         </TabsList>

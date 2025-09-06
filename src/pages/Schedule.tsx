@@ -21,8 +21,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce, useDebouncedCallback } from '@/hooks/useDebounce';
 import { useDebounce, useDebouncedCallback } from '@/hooks/useDebounce';
 import { useScheduleCache } from '@/hooks/useScheduleCache';
 import { format, isToday, isFuture } from 'date-fns';
@@ -88,7 +88,7 @@ const Schedule = () => {
 
   const { user } = useAuth();
   const { currentUser } = useCurrentUser();
-  const { userRole, isSuperAdmin } = useUserRole();
+  const { primaryRole, isSuperAdmin } = useOptimizedAuth();
   const { toast } = useToast();
 
   // Use cached events with debounced filtering
@@ -114,7 +114,7 @@ const Schedule = () => {
 
   const fetchUserTeams = async () => {
     try {
-      if (isSuperAdmin || userRole === 'staff') {
+      if (isSuperAdmin() || primaryRole === 'staff') {
         // Super admins and staff see all teams
         const { data, error } = await supabase
           .from('teams')
@@ -144,7 +144,7 @@ const Schedule = () => {
     
     let filtered = events.filter(event => {
       // Filter out deleted events unless super admin
-      if (event.status === 'deleted' && !isSuperAdmin) {
+      if (event.status === 'deleted' && !isSuperAdmin()) {
         return false;
       }
       return true;
@@ -369,8 +369,8 @@ const Schedule = () => {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const canManageEvents = isSuperAdmin() || userRole === 'staff';
-  const canManageAttendance = isSuperAdmin() || userRole === 'staff' || userRole === 'coach';
+  const canManageEvents = isSuperAdmin() || primaryRole === 'staff';
+  const canManageAttendance = isSuperAdmin() || primaryRole === 'staff' || primaryRole === 'coach';
 
   return (
     <Layout currentUser={currentUser}>
@@ -410,7 +410,7 @@ const Schedule = () => {
           <TabsList>
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             <TabsTrigger value="past">Past Events</TabsTrigger>
-            {isSuperAdmin && (
+            {isSuperAdmin() && (
               <>
                 <TabsTrigger value="archived">Archived Events</TabsTrigger>
                 <TabsTrigger value="locations">Locations</TabsTrigger>
