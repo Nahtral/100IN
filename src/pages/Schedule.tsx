@@ -20,7 +20,7 @@ import { LazyLoadWrapper } from '@/components/ui/LazyLoadWrapper';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce, useDebouncedCallback } from '@/hooks/useDebounce';
 import { useScheduleCache } from '@/hooks/useScheduleCache';

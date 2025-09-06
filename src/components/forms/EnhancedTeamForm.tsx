@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { InputSanitizer } from '@/utils/inputSanitizer';
 import { ErrorLogger } from '@/utils/errorLogger';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 // Enhanced validation schema with security checks
 const teamFormSchema = z.object({
@@ -64,7 +64,7 @@ const EnhancedTeamForm: React.FC<EnhancedTeamFormProps> = ({
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { primaryRole } = useOptimizedAuth();
 
   const form = useForm<TeamFormData>({
     resolver: zodResolver(teamFormSchema),

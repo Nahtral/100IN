@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface BenefitsManagementProps {
   onStatsUpdate: () => void;
@@ -34,7 +34,7 @@ interface BenefitsManagementProps {
 
 const BenefitsManagement: React.FC<BenefitsManagementProps> = ({ onStatsUpdate }) => {
   const { toast } = useToast();
-  const { isSuperAdmin, hasRole } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedCard, setSelectedCard] = useState<string | null>(null);

@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Plus, Edit, Trash2, Eye, Download, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useRequestCache } from '@/hooks/useRequestCache';
 import EmployeeForm from './EmployeeForm';
 

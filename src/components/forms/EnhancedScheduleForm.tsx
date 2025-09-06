@@ -16,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { InputSanitizer } from '@/utils/inputSanitizer';
 import { ErrorLogger } from '@/utils/errorLogger';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 // Enhanced validation schema with security checks
 const scheduleFormSchema = z.object({
@@ -86,7 +86,7 @@ const EnhancedScheduleForm: React.FC<EnhancedScheduleFormProps> = ({
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { userRole } = useUserRole();
+  const { primaryRole } = useOptimizedAuth();
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),

@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 

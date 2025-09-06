@@ -19,7 +19,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import HealthAlertModal from './HealthAlertModal';
 import TeamUpdatesModal from './TeamUpdatesModal';
 import ParentCommunicationModal from './ParentCommunicationModal';

@@ -10,7 +10,7 @@ import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { NewsCard } from '@/components/news/NewsCard';
 import { NewsModal } from '@/components/news/NewsModal';
 

@@ -9,7 +9,7 @@ import { Calendar, Clock, MapPin, Users, Edit, Archive, Trash2, Copy, UserPlus, 
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface ScheduleEvent {
   id: string;

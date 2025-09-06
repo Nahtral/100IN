@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Users, Calendar, Menu } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { cn } from '@/lib/utils';
 

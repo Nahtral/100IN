@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Calendar, Clock, Users, AlertTriangle, Settings } from 'lucide-react';
 import { MembershipSummary } from '@/hooks/useMembership';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface MembershipCardProps {
   summary: MembershipSummary | null;

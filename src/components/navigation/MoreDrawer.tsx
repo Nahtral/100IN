@@ -22,7 +22,7 @@ import {
   UserCog,
   ToggleLeft
 } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { cn } from '@/lib/utils';

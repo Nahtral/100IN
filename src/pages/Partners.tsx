@@ -2,7 +2,7 @@ import React from 'react';
 import RoleProtectedRoute from '@/components/RoleProtectedRoute';
 import PartnerDashboard from '@/components/dashboards/PartnerDashboard';
 import Layout from '@/components/layout/Layout';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

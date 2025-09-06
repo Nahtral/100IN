@@ -17,7 +17,7 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Navigation = () => {

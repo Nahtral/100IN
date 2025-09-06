@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Settings, Save, Plus, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface PayrollSetting {
   id: string;

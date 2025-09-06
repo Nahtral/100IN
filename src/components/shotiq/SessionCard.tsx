@@ -15,7 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface ShotSession {
   id: string;
