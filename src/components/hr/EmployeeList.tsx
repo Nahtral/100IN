@@ -32,6 +32,7 @@ interface Employee {
   employee_id: string;
   first_name: string;
   last_name: string;
+  full_name: string;
   email: string;
   phone?: string;
   department?: string;
@@ -39,6 +40,10 @@ interface Employee {
   hire_date: string;
   employment_status: string;
   payment_type: string;
+  role: string;
+  role_active: boolean;
+  role_display: string;
+  approval_status: string;
   created_at?: string;
   updated_at?: string;
   has_compensation_access?: boolean;

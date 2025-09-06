@@ -4583,10 +4583,18 @@ export type Database = {
         Returns: {
           approval_status: string
           created_at: string
+          department: string
           email: string
           employee_id: string
+          employment_status: string
+          first_name: string
           full_name: string
+          hire_date: string
+          id: string
+          last_name: string
+          payment_type: string
           phone: string
+          position: string
           role: string
           role_active: boolean
           role_display: string
