@@ -1,7 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useReliableUserRole } from '@/hooks/useReliableUserRole';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, AlertTriangle } from 'lucide-react';
@@ -17,8 +16,7 @@ const RoleProtectedRoute = ({
   allowedRoles, 
   requireAll = false 
 }: RoleProtectedRouteProps) => {
-  const { user } = useAuth();
-  const { userData, loading, isSuperAdmin, hasRole, isApproved } = useReliableUserRole();
+  const { user, loading, userData, hasRole, isSuperAdmin, isApproved } = useOptimizedAuth();
 
   // Show comprehensive loading state while checking
   if (loading) {
@@ -81,7 +79,7 @@ const RoleProtectedRoute = ({
   if (isSuperAdmin() && isApproved()) {
     console.log('✅ SUPER ADMIN ACCESS GRANTED:', {
       route: allowedRoles.join(', '),
-      user: userData?.email,
+      user: userData?.profile?.email,
       isApproved: isApproved(),
       isSuperAdmin: isSuperAdmin()
     });
@@ -94,9 +92,9 @@ const RoleProtectedRoute = ({
     : allowedRoles.some(role => hasRole(role));
 
   console.log('🔐 Role check result:', {
-    user: userData?.email,
+    user: userData?.profile?.email,
     allowedRoles,
-    userRoles: userData?.all_roles,
+    userRoles: userData?.roles,
     isSuperAdmin: isSuperAdmin(),
     isApproved: isApproved(),
     hasPermission,
@@ -106,8 +104,8 @@ const RoleProtectedRoute = ({
 
   if (!hasPermission && !isSuperAdmin()) {
     console.log('❌ ACCESS DENIED:', {
-      user: userData?.email,
-      userRoles: userData?.all_roles,
+      user: userData?.profile?.email,
+      userRoles: userData?.roles,
       requiredRoles: allowedRoles,
       isApproved: isApproved(),
       isSuperAdmin: isSuperAdmin()
@@ -124,7 +122,7 @@ const RoleProtectedRoute = ({
                 You don't have permission to access this page.
               </p>
               <div className="mt-4 p-3 bg-muted rounded-md text-sm">
-                <p><strong>Your roles:</strong> {userData?.all_roles?.join(', ') || 'None'}</p>
+                <p><strong>Your roles:</strong> {userData?.roles?.join(', ') || 'None'}</p>
                 <p><strong>Required:</strong> {allowedRoles.join(requireAll ? ' AND ' : ' OR ')}</p>
                 <p><strong>Super Admin:</strong> {isSuperAdmin() ? 'Yes' : 'No'}</p>
                 <p><strong>Approved:</strong> {isApproved() ? 'Yes' : 'No'}</p>

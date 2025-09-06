@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Settings, Save, RotateCcw, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useSuperAdminGuard } from '@/hooks/useSuperAdminGuard';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface TeamGridSettings {
   id: string;

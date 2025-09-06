@@ -2,7 +2,7 @@ import React from 'react';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useReliableUserRole } from '@/hooks/useReliableUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface TeamGridSettingsButtonProps {
   className?: string;
@@ -16,7 +16,7 @@ export const TeamGridSettingsButton: React.FC<TeamGridSettingsButtonProps> = ({
   size = 'default'
 }) => {
   const navigate = useNavigate();
-  const { isSuperAdmin, loading } = useReliableUserRole();
+  const { isSuperAdmin, loading } = useOptimizedAuth();
 
   // Don't show while loading or if not super admin
   if (loading || !isSuperAdmin()) {

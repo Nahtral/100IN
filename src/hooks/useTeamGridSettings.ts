@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from './useUserRole';
+import { useOptimizedAuth } from './useOptimizedAuth';
 
 export interface TeamGridSettings {
   id: string;

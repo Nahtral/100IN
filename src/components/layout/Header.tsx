@@ -3,9 +3,8 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Search, LogOut } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import ProfilePicture from '@/components/ui/ProfilePicture';
 import { EnhancedNotificationCenter } from '@/components/notifications/EnhancedNotificationCenter';
@@ -19,9 +18,8 @@ interface HeaderProps {
 }
 
 const Header = ({ currentUser }: HeaderProps) => {
-  const { signOut } = useAuth();
+  const { signOut, userData, primaryRole } = useOptimizedAuth();
   const { profile, updateProfile } = useUserProfile();
-  const { userRole } = useUserRole();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -44,8 +42,8 @@ const Header = ({ currentUser }: HeaderProps) => {
     updateProfile({ avatar_url: newAvatarUrl });
   };
 
-  const displayName = profile?.full_name || currentUser?.name || 'User';
-  const displayRole = userRole || currentUser?.role || 'Loading...';
+  const displayName = profile?.full_name || userData?.profile?.full_name || currentUser?.name || 'User';
+  const displayRole = primaryRole || currentUser?.role || 'Loading...';
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 ml-64">
