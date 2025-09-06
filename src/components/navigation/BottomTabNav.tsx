@@ -1,4 +1,5 @@
 import React from 'react';
+import { useUserRole } from '@/hooks/useUserRole';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Users, Calendar, Menu } from 'lucide-react';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useUserRole } from '@/hooks/useUserRole';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -229,7 +230,7 @@ const HealthWellness = () => {
             <TabsContent value="dashboard" className="mt-0">
               <HealthDashboard 
                 userRole={userRole} 
-                isSuperAdmin={isSuperAdmin}
+                isSuperAdmin={isSuperAdmin()}
                 playerProfile={playerProfile}
               />
             </TabsContent>
@@ -246,7 +247,7 @@ const HealthWellness = () => {
             <TabsContent value="injuries" className="mt-0">
               <InjuryReporting 
                 userRole={userRole}
-                isSuperAdmin={isSuperAdmin}
+                isSuperAdmin={isSuperAdmin()}
                 playerProfile={playerProfile}
               />
             </TabsContent>
@@ -254,7 +255,7 @@ const HealthWellness = () => {
             <TabsContent value="medical-log" className="mt-0">
               <MedicalLog 
                 userRole={userRole}
-                isSuperAdmin={isSuperAdmin}
+                isSuperAdmin={isSuperAdmin()}
                 playerProfile={playerProfile}
               />
             </TabsContent>
@@ -263,7 +264,7 @@ const HealthWellness = () => {
               <TabsContent value="communication" className="mt-0">
                  <HealthCommunication 
                    userRole={userRole}
-                   isSuperAdmin={isSuperAdmin}
+                    isSuperAdmin={isSuperAdmin()}
                    playerProfile={playerProfile}
                  />
               </TabsContent>
@@ -273,7 +274,7 @@ const HealthWellness = () => {
               <TabsContent value="analytics" className="mt-0">
                 <HealthAnalytics 
                   userRole={userRole}
-                  isSuperAdmin={isSuperAdmin}
+                  isSuperAdmin={isSuperAdmin()}
                 />
               </TabsContent>
              )}

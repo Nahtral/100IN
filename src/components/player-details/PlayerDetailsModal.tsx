@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -615,7 +616,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                           <MembershipCard
                             summary={membershipSummary}
                             loading={membershipLoading}
-                            showAdminControls={isSuperAdmin}
+                            showAdminControls={isSuperAdmin()}
                             onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
                             onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
                             onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
