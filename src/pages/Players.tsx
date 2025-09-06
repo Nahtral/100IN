@@ -95,10 +95,6 @@ const Players = () => {
             email,
             phone,
             approval_status
-          ),
-          teams(
-            name,
-            season
           )
         `)
         .eq('profiles.approval_status', 'approved')
