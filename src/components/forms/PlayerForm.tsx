@@ -13,22 +13,33 @@ import { User, Save } from 'lucide-react';
 import { InputSanitizer } from '@/utils/inputSanitizer';
 import { useSecurityMonitoring } from '@/hooks/useSecurityMonitoring';
 
-// Relaxed schema for super admin manual entry
-const relaxedPlayerFormSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required'),
+// Schema that matches actual database columns in players table
+const playerFormSchema = z.object({
+  // Maps to profiles.full_name (via user_id relationship)
+  full_name: z.string().min(1, 'Full name is required'),
+  // Maps to profiles.email (via user_id relationship) 
   email: z.string().refine((val) => val === '' || z.string().email().safeParse(val).success, 'Invalid email address'),
+  // Maps to profiles.phone (via user_id relationship)
   phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
+  // Maps to players.date_of_birth
+  date_of_birth: z.string().optional(),
+  // Maps to players.position
   position: z.string().optional(),
+  // Maps to players.height
   height: z.string().optional(),
+  // Maps to players.weight
   weight: z.string().optional(),
-  jerseyNumber: z.string().optional(),
-  emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().optional(),
-  medicalNotes: z.string().optional(),
+  // Maps to players.jersey_number - must be number, not string
+  jersey_number: z.number().int().positive().optional().or(z.literal('')),
+  // Maps to players.emergency_contact_name
+  emergency_contact_name: z.string().optional(),
+  // Maps to players.emergency_contact_phone
+  emergency_contact_phone: z.string().optional(),
+  // Maps to players.medical_notes
+  medical_notes: z.string().optional(),
 });
 
-type PlayerFormData = z.infer<typeof relaxedPlayerFormSchema>;
+type PlayerFormData = z.infer<typeof playerFormSchema>;
 
 interface PlayerFormProps {
   onSubmit: (data: PlayerFormData) => void;
@@ -41,19 +52,19 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
   const { validateSensitiveInput, checkSQLInjection, logSecurityEvent } = useSecurityMonitoring();
   
   const form = useForm<PlayerFormData>({
-    resolver: zodResolver(relaxedPlayerFormSchema),
+    resolver: zodResolver(playerFormSchema),
     defaultValues: {
-      fullName: initialData?.fullName || '',
+      full_name: initialData?.full_name || '',
       email: initialData?.email || '',
       phone: initialData?.phone || '',
-      dateOfBirth: initialData?.dateOfBirth || '',
+      date_of_birth: initialData?.date_of_birth || '',
       position: initialData?.position || '',
       height: initialData?.height || '',
       weight: initialData?.weight || '',
-      jerseyNumber: initialData?.jerseyNumber || '',
-      emergencyContactName: initialData?.emergencyContactName || '',
-      emergencyContactPhone: initialData?.emergencyContactPhone || '',
-      medicalNotes: initialData?.medicalNotes || '',
+      jersey_number: initialData?.jersey_number || '',
+      emergency_contact_name: initialData?.emergency_contact_name || '',
+      emergency_contact_phone: initialData?.emergency_contact_phone || '',
+      medical_notes: initialData?.medical_notes || '',
     },
   });
 
@@ -62,7 +73,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
   // Enhanced form submission with security validation
   const handleSecureSubmit = (data: PlayerFormData) => {
     // Check for SQL injection attempts
-    const checkFields = [data.fullName, data.email, data.medicalNotes, data.emergencyContactName];
+    const checkFields = [data.full_name, data.email, data.medical_notes, data.emergency_contact_name];
     const hasSQLInjection = checkFields.some(field => field && checkSQLInjection(field));
     
     if (hasSQLInjection) {
@@ -76,19 +87,21 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
     // Sanitize sensitive data
     const sanitizedData = {
       ...data,
-      fullName: validateSensitiveInput(data.fullName, 'personal'),
+      full_name: validateSensitiveInput(data.full_name, 'personal'),
       email: InputSanitizer.sanitizeEmail(data.email || ''),
       phone: InputSanitizer.sanitizePhone(data.phone || ''),
-      medicalNotes: validateSensitiveInput(data.medicalNotes || '', 'medical'),
-      emergencyContactName: validateSensitiveInput(data.emergencyContactName || '', 'personal'),
-      emergencyContactPhone: InputSanitizer.sanitizePhone(data.emergencyContactPhone || ''),
+      medical_notes: validateSensitiveInput(data.medical_notes || '', 'medical'),
+      emergency_contact_name: validateSensitiveInput(data.emergency_contact_name || '', 'personal'),
+      emergency_contact_phone: InputSanitizer.sanitizePhone(data.emergency_contact_phone || ''),
+      // Convert jersey_number to integer if provided
+      jersey_number: typeof data.jersey_number === 'number' ? data.jersey_number : undefined,
     };
 
     // Log form submission for audit
     logSecurityEvent('form_submission', {
       form_type: 'player_form',
-      has_medical_data: !!data.medicalNotes,
-      has_contact_data: !!data.emergencyContactName
+      has_medical_data: !!data.medical_notes,
+      has_contact_data: !!data.emergency_contact_name
     }, 'low');
 
     onSubmit(sanitizedData);
@@ -108,7 +121,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
             <div className="mobile-form-group grid grid-cols-1 sm:grid-cols-2 mobile-gap">
               <FormField
                 control={form.control}
-                name="fullName"
+                name="full_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
@@ -150,7 +163,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
               
                 <FormField
                 control={form.control}
-                name="dateOfBirth"
+                name="date_of_birth"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Date of Birth {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
@@ -217,12 +230,17 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
               
               <FormField
                 control={form.control}
-                name="jerseyNumber"
+                name="jersey_number"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Jersey Number {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter jersey number" {...field} />
+                      <Input 
+                        type="number" 
+                        placeholder="Enter jersey number" 
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : '')}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,7 +249,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
               
               <FormField
                 control={form.control}
-                name="emergencyContactName"
+                name="emergency_contact_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Emergency Contact Name {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
@@ -245,7 +263,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
               
               <FormField
                 control={form.control}
-                name="emergencyContactPhone"
+                name="emergency_contact_phone"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Emergency Contact Phone {!isRequiredFieldsOnly && <span className="text-muted-foreground">(Optional)</span>}</FormLabel>
@@ -260,7 +278,7 @@ const PlayerForm: React.FC<PlayerFormProps> = ({ onSubmit, initialData, isLoadin
             
             <FormField
               control={form.control}
-              name="medicalNotes"
+              name="medical_notes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Medical Notes (Optional)</FormLabel>

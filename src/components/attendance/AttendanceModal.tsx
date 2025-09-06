@@ -213,7 +213,8 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       const { error } = await supabase
         .from('player_attendance')
         .upsert(attendanceRecords, {
-          onConflict: 'player_id,schedule_id'
+          onConflict: 'player_id,schedule_id',
+          ignoreDuplicates: false
         });
 
       if (error) throw error;

@@ -248,14 +248,17 @@ const Players = () => {
               <PlayerForm
                 onSubmit={handleSubmit}
                 initialData={editingPlayer ? {
-                  jerseyNumber: editingPlayer.jersey_number?.toString(),
+                  full_name: editingPlayer.profiles?.full_name || '',
+                  email: editingPlayer.profiles?.email || '',
+                  phone: editingPlayer.profiles?.phone || '',
+                  jersey_number: editingPlayer.jersey_number || '',
                   position: editingPlayer.position,
                   height: editingPlayer.height,
                   weight: editingPlayer.weight,
-                  dateOfBirth: editingPlayer.date_of_birth,
-                  emergencyContactName: editingPlayer.emergency_contact_name,
-                  emergencyContactPhone: editingPlayer.emergency_contact_phone,
-                  medicalNotes: editingPlayer.medical_notes,
+                  date_of_birth: editingPlayer.date_of_birth,
+                  emergency_contact_name: editingPlayer.emergency_contact_name,
+                  emergency_contact_phone: editingPlayer.emergency_contact_phone,
+                  medical_notes: editingPlayer.medical_notes,
                 } : undefined}
                 isLoading={isSubmitting}
               />
