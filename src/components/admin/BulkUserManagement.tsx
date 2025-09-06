@@ -86,10 +86,16 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
         };
       });
 
-      // Filter to show only users who don't have player role or player record
-      const usersNeedingPlayerSetup = usersWithRoles.filter(user => 
-        !user.roles.includes('player') || !user.has_player_record
-      );
+      // Filter to show only users who need player setup, excluding administrative roles
+      const administrativeRoles = ['super_admin', 'staff', 'coach', 'medical'];
+      const usersNeedingPlayerSetup = usersWithRoles.filter(user => {
+        // Skip users who have administrative roles (they shouldn't be converted to players)
+        const hasAdminRole = user.roles.some(role => administrativeRoles.includes(role));
+        if (hasAdminRole) return false;
+        
+        // Include users who need either player role or player record
+        return !user.roles.includes('player') || !user.has_player_record;
+      });
 
       setUsers(usersNeedingPlayerSetup);
     } catch (error: any) {
@@ -130,46 +136,91 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
 
     try {
       setProcessing(true);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
 
       for (const userId of selectedUsers) {
         const user = users.find(u => u.id === userId);
-        if (!user) continue;
-
-        // Assign player role if not already assigned
-        if (!user.roles.includes('player')) {
-          const { error: roleError } = await supabase.rpc('assign_user_role', {
-            target_user_id: userId,
-            target_role: 'player'
-          });
-
-          if (roleError) {
-            console.error(`Error assigning player role to ${user.email}:`, roleError);
-            continue;
-          }
+        if (!user) {
+          errorCount++;
+          errors.push(`User not found: ${userId}`);
+          continue;
         }
 
-        // Create player record if it doesn't exist
-        if (!user.has_player_record) {
-          const { error: playerError } = await supabase
-            .from('players')
-            .insert({
-              user_id: userId,
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+        try {
+          let roleAssigned = false;
+          let playerRecordCreated = false;
+
+          // Assign player role if not already assigned
+          if (!user.roles.includes('player')) {
+            const { error: roleError } = await supabase.rpc('assign_user_role', {
+              target_user_id: userId,
+              target_role: 'player'
             });
 
-          if (playerError) {
-            console.error(`Error creating player record for ${user.email}:`, playerError);
-            continue;
+            if (roleError) {
+              throw new Error(`Failed to assign player role: ${roleError.message}`);
+            }
+            roleAssigned = true;
           }
+
+          // Create player record if it doesn't exist
+          if (!user.has_player_record) {
+            const { error: playerError } = await supabase
+              .from('players')
+              .insert({
+                user_id: userId,
+                is_active: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+            if (playerError) {
+              throw new Error(`Failed to create player record: ${playerError.message}`);
+            }
+            playerRecordCreated = true;
+          }
+
+          // If we got here, the user was successfully processed
+          if (roleAssigned || playerRecordCreated) {
+            successCount++;
+            console.log(`Successfully converted ${user.email} to player`);
+          }
+
+        } catch (userError: any) {
+          errorCount++;
+          const errorMsg = `${user.email}: ${userError.message}`;
+          errors.push(errorMsg);
+          console.error(`Error converting ${user.email}:`, userError);
         }
       }
 
-      toast({
-        title: "Success",
-        description: `Successfully converted ${selectedUsers.length} users to players.`,
-      });
+      // Show detailed results
+      if (successCount > 0 && errorCount === 0) {
+        toast({
+          title: "Complete Success",
+          description: `Successfully converted ${successCount} user${successCount !== 1 ? 's' : ''} to players.`,
+        });
+      } else if (successCount > 0 && errorCount > 0) {
+        toast({
+          title: "Partial Success",
+          description: `Converted ${successCount} users successfully, ${errorCount} failed. Check console for details.`,
+          variant: "destructive",
+        });
+      } else if (errorCount > 0) {
+        toast({
+          title: "Conversion Failed",
+          description: `Failed to convert ${errorCount} user${errorCount !== 1 ? 's' : ''}. Check console for details.`,
+          variant: "destructive",
+        });
+      }
+
+      // Log detailed errors for debugging
+      if (errors.length > 0) {
+        console.error('Conversion errors:', errors);
+      }
 
       // Reset selections and refetch data
       setSelectedUsers([]);
@@ -183,8 +234,8 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
     } catch (error: any) {
       console.error('Error converting users to players:', error);
       toast({
-        title: "Error",
-        description: `Failed to convert users: ${error.message}`,
+        title: "System Error",
+        description: `System error during conversion: ${error.message}`,
         variant: "destructive",
       });
     } finally {
