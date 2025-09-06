@@ -17,7 +17,7 @@ import Layout from "@/components/layout/Layout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import InjuryDetailsModal from "@/components/health/InjuryDetailsModal";
 import FitnessDetailsModal from "@/components/health/FitnessDetailsModal";
 import CheckInDetailsModal from "@/components/health/CheckInDetailsModal";
@@ -323,19 +323,19 @@ const MedicalDashboard = () => {
       <InjuryDetailsModal 
         isOpen={showInjuriesModal}
         onClose={() => setShowInjuriesModal(false)}
-        isSuperAdmin={isSuperAdmin}
+        isSuperAdmin={isSuperAdmin()}
       />
       
       <FitnessDetailsModal 
         isOpen={showFitnessModal}
         onClose={() => setShowFitnessModal(false)}
-        isSuperAdmin={isSuperAdmin}
+        isSuperAdmin={isSuperAdmin()}
       />
       
       <CheckInDetailsModal 
         isOpen={showCheckInModal}
         onClose={() => setShowCheckInModal(false)}
-        isSuperAdmin={isSuperAdmin}
+        isSuperAdmin={isSuperAdmin()}
       />
       
       <MedicalReportGenerator

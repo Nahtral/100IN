@@ -28,7 +28,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 
@@ -147,7 +147,7 @@ const SuperAdminDashboard = () => {
     return (
       <Layout currentUser={{ 
         name: user?.user_metadata?.full_name || 'User',
-        role: userRole || 'Super Admin',
+        role: primaryRole || 'Super Admin',
         avatar: '' 
       }}>
         <DashboardSkeleton />
@@ -162,7 +162,7 @@ const SuperAdminDashboard = () => {
   return (
     <Layout currentUser={{ 
       name: user?.user_metadata?.full_name || 'User',
-      role: userRole || 'Super Admin',
+      role: primaryRole || 'Super Admin',
       avatar: '' 
     }}>
       <div className="mobile-container space-y-6">

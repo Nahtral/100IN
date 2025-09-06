@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -118,7 +118,7 @@ const ParentDashboard = () => {
     return (
       <Layout currentUser={{ 
         name: user?.user_metadata?.full_name || 'Parent',
-        role: userRole || 'Parent',
+        role: primaryRole || 'Parent',
         avatar: '' 
       }}>
         <div className="flex items-center justify-center p-8">
@@ -133,7 +133,7 @@ const ParentDashboard = () => {
   return (
     <Layout currentUser={{ 
       name: user?.user_metadata?.full_name || 'Parent',
-      role: userRole || 'Parent',
+      role: primaryRole || 'Parent',
       avatar: '' 
     }}>
       <div className="space-y-6">
