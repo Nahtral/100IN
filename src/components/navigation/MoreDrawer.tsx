@@ -45,8 +45,8 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
 
   // Determine actual permissions based on test mode
   const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
-  const actualCanAccessMedical = isTestMode ? testCanAccessMedical() : canAccessMedical();
-  const actualCanAccessPartners = isTestMode ? testCanAccessPartners() : canAccessPartners();
+  const actualCanAccessMedical = isTestMode ? testCanAccessMedical() : (isSuperAdmin() || hasRole('medical'));
+  const actualCanAccessPartners = isTestMode ? testCanAccessPartners() : (isSuperAdmin() || hasRole('partner'));
   const actualCanAccessHR = isTestMode ? 
     (effectiveIsSuperAdmin || hasRole('staff') || hasRole('coach')) : 
     (isSuperAdmin || hasRole('staff') || hasRole('coach'));

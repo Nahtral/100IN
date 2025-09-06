@@ -17,7 +17,6 @@ import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTeamGridSettings } from '@/hooks/useTeamGridSettings';
 import BulkUserManagement from '@/components/admin/BulkUserManagement';
-import BulkUserManagement from '@/components/admin/BulkUserManagement';
 
 interface Player {
   id: string;

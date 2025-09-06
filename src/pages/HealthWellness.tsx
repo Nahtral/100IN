@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,11 +44,11 @@ const HealthWellness = () => {
     if (!roleLoading && user) {
       fetchUserData();
     }
-  }, [user, userRole, roleLoading]);
+  }, [user, primaryRole, roleLoading]);
 
   const fetchUserData = async () => {
     try {
-      if (userRole === 'player') {
+      if (primaryRole === 'player') {
         // Fetch player profile for players
         const { data: playerData, error } = await supabase
           .from('players')
@@ -87,7 +86,7 @@ const HealthWellness = () => {
   }
 
   // Check if user has access to health and wellness
-  const hasAccess = ['player', 'parent', 'coach', 'staff', 'medical'].includes(userRole) || isSuperAdmin;
+  const hasAccess = ['player', 'parent', 'coach', 'staff', 'medical'].includes(primaryRole) || isSuperAdmin();
 
   if (!hasAccess) {
     return (
@@ -108,7 +107,7 @@ const HealthWellness = () => {
   }
 
   // Show message for players without profile
-  if (userRole === 'player' && !playerProfile) {
+  if (primaryRole === 'player' && !playerProfile) {
     return (
       <Layout currentUser={currentUser}>
         <div className="space-y-6 animate-fade-in">
@@ -177,7 +176,7 @@ const HealthWellness = () => {
                   Dashboard
                 </TabsTrigger>
                 
-                {(userRole === 'player' || userRole === 'parent') && (
+                {(primaryRole === 'player' || primaryRole === 'parent') && (
                   <TabsTrigger 
                     value="daily-checkin" 
                     className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
@@ -203,7 +202,7 @@ const HealthWellness = () => {
                   Medical Log
                 </TabsTrigger>
                 
-                {(['coach', 'staff', 'medical'].includes(userRole) || isSuperAdmin) && (
+                {(['coach', 'staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
                   <TabsTrigger 
                     value="communication" 
                     className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
@@ -213,7 +212,7 @@ const HealthWellness = () => {
                   </TabsTrigger>
                 )}
                 
-                {(['staff', 'medical'].includes(userRole) || isSuperAdmin) && (
+                {(['staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
                   <TabsTrigger 
                     value="analytics" 
                     className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
@@ -229,24 +228,24 @@ const HealthWellness = () => {
           <div className="mt-6">
             <TabsContent value="dashboard" className="mt-0">
               <HealthDashboard 
-                userRole={userRole} 
+                userRole={primaryRole} 
                 isSuperAdmin={isSuperAdmin()}
                 playerProfile={playerProfile}
               />
             </TabsContent>
 
-            {(userRole === 'player' || userRole === 'parent') && (
+            {(primaryRole === 'player' || primaryRole === 'parent') && (
               <TabsContent value="daily-checkin" className="mt-0">
                 <DailyCheckIn 
                   playerProfile={playerProfile}
-                  userRole={userRole}
+                  userRole={primaryRole}
                 />
               </TabsContent>
             )}
 
             <TabsContent value="injuries" className="mt-0">
               <InjuryReporting 
-                userRole={userRole}
+                userRole={primaryRole}
                 isSuperAdmin={isSuperAdmin()}
                 playerProfile={playerProfile}
               />
@@ -254,26 +253,26 @@ const HealthWellness = () => {
 
             <TabsContent value="medical-log" className="mt-0">
               <MedicalLog 
-                userRole={userRole}
+                userRole={primaryRole}
                 isSuperAdmin={isSuperAdmin()}
                 playerProfile={playerProfile}
               />
             </TabsContent>
 
-            {(['coach', 'staff', 'medical'].includes(userRole) || isSuperAdmin) && (
+            {(['coach', 'staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
               <TabsContent value="communication" className="mt-0">
                  <HealthCommunication 
-                   userRole={userRole}
+                   userRole={primaryRole}
                     isSuperAdmin={isSuperAdmin()}
                    playerProfile={playerProfile}
                  />
               </TabsContent>
             )}
 
-            {(['staff', 'medical'].includes(userRole) || isSuperAdmin) && (
+            {(['staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
               <TabsContent value="analytics" className="mt-0">
                 <HealthAnalytics 
-                  userRole={userRole}
+                  userRole={primaryRole}
                   isSuperAdmin={isSuperAdmin()}
                 />
               </TabsContent>
@@ -286,7 +285,7 @@ const HealthWellness = () => {
          <div className="lg:col-span-1">
            <QuickCheckIn 
              playerProfile={playerProfile}
-             userRole={userRole}
+             userRole={primaryRole}
            />
          </div>
        </div>

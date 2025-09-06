@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,7 @@ interface CommunicationCenterProps {
 
 const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) => {
   const { toast } = useToast();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const [communications, setCommunications] = useState<CommunicationRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);

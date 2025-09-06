@@ -20,7 +20,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Link } from 'react-router-dom';
@@ -41,7 +40,7 @@ const Dashboard = () => {
 
   // Use effective role and admin status based on test mode
   const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin();
-  const actualUserRole = isTestMode ? effectiveRole : userRole;
+  const actualUserRole = isTestMode ? effectiveRole : primaryRole;
 
   // Fetch recent activities
   const { data: recentActivities } = useQuery({

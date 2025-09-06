@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +79,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { isSuperAdmin, hasRole } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
 
   useEffect(() => {
     if (event && event.team_ids && event.team_ids.length > 0) {

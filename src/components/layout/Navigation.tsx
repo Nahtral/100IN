@@ -66,7 +66,7 @@ const Navigation = () => {
       href: '/medical',
       icon: Heart,
       showForAll: false,
-      showCondition: () => canAccessMedical()
+      showCondition: () => isSuperAdmin() || hasRole('medical')
     },
     {
       title: 'Health & Wellness',
@@ -80,7 +80,7 @@ const Navigation = () => {
       href: '/partners',
       icon: Handshake,
       showForAll: false,
-      showCondition: () => canAccessPartners()
+      showCondition: () => isSuperAdmin() || hasRole('partner')
     },
     {
       title: 'Chat',

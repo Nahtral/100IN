@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,7 @@ interface OptimizedSecureEmployeeListProps {
 
 const OptimizedSecureEmployeeList = ({ onStatsUpdate }: OptimizedSecureEmployeeListProps) => {
   const { toast } = useToast();
-  const { isSuperAdmin, hasRole } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const { fetchWithCache, invalidate } = useRequestCache<Employee[]>();
   
   const [employees, setEmployees] = useState<Employee[]>([]);

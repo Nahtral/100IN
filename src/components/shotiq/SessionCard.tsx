@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,6 @@ import {
   Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface ShotSession {
   id: string;
@@ -53,7 +52,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
   onArchive,
   onDelete
 }) => {
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
 
   const getStatusColor = (status: string) => {
     switch (status) {

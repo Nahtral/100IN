@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ interface DeductionType {
 
 const PayrollSettings: React.FC = () => {
   const { toast } = useToast();
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<PayrollSetting[]>([]);
   const [deductionTypes, setDeductionTypes] = useState<DeductionType[]>([]);

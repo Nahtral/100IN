@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ const SecurityDashboard = () => {
   const [eventModalMode, setEventModalMode] = useState<'view' | 'edit' | 'create'>('view');
   const [metricsModalOpen, setMetricsModalOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<{type: string, title: string}>({type: '', title: ''});
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
   const { toast } = useToast();
 
   useEffect(() => {

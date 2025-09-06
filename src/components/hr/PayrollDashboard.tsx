@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +42,7 @@ interface PayrollPeriod {
 
 const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ onStatsUpdate }) => {
   const { toast } = useToast();
-  const { isSuperAdmin, hasRole } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedCard, setSelectedCard] = useState<string | null>(null);

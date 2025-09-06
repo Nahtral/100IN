@@ -20,7 +20,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import HealthAlertModal from './HealthAlertModal';
 import TeamUpdatesModal from './TeamUpdatesModal';
 import ParentCommunicationModal from './ParentCommunicationModal';

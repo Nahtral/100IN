@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import EmployeeForm from './EmployeeForm';
 
 interface Employee {
@@ -61,7 +60,7 @@ interface EmployeeListProps {
 
 const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
   const { toast } = useToast();
-  const { isSuperAdmin, hasRole } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,7 +199,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
           <h2 className="text-2xl font-bold">Employees</h2>
           <p className="text-muted-foreground">Manage employee information and records</p>
         </div>
-        {(isSuperAdmin || hasRole('staff')) && (
+        {(isSuperAdmin() || hasRole('staff')) && (
           <Dialog open={isFormOpen} onOpenChange={(open) => {
             setIsFormOpen(open);
             if (!open) setEditingEmployee(null);
@@ -267,7 +266,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
                   <TableHead>Status</TableHead>
                   <TableHead>Hire Date</TableHead>
                   <TableHead>Contact</TableHead>
-                  {(isSuperAdmin || hasRole('staff')) && <TableHead>Actions</TableHead>}
+                  {(isSuperAdmin() || hasRole('staff')) && <TableHead>Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -309,7 +308,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
                         </div>
                       )}
                     </TableCell>
-                    {(isSuperAdmin || hasRole('staff')) && (
+                    {(isSuperAdmin() || hasRole('staff')) && (
                       <TableCell>
                          <div className="flex items-center gap-2">
                            <Button
@@ -320,7 +319,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onStatsUpdate }) => {
                            >
                              <Edit className="h-4 w-4" />
                            </Button>
-                           {isSuperAdmin && (
+                           {isSuperAdmin() && (
                              <Button
                                variant="ghost"
                                size="sm"

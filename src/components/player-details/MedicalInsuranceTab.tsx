@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -53,7 +53,7 @@ const MedicalInsuranceTab: React.FC<MedicalInsuranceTabProps> = ({ playerId }) =
   const [editingInsurance, setEditingInsurance] = useState<MedicalInsurance | null>(null);
   const [formData, setFormData] = useState<Partial<MedicalInsurance>>({});
   const { toast } = useToast();
-  const { isSuperAdmin, hasRole } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
 
   const canManage = isSuperAdmin || hasRole('medical') || hasRole('staff');
 

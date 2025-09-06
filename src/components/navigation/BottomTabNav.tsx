@@ -2,7 +2,6 @@ import React from 'react';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Users, Calendar, Menu } from 'lucide-react';
-import { Home, Calendar, Users, BarChart3, Settings, More } from 'lucide-react';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { cn } from '@/lib/utils';
 
