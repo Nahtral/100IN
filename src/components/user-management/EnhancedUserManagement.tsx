@@ -20,6 +20,7 @@ import UserDetailsView from './UserDetailsView';
 import { UserApprovalDashboard } from './UserApprovalDashboard';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 import PermissionManager from './PermissionManager';
+import BulkUserManagement from '../admin/BulkUserManagement';
 
 interface UserProfile {
   id: string;
@@ -601,6 +602,9 @@ const EnhancedUserManagement = () => {
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
+          {/* Bulk User Management for Player Setup */}
+          <BulkUserManagement onPlayerCreated={fetchUsers} />
+          
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
