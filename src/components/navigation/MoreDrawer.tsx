@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { NavLink } from 'react-router-dom';
 import {
   Drawer,
@@ -23,7 +23,7 @@ import {
   UserCog,
   ToggleLeft
 } from 'lucide-react';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,7 @@ interface MoreDrawerProps {
 }
 
 export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
-  const { isSuperAdmin, hasRole, canAccessMedical, canAccessPartners } = useUserRole();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const { 
     isTestMode, 
     effectiveIsSuperAdmin, 

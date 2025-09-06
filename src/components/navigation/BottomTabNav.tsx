@@ -1,8 +1,8 @@
 import React from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Users, Calendar, Menu } from 'lucide-react';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { Home, Calendar, Users, BarChart3, Settings, More } from 'lucide-react';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,7 @@ interface BottomTabNavProps {
 
 export const BottomTabNav: React.FC<BottomTabNavProps> = ({ onMoreClick }) => {
   const location = useLocation();
-  const { initialized } = useUserRole();
+  const { initialized } = useOptimizedAuth();
   const { isTestMode, effectiveRole } = useRoleSwitcher();
 
   const tabs = [

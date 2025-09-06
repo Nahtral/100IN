@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -18,14 +18,14 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Navigation = () => {
   const location = useLocation();
   const { trackUserAction } = useAnalytics();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isSuperAdmin, hasRole, loading, initialized, canAccessMedical, canAccessPartners } = useUserRole();
+  const { isSuperAdmin, hasRole, loading, initialized } = useOptimizedAuth();
 
   const navItems = [
     {

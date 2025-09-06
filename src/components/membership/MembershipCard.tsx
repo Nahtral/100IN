@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Calendar, Clock, Users, AlertTriangle, Settings } from 'lucide-react';
 import { MembershipSummary } from '@/hooks/useMembership';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useQuery } from '@tanstack/react-query';
 
 interface MembershipCardProps {
   summary: MembershipSummary | null;
@@ -26,7 +26,7 @@ export const MembershipCard: React.FC<MembershipCardProps> = ({
   onAdjustUsage,
   showAdminControls = false
 }) => {
-  const { isSuperAdmin } = useUserRole();
+  const { isSuperAdmin } = useOptimizedAuth();
 
   if (loading) {
     return (

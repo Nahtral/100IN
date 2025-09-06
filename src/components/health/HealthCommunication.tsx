@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { supabase } from '@/integrations/supabase/client';
 import HealthAlertModal from './HealthAlertModal';
 import TeamUpdatesModal from './TeamUpdatesModal';
 import ParentCommunicationModal from './ParentCommunicationModal';
@@ -38,7 +38,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { userRoles, hasRole, canAccessMedical } = useUserRole();
+  const { userRoles, hasRole } = useOptimizedAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState('');
