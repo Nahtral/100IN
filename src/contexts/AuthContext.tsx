@@ -40,14 +40,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         // Check approval status when user logs in
         if (session?.user) {
-          setTimeout(async () => {
-            await checkApprovalStatus(session.user.id);
+          setTimeout(() => {
+            checkApprovalStatus(session.user.id);
           }, 0);
         } else {
           setIsApproved(null);

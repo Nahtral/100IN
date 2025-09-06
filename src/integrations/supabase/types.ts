@@ -4581,20 +4581,15 @@ export type Database = {
       get_employees_secure: {
         Args: Record<PropertyKey, never>
         Returns: {
+          approval_status: string
           created_at: string
-          department: string
           email: string
           employee_id: string
-          employment_status: string
-          first_name: string
-          has_compensation_access: boolean
-          hire_date: string
-          id: string
-          last_name: string
-          payment_type: string
+          full_name: string
           phone: string
-          position: string
-          updated_at: string
+          role: string
+          role_active: boolean
+          role_display: string
         }[]
       }
       get_notifications_paginated: {
