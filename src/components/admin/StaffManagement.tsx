@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { StaffDetailModal } from './modals/StaffDetailModal';
+import { StaffEditModal } from './modals/StaffEditModal';
+import { CreateStaffModal } from './modals/CreateStaffModal';
 import { 
   UserPlus, 
   Users, 
@@ -17,7 +21,9 @@ import {
   Eye,
   Edit,
   Building,
-  Plus
+  Plus,
+  BarChart3,
+  TrendingUp
 } from 'lucide-react';
 
 interface StaffMember {
@@ -46,11 +52,17 @@ interface Department {
 
 export const StaffManagement = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('staff');
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -61,7 +73,8 @@ export const StaffManagement = () => {
     try {
       await Promise.all([
         fetchStaffMembers(),
-        fetchDepartments()
+        fetchDepartments(),
+        fetchAnalytics()
       ]);
     } finally {
       setLoading(false);
@@ -155,6 +168,40 @@ export const StaffManagement = () => {
     }
   };
 
+  const fetchAnalytics = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_staff_analytics');
+      if (error) throw error;
+      setAnalytics(data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+  const handleStaffClick = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setShowDetailModal(true);
+  };
+
+  const handleEditClick = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setShowEditModal(true);
+  };
+
+  const handleStaffUpdate = (updatedStaff: StaffMember) => {
+    setStaffMembers(prev => prev.map(staff => 
+      staff.id === updatedStaff.id ? updatedStaff : staff
+    ));
+  };
+
+  const handleCreateSuccess = () => {
+    fetchData();
+  };
+
+  const navigateToHRSection = (section: string) => {
+    navigate(`/admin/staff/hr/${section}`);
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -244,12 +291,7 @@ export const StaffManagement = () => {
                   <Users className="h-5 w-5 text-blue-600" />
                   Staff Directory
                 </CardTitle>
-                <Button onClick={() => {
-                  toast({
-                    title: "Add Staff Member",
-                    description: "Staff creation functionality is now active and ready for production use.",
-                  });
-                }}>
+                <Button onClick={() => setShowCreateModal(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add Staff Member
                 </Button>
@@ -271,10 +313,14 @@ export const StaffManagement = () => {
                   </h3>
                   <div className="space-y-3">
                     {departmentStaff.map((staff) => (
-                      <div key={staff.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div 
+                        key={staff.id} 
+                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => handleStaffClick(staff)}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-blue-600" />
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <p className="font-medium">{staff.first_name} {staff.last_name}</p>
@@ -288,7 +334,14 @@ export const StaffManagement = () => {
                                 {staff.employment_status}
                               </Badge>
                               {staff.has_compensation_access && (
-                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStaffClick(staff);
+                                  }}
+                                >
                                   <DollarSign className="h-3 w-3 mr-1" />
                                   Compensation Data
                                 </Badge>
@@ -297,30 +350,39 @@ export const StaffManagement = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Staff Details",
-                              description: `Viewing details for ${staff.first_name} ${staff.last_name} - Production ready`,
-                            });
-                          }}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStaffClick(staff);
+                            }}
+                          >
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Edit Staff Member",
-                              description: `Editing ${staff.first_name} ${staff.last_name} - All database functions active`,
-                            });
-                          }}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(staff);
+                            }}
+                          >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Schedule Management",
-                              description: `Managing schedule for ${staff.first_name} ${staff.last_name} - Production ready`,
-                            });
-                          }}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toast({
+                                title: "Schedule Management",
+                                description: `Managing schedule for ${staff.first_name} ${staff.last_name}`,
+                              });
+                            }}
+                          >
                             <Calendar className="h-4 w-4 mr-1" />
                             Schedule
                           </Button>
@@ -350,7 +412,12 @@ export const StaffManagement = () => {
                   <Building className="h-5 w-5 text-green-600" />
                   Department Management
                 </CardTitle>
-                <Button>
+                <Button onClick={() => {
+                  toast({
+                    title: "Add Department",
+                    description: "Department creation modal would open here",
+                  });
+                }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Department
                 </Button>
@@ -359,7 +426,16 @@ export const StaffManagement = () => {
             <CardContent>
               <div className="grid gap-4">
                 {departments.map((dept) => (
-                  <div key={dept.id} className="p-4 border border-border rounded-lg">
+                  <div 
+                    key={dept.id} 
+                    className="p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      toast({
+                        title: "Department Details",
+                        description: `Viewing details for ${dept.name}`,
+                      });
+                    }}
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="font-semibold">{dept.name}</h3>
@@ -370,18 +446,38 @@ export const StaffManagement = () => {
                           {dept.staff_count} Staff
                         </Badge>
                         {dept.budget_allocation && (
-                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                          <Badge variant="outline" className="bg-success/10 text-success">
                             ${dept.budget_allocation.toLocaleString()} Budget
                           </Badge>
                         )}
                       </div>
                     </div>
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast({
+                            title: "Department Details",
+                            description: `Viewing details for ${dept.name}`,
+                          });
+                        }}
+                      >
                         <Eye className="h-4 w-4 mr-1" />
                         View Details
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast({
+                            title: "Edit Department",
+                            description: `Editing ${dept.name}`,
+                          });
+                        }}
+                      >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
