@@ -238,7 +238,7 @@ export const StaffEditModal: React.FC<StaffEditModalProps> = ({
             
             {formData.payment_type === 'salary' && (
               <div className="space-y-2">
-                <Label htmlFor="salary">Annual Salary ($)</Label>
+                <Label htmlFor="salary">Annual Salary (¥)</Label>
                 <Input
                   id="salary"
                   type="number"

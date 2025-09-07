@@ -127,7 +127,7 @@ export const DepartmentEditModal: React.FC<DepartmentEditModalProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="budget">Budget Allocation ($)</Label>
+            <Label htmlFor="budget">Budget Allocation (¥)</Label>
             <Input
               id="budget"
               type="number"

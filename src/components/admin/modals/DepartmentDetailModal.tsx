@@ -84,9 +84,9 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'JPY'
     }).format(amount);
   };
 

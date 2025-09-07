@@ -54,9 +54,9 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
 
   const formatCurrency = (amount?: number) => {
     if (!amount) return 'Not set';
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('ja-JP', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'JPY'
     }).format(amount);
   };
 
