@@ -92,7 +92,7 @@ export const ProductionReadinessTester: React.FC = () => {
       });
 
       await runTest('Database Schema Validation', 'database', async () => {
-        const tables = ['profiles', 'user_roles', 'players', 'schedules', 'player_attendance'];
+        const tables = ['profiles', 'user_roles', 'players', 'schedules', 'player_attendance'] as const;
         const errors: string[] = [];
         
         for (const table of tables) {

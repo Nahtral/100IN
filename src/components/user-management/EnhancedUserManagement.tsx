@@ -14,13 +14,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus, Shield } from 'lucide-react';
+import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus, Shield, TestTube } from 'lucide-react';
 import UserActionsDropdown from './UserActionsDropdown';
 import UserDetailsView from './UserDetailsView';
 import { UserApprovalDashboard } from './UserApprovalDashboard';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 import PermissionManager from './PermissionManager';
 import BulkUserManagement from '../admin/BulkUserManagement';
+import BulkUserManagementTester from '../admin/BulkUserManagementTester';
+import { EnhancedProductionReadiness } from '../admin/EnhancedProductionReadiness';
 
 interface UserProfile {
   id: string;
@@ -582,7 +584,7 @@ const EnhancedUserManagement = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-fit">
+        <TabsList className="grid grid-cols-6 w-fit">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Users
@@ -594,6 +596,14 @@ const EnhancedUserManagement = () => {
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Templates
+          </TabsTrigger>
+          <TabsTrigger value="testing" className="flex items-center gap-2">
+            <TestTube className="w-4 h-4" />
+            System Testing
+          </TabsTrigger>
+          <TabsTrigger value="production" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Production Readiness
           </TabsTrigger>
           <TabsTrigger value="approvals" className="flex items-center gap-2">
             <UserPlus className="w-4 h-4" />
@@ -780,6 +790,14 @@ const EnhancedUserManagement = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="testing" className="space-y-4">
+          <BulkUserManagementTester />
+        </TabsContent>
+
+        <TabsContent value="production" className="space-y-4">
+          <EnhancedProductionReadiness />
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-4">

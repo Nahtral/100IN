@@ -85,17 +85,23 @@ export const useProductionReadiness = () => {
       // 4. Performance metrics
       const performanceTests = await Promise.allSettled([
         // Test profiles query performance
-        measureQueryPerformance('profiles', () => 
-          supabase.from('profiles').select('id, full_name').limit(10)
-        ),
+        measureQueryPerformance('profiles', async () => {
+          const { data, error } = await supabase.from('profiles').select('id, full_name').limit(10);
+          if (error) throw error;
+          return data;
+        }),
         // Test schedules query performance
-        measureQueryPerformance('schedules', () => 
-          supabase.from('schedules').select('id, title, start_time').limit(10)
-        ),
+        measureQueryPerformance('schedules', async () => {
+          const { data, error } = await supabase.from('schedules').select('id, title, start_time').limit(10);
+          if (error) throw error;
+          return data;
+        }),
         // Test user_roles query performance
-        measureQueryPerformance('user_roles', () => 
-          supabase.from('user_roles').select('user_id, role').limit(10)
-        )
+        measureQueryPerformance('user_roles', async () => {
+          const { data, error } = await supabase.from('user_roles').select('user_id, role').limit(10);
+          if (error) throw error;
+          return data;
+        })
       ]);
 
       const successfulTests = performanceTests.filter(test => test.status === 'fulfilled');
@@ -163,7 +169,7 @@ export const useProductionReadiness = () => {
   ): Promise<{ name: string; duration: number; success: boolean }> => {
     const startTime = performance.now();
     try {
-      await queryFn();
+      const result = await queryFn();
       const duration = performance.now() - startTime;
       return { name: queryName, duration, success: true };
     } catch (error) {
