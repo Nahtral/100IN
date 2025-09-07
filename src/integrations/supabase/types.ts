@@ -155,9 +155,11 @@ export type Database = {
           id: string
           is_deleted: boolean | null
           is_edited: boolean | null
+          language_code: string | null
           message_type: string | null
           reply_to_id: string | null
           sender_id: string
+          status: string
         }
         Insert: {
           attachment_name?: string | null
@@ -170,9 +172,11 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_edited?: boolean | null
+          language_code?: string | null
           message_type?: string | null
           reply_to_id?: string | null
           sender_id: string
+          status?: string
         }
         Update: {
           attachment_name?: string | null
@@ -185,9 +189,11 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_edited?: boolean | null
+          language_code?: string | null
           message_type?: string | null
           reply_to_id?: string | null
           sender_id?: string
+          status?: string
         }
         Relationships: [
           {
@@ -196,6 +202,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "chats"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "v_chat_display"
+            referencedColumns: ["chat_id"]
           },
           {
             foreignKeyName: "chat_messages_reply_to_id_fkey"
@@ -239,6 +252,13 @@ export type Database = {
             referencedRelation: "chats"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chat_participants_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "v_chat_display"
+            referencedColumns: ["chat_id"]
+          },
         ]
       }
       chats: {
@@ -251,6 +271,7 @@ export type Database = {
           is_pinned: boolean | null
           last_message_at: string | null
           name: string
+          status: string
           team_id: string | null
           updated_at: string | null
         }
@@ -263,6 +284,7 @@ export type Database = {
           is_pinned?: boolean | null
           last_message_at?: string | null
           name: string
+          status?: string
           team_id?: string | null
           updated_at?: string | null
         }
@@ -275,6 +297,7 @@ export type Database = {
           is_pinned?: boolean | null
           last_message_at?: string | null
           name?: string
+          status?: string
           team_id?: string | null
           updated_at?: string | null
         }
@@ -4324,7 +4347,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_chat_display: {
+        Row: {
+          chat_id: string | null
+          created_at: string | null
+          display_name: string | null
+          is_archived: boolean | null
+          is_group: boolean | null
+          is_pinned: boolean | null
+          last_message_at: string | null
+          original_name: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          created_at?: string | null
+          display_name?: never
+          is_archived?: boolean | null
+          is_group?: never
+          is_pinned?: boolean | null
+          last_message_at?: string | null
+          original_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          created_at?: string | null
+          display_name?: never
+          is_archived?: boolean | null
+          is_group?: never
+          is_pinned?: boolean | null
+          last_message_at?: string | null
+          original_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_user_permission: {
@@ -4651,6 +4712,18 @@ export type Database = {
         }
         Returns: string
       }
+      rpc_edit_or_recall_message: {
+        Args: {
+          p_message_id: string
+          p_new_content?: string
+          p_recall?: boolean
+        }
+        Returns: undefined
+      }
+      rpc_forward_message: {
+        Args: { p_source_message_id: string; p_target_chat_ids: string[] }
+        Returns: undefined
+      }
       rpc_get_chat_participants: {
         Args: { chat_id_param: string }
         Returns: {
@@ -4715,6 +4788,10 @@ export type Database = {
           reply_to_id_param?: string
         }
         Returns: string
+      }
+      rpc_update_chat: {
+        Args: { p_chat_id: string; p_status?: string; p_title?: string }
+        Returns: undefined
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }
