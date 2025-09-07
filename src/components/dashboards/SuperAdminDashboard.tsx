@@ -38,6 +38,7 @@ const PermissionsManagement = lazy(() => import("@/components/admin/PermissionsM
 const ParentsManagement = lazy(() => import("@/components/admin/ParentsManagement").then(m => ({ default: m.ParentsManagement })));
 const CoachesManagement = lazy(() => import("@/components/admin/CoachesManagement").then(m => ({ default: m.CoachesManagement })));
 const StaffManagement = lazy(() => import("@/components/admin/StaffManagement").then(m => ({ default: m.StaffManagement })));
+const TeamsManagement = lazy(() => import("@/components/admin/TeamsManagement").then(m => ({ default: m.TeamsManagement })));
 
 interface PendingRequest {
   id: string;
@@ -288,18 +289,9 @@ const SuperAdminDashboard = () => {
           {/* Teams Tab */}
           <TabsContent value="teams">
             <LazyTabContent isActive={activeTab === 'teams'}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Team Management</CardTitle>
-                  <CardDescription>Create and manage teams, player assignments</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate('/teams')} className="w-full">
-                    <Trophy className="h-4 w-4 mr-2" />
-                    Open Team Management
-                  </Button>
-                </CardContent>
-              </Card>
+              <Suspense fallback={<DashboardSkeleton />}>
+                <TeamsManagement />
+              </Suspense>
             </LazyTabContent>
           </TabsContent>
 
