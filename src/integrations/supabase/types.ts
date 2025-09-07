@@ -143,25 +143,91 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_size: number | null
+          attachment_url: string | null
+          chat_id: string
+          content: string
+          created_at: string | null
+          edited_at: string | null
+          id: string
+          is_deleted: boolean | null
+          is_edited: boolean | null
+          message_type: string | null
+          reply_to_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
+          chat_id: string
+          content: string
+          created_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
+          chat_id?: string
+          content?: string
+          created_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_participants: {
         Row: {
           chat_id: string
           id: string
-          joined_at: string
+          joined_at: string | null
+          last_read_at: string | null
           role: string
           user_id: string
         }
         Insert: {
           chat_id: string
           id?: string
-          joined_at?: string
+          joined_at?: string | null
+          last_read_at?: string | null
           role?: string
           user_id: string
         }
         Update: {
           chat_id?: string
           id?: string
-          joined_at?: string
+          joined_at?: string | null
+          last_read_at?: string | null
           role?: string
           user_id?: string
         }
@@ -173,77 +239,46 @@ export type Database = {
             referencedRelation: "chats"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_chat_participants_chat_id"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
         ]
       }
       chats: {
         Row: {
-          archived_at: string | null
-          archived_by: string | null
           chat_type: string
-          created_at: string
+          created_at: string | null
           created_by: string
           id: string
           is_archived: boolean | null
-          is_muted: boolean | null
           is_pinned: boolean | null
-          last_read_at: string | null
-          name: string | null
+          last_message_at: string | null
+          name: string
           team_id: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          archived_at?: string | null
-          archived_by?: string | null
           chat_type: string
-          created_at?: string
+          created_at?: string | null
           created_by: string
           id?: string
           is_archived?: boolean | null
-          is_muted?: boolean | null
           is_pinned?: boolean | null
-          last_read_at?: string | null
-          name?: string | null
+          last_message_at?: string | null
+          name: string
           team_id?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          archived_at?: string | null
-          archived_by?: string | null
           chat_type?: string
-          created_at?: string
+          created_at?: string | null
           created_by?: string
           id?: string
           is_archived?: boolean | null
-          is_muted?: boolean | null
           is_pinned?: boolean | null
-          last_read_at?: string | null
-          name?: string | null
+          last_message_at?: string | null
+          name?: string
           team_id?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "chats_archived_by_fkey"
-            columns: ["archived_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chats_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       coach_assignments: {
         Row: {
@@ -1679,21 +1714,21 @@ export type Database = {
       }
       message_reactions: {
         Row: {
-          created_at: string
+          created_at: string | null
           emoji: string
           id: string
           message_id: string
           user_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           emoji: string
           id?: string
           message_id: string
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           emoji?: string
           id?: string
           message_id?: string
@@ -1701,96 +1736,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_message_reactions_message_id"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "message_reactions_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          chat_id: string
-          content: string | null
-          created_at: string
-          edit_history: Json | null
-          id: string
-          is_archived: boolean | null
-          is_edited: boolean | null
-          is_recalled: boolean | null
-          media_size: number | null
-          media_type: string | null
-          media_url: string | null
-          message_type: string
-          recalled_at: string | null
-          recalled_by: string | null
-          sender_id: string
-          updated_at: string
-        }
-        Insert: {
-          chat_id: string
-          content?: string | null
-          created_at?: string
-          edit_history?: Json | null
-          id?: string
-          is_archived?: boolean | null
-          is_edited?: boolean | null
-          is_recalled?: boolean | null
-          media_size?: number | null
-          media_type?: string | null
-          media_url?: string | null
-          message_type?: string
-          recalled_at?: string | null
-          recalled_by?: string | null
-          sender_id: string
-          updated_at?: string
-        }
-        Update: {
-          chat_id?: string
-          content?: string | null
-          created_at?: string
-          edit_history?: Json | null
-          id?: string
-          is_archived?: boolean | null
-          is_edited?: boolean | null
-          is_recalled?: boolean | null
-          media_size?: number | null
-          media_type?: string | null
-          media_url?: string | null
-          message_type?: string
-          recalled_at?: string | null
-          recalled_by?: string | null
-          sender_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_messages_chat_id"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_recalled_by_fkey"
-            columns: ["recalled_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]
