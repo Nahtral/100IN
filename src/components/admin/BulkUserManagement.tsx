@@ -100,9 +100,20 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
       setUsers(usersNeedingPlayerSetup);
     } catch (error: any) {
       console.error('Error fetching approved users:', error);
+      
+      // Enhanced error handling with specific messages
+      let errorMessage = 'Failed to load users';
+      if (error.message?.includes('permission denied')) {
+        errorMessage = 'Access denied. Please ensure you have administrator privileges.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message) {
+        errorMessage = `Failed to load users: ${error.message}`;
+      }
+      
       toast({
-        title: "Error",
-        description: `Failed to load users: ${error.message}`,
+        title: "Error Loading Users",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -196,9 +207,30 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
 
     } catch (error: any) {
       console.error('System error during bulk conversion:', error);
+      
+      // Enhanced error handling for conversion failures
+      let errorMessage = 'Critical system error occurred';
+      let errorTitle = 'System Error';
+      
+      if (error.message?.includes('bulk_convert_users_to_players')) {
+        errorTitle = 'Conversion Function Error';
+        errorMessage = 'The user conversion system is currently unavailable. Please try again or contact support.';
+      } else if (error.message?.includes('permission denied')) {
+        errorTitle = 'Access Denied';
+        errorMessage = 'You do not have permission to convert users. Please contact your administrator.';
+      } else if (error.message?.includes('ambiguous column')) {
+        errorTitle = 'Database Configuration Error';
+        errorMessage = 'Database configuration issue detected. Please contact technical support immediately.';
+      } else if (error.message?.includes('timeout')) {
+        errorTitle = 'Operation Timeout';
+        errorMessage = 'The conversion process timed out. Please try with fewer users or contact support.';
+      } else if (error.message) {
+        errorMessage = `${error.message}. Please contact support if this persists.`;
+      }
+      
       toast({
-        title: "System Error",
-        description: `Critical system error: ${error.message}. Please contact support if this persists.`,
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

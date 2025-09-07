@@ -59,25 +59,78 @@ export const useErrorHandler = (defaultContext?: ErrorContext) => {
 };
 
 const getUserFriendlyMessage = (errorMessage: string): string => {
-  // Map technical errors to user-friendly messages
-  if (errorMessage.includes('Failed to fetch')) {
-    return 'Unable to connect to the server. Please check your internet connection.';
+  // Enhanced error mapping for production readiness
+  
+  // Network and connectivity errors
+  if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+    return 'Unable to connect to the server. Please check your internet connection and try again.';
   }
   
+  if (errorMessage.includes('timeout') || errorMessage.includes('TIMEOUT')) {
+    return 'Request timed out. Please try again in a moment.';
+  }
+  
+  // Authentication and authorization errors
   if (errorMessage.includes('permission denied') || errorMessage.includes('unauthorized')) {
-    return 'You do not have permission to perform this action.';
+    return 'You do not have permission to perform this action. Please contact your administrator.';
   }
   
-  if (errorMessage.includes('not found')) {
-    return 'The requested information was not found.';
+  if (errorMessage.includes('JWT') || errorMessage.includes('token')) {
+    return 'Your session has expired. Please sign in again.';
   }
   
-  if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
+  // Database and validation errors
+  if (errorMessage.includes('not found') || errorMessage.includes('NOT_FOUND')) {
+    return 'The requested information could not be found.';
+  }
+  
+  if (errorMessage.includes('duplicate') || errorMessage.includes('already exists') || errorMessage.includes('UNIQUE')) {
     return 'This information already exists in the system.';
   }
   
-  // Return original message if no mapping found, but sanitized
-  return errorMessage.length > 100 
-    ? 'An unexpected error occurred. Please try again.' 
-    : errorMessage;
+  if (errorMessage.includes('violates row-level security')) {
+    return 'Access denied. You can only modify your own data.';
+  }
+  
+  if (errorMessage.includes('check constraint') || errorMessage.includes('CHECK_VIOLATION')) {
+    return 'The data provided does not meet system requirements.';
+  }
+  
+  if (errorMessage.includes('foreign key') || errorMessage.includes('FOREIGN_KEY_VIOLATION')) {
+    return 'Cannot complete action due to related data dependencies.';
+  }
+  
+  // File upload and storage errors
+  if (errorMessage.includes('file size') || errorMessage.includes('FILE_SIZE')) {
+    return 'File is too large. Please choose a smaller file.';
+  }
+  
+  if (errorMessage.includes('file type') || errorMessage.includes('MIME')) {
+    return 'File type not supported. Please choose a different file.';
+  }
+  
+  // Rate limiting and capacity errors
+  if (errorMessage.includes('rate limit') || errorMessage.includes('too many requests')) {
+    return 'Too many requests. Please wait a moment before trying again.';
+  }
+  
+  if (errorMessage.includes('capacity') || errorMessage.includes('quota')) {
+    return 'Service temporarily unavailable. Please try again later.';
+  }
+  
+  // Specific business logic errors
+  if (errorMessage.includes('bulk_convert_users_to_players')) {
+    return 'Failed to convert users to players. Please check user eligibility and try again.';
+  }
+  
+  if (errorMessage.includes('ambiguous column')) {
+    return 'Database configuration error. Please contact technical support.';
+  }
+  
+  // Generic fallback with more context
+  if (errorMessage.length > 100) {
+    return 'An unexpected error occurred. Please try again or contact support if the issue persists.';
+  }
+  
+  return errorMessage;
 };
