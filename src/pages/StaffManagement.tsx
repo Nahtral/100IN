@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout } from '@/components/layout/Layout';
+import Layout from '@/components/layout/Layout';
 import { useRequireSuperAdmin } from '@/hooks/useRequireRole';
 import { StaffManagement } from '@/components/admin/StaffManagement';
 

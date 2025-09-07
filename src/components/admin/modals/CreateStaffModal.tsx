@@ -39,19 +39,28 @@ export const CreateStaffModal: React.FC<CreateStaffModalProps> = ({
     setLoading(true);
 
     try {
-      // Call the RPC function to create staff member
-      const { data, error } = await supabase.rpc('create_staff_member', {
-        p_first_name: formData.first_name,
-        p_last_name: formData.last_name,
-        p_email: formData.email,
-        p_phone: formData.phone || null,
-        p_department: formData.department,
-        p_position: formData.position,
-        p_hire_date: formData.hire_date,
-        p_payment_type: formData.payment_type,
-        p_hourly_rate: formData.payment_type === 'hourly' && formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
-        p_salary: formData.payment_type === 'salary' && formData.salary ? parseFloat(formData.salary) : null
-      });
+      // Create staff member directly using database insert
+      const updateData = {
+        employee_id: `EMP-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone || null,
+        department: formData.department,
+        position: formData.position,
+        hire_date: formData.hire_date,
+        payment_type: formData.payment_type,
+        hourly_rate: formData.payment_type === 'hourly' && formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+        salary: formData.payment_type === 'salary' && formData.salary ? parseFloat(formData.salary) : null,
+        employment_status: 'active',
+        created_by: (await supabase.auth.getUser()).data.user?.id
+      };
+
+      const { data, error } = await supabase
+        .from('employees')
+        .insert(updateData)
+        .select()
+        .single();
 
       if (error) throw error;
 

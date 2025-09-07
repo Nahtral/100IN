@@ -39,6 +39,7 @@ const TryoutRubric = React.lazy(() => import("./pages/TryoutRubric"));
 const NotificationSettings = React.lazy(() => import("./pages/NotificationSettings"));
 const MembershipTypes = React.lazy(() => import("./pages/MembershipTypes"));
 const StaffManagement = React.lazy(() => import("./pages/StaffManagement"));
+const HRSection = React.lazy(() => import("./pages/HRSection"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -194,9 +195,14 @@ const App = () => (
             <TryoutRubric />
           </RoleProtectedRoute>
         } />
-        <Route path="/admin/staff/*" element={
+        <Route path="/admin/staff" element={
           <RoleProtectedRoute allowedRoles={['super_admin']}>
             <StaffManagement />
+          </RoleProtectedRoute>
+        } />
+        <Route path="/admin/staff/hr/*" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <HRSection />
           </RoleProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />

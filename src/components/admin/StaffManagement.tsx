@@ -170,11 +170,24 @@ export const StaffManagement = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_staff_analytics');
-      if (error) throw error;
-      setAnalytics(data);
+      // For now, calculate analytics from local data until RPC is available
+      const totalStaff = staffMembers.length;
+      const activeDepartments = departments.length;
+      const departmentDistribution = departments.map(dept => ({
+        department: dept.name,
+        count: dept.staff_count,
+        budget: dept.budget_allocation
+      }));
+
+      setAnalytics({
+        total_staff: totalStaff,
+        active_staff: staffMembers.filter(s => s.employment_status === 'active').length,
+        total_departments: activeDepartments,
+        avg_staff_per_department: activeDepartments > 0 ? Math.round(totalStaff / activeDepartments) : 0,
+        department_distribution: departmentDistribution
+      });
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      console.error('Error calculating analytics:', error);
     }
   };
 
