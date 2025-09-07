@@ -1,17 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
   Plus, 
   Search, 
   RefreshCw,
   AlertCircle,
-  Loader2
+  Loader2,
+  MoreVertical,
+  Edit,
+  Archive,
+  ArchiveRestore,
+  Trash
 } from 'lucide-react';
 import { Chat, ChatError } from '@/types/chat';
 import { cn } from '@/lib/utils';
+import { RenameChatModal } from './RenameChatModal';
 
 interface ProductionChatSidebarProps {
   chats: Chat[];
@@ -23,6 +31,9 @@ interface ProductionChatSidebarProps {
   onRefresh: () => void;
   onLoadMore: () => void;
   onRetry: (operation: string) => void;
+  onRenameChat?: (chatId: string, newTitle: string) => Promise<void>;
+  onArchiveChat?: (chatId: string, archive: boolean) => Promise<void>;
+  onDeleteChat?: (chatId: string, permanent?: boolean) => Promise<void>;
 }
 
 export const ProductionChatSidebar: React.FC<ProductionChatSidebarProps> = ({
@@ -34,9 +45,16 @@ export const ProductionChatSidebar: React.FC<ProductionChatSidebarProps> = ({
   onCreateChat,
   onRefresh,
   onLoadMore,
-  onRetry
+  onRetry,
+  onRenameChat,
+  onArchiveChat,
+  onDeleteChat
 }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [selectedChatForAction, setSelectedChatForAction] = useState<Chat | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteType, setDeleteType] = useState<'soft' | 'hard'>('soft');
 
   const filteredChats = React.useMemo(() => {
     if (!searchQuery.trim()) return chats;
@@ -51,11 +69,19 @@ export const ProductionChatSidebar: React.FC<ProductionChatSidebarProps> = ({
   const regularChats = filteredChats.filter(chat => !chat.is_pinned);
 
   const getChatDisplayName = (chat: Chat) => {
+    // Use display_title from the database if available
+    if (chat.display_title) return chat.display_title;
     if (chat.name && chat.name !== 'Chat') return chat.name;
     if (chat.chat_type === 'private') {
       return chat.participant_count === 2 ? 'Direct Message' : 'Private Chat';
     }
     return chat.chat_type === 'group' ? 'Group Chat' : 'Team Chat';
+  };
+
+  const getMemberCountText = (chat: Chat) => {
+    const count = chat.member_count || chat.participant_count || 0;
+    if (count === 0) return '0 members';
+    return `${count} ${count === 1 ? 'member' : 'members'}`;
   };
 
   const formatLastActivity = (timestamp: string) => {
@@ -73,15 +99,35 @@ export const ProductionChatSidebar: React.FC<ProductionChatSidebarProps> = ({
     return date.toLocaleDateString();
   };
 
+  const handleRename = async (newTitle: string) => {
+    if (selectedChatForAction && onRenameChat) {
+      await onRenameChat(selectedChatForAction.id, newTitle);
+      setSelectedChatForAction(null);
+    }
+  };
+
+  const handleArchive = async (chat: Chat) => {
+    if (onArchiveChat) {
+      await onArchiveChat(chat.id, !chat.is_archived);
+    }
+  };
+
+  const handleDelete = async (permanent: boolean) => {
+    if (selectedChatForAction && onDeleteChat) {
+      await onDeleteChat(selectedChatForAction.id, permanent);
+      setSelectedChatForAction(null);
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   const ChatItem = ({ chat }: { chat: Chat }) => (
     <div
       className={cn(
-        "flex items-center p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
+        "flex items-center p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 group",
         selectedChatId === chat.id && "bg-primary/10 border-l-2 border-primary"
       )}
-      onClick={() => onSelectChat(chat.id)}
     >
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0" onClick={() => onSelectChat(chat.id)}>
         <div className="flex items-center justify-between mb-1">
           <h4 className="font-medium text-sm text-foreground truncate">
             {getChatDisplayName(chat)}
@@ -93,7 +139,7 @@ export const ProductionChatSidebar: React.FC<ProductionChatSidebarProps> = ({
               </span>
             )}
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {formatLastActivity(chat.last_message_at)}
+              {formatLastActivity(chat.last_activity_at || chat.last_message_at || chat.created_at)}
             </span>
           </div>
         </div>
@@ -111,13 +157,85 @@ export const ProductionChatSidebar: React.FC<ProductionChatSidebarProps> = ({
         
         <div className="flex items-center gap-2 mt-1">
           <span className="text-xs text-muted-foreground">
-            {chat.participant_count} {chat.participant_count === 1 ? 'member' : 'members'}
+            {getMemberCountText(chat)}
           </span>
           {chat.is_pinned && (
             <span className="text-xs text-primary font-medium">📌 Pinned</span>
           )}
+          {chat.is_archived && (
+            <span className="text-xs text-muted-foreground">📦 Archived</span>
+          )}
         </div>
       </div>
+
+      {/* Chat Actions Menu */}
+      {(onRenameChat || onArchiveChat || onDeleteChat) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onRenameChat && chat.chat_type === 'group' && chat.is_admin && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedChatForAction(chat);
+                  setRenameModalOpen(true);
+                }}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Rename Chat
+              </DropdownMenuItem>
+            )}
+            
+            {onArchiveChat && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleArchive(chat);
+                }}
+              >
+                {chat.is_archived ? (
+                  <>
+                    <ArchiveRestore className="h-4 w-4 mr-2" />
+                    Unarchive
+                  </>
+                ) : (
+                  <>
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </>
+                )}
+              </DropdownMenuItem>
+            )}
+            
+            {onDeleteChat && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedChatForAction(chat);
+                    setDeleteType('soft');
+                    setDeleteConfirmOpen(true);
+                  }}
+                  className="text-destructive"
+                >
+                  <Trash className="h-4 w-4 mr-2" />
+                  Delete Chat
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 
@@ -257,6 +375,47 @@ export const ProductionChatSidebar: React.FC<ProductionChatSidebarProps> = ({
           )}
         </div>
       </ScrollArea>
+
+      {/* Rename Chat Modal */}
+      {selectedChatForAction && (
+        <RenameChatModal
+          isOpen={renameModalOpen}
+          onClose={() => {
+            setRenameModalOpen(false);
+            setSelectedChatForAction(null);
+          }}
+          onRename={handleRename}
+          currentTitle={selectedChatForAction.display_title || selectedChatForAction.name}
+          chatType={selectedChatForAction.chat_type}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedChatForAction?.chat_type === 'group' ? 'Group' : 'Chat'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{selectedChatForAction?.display_title || selectedChatForAction?.name}"? 
+              {deleteType === 'soft' 
+                ? ' This action can be undone by administrators.'
+                : ' This action cannot be undone and will permanently delete all messages.'
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(deleteType === 'hard')}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

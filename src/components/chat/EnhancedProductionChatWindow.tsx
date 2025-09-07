@@ -130,11 +130,19 @@ export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindow
   };
 
   const getChatDisplayName = (chat: Chat) => {
+    // Use display_title from database if available
+    if (chat.display_title) return chat.display_title;
     if (chat.name && chat.name !== 'Chat' && chat.name !== 'Direct Chat') return chat.name;
     if (chat.chat_type === 'private') {
       return chat.participant_count === 2 ? 'Direct Message' : 'Private Chat';
     }
     return chat.chat_type === 'group' ? 'Group Chat' : 'Team Chat';
+  };
+
+  const getMemberCountText = (chat: Chat) => {
+    const count = chat.member_count || chat.participant_count || 0;
+    if (chat.chat_type === 'private') return 'Direct conversation';
+    return `${count} ${count === 1 ? 'member' : 'members'}`;
   };
 
   const handleReply = (message: ChatMessage) => {
@@ -246,8 +254,8 @@ export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindow
               {getChatDisplayName(chat)}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {chat.participant_count} {chat.participant_count === 1 ? 'member' : 'members'}
-              {chat.last_message_at && ` • Active ${formatMessageTime(chat.last_message_at)}`}
+              {getMemberCountText(chat)}
+              {(chat.last_activity_at || chat.last_message_at) && ` • Active ${formatMessageTime(chat.last_activity_at || chat.last_message_at)}`}
             </p>
           </div>
         </div>

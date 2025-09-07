@@ -29,7 +29,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     markAsRead,
     refreshChats,
     refreshMessages,
-    retry
+    retry,
+    renameChat,
+    archiveChat,
+    deleteChat
   } = useProductionChat();
 
   const [showCreateModal, setShowCreateModal] = React.useState(false);
@@ -49,17 +52,20 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
           "border-r border-border bg-card",
           isMobile ? "w-full" : "w-80 min-w-80"
         )}>
-          <ProductionChatSidebar
-            chats={chats}
-            loading={loading}
-            error={error}
-            selectedChatId={selectedChat?.id || null}
-            onSelectChat={selectChat}
-            onCreateChat={() => setShowCreateModal(true)}
-            onRefresh={refreshChats}
-            onLoadMore={loadMoreChats}
-            onRetry={retry}
-          />
+      <ProductionChatSidebar
+        chats={chats}
+        loading={loading}
+        error={error}
+        selectedChatId={selectedChat?.id || null}
+        onSelectChat={selectChat}
+        onCreateChat={() => setShowCreateModal(true)}
+        onRefresh={refreshChats}
+        onLoadMore={loadMoreChats}
+        onRetry={retry}
+        onRenameChat={renameChat}
+        onArchiveChat={archiveChat}
+        onDeleteChat={deleteChat}
+      />
         </div>
       )}
 

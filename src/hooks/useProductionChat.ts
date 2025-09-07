@@ -23,6 +23,11 @@ interface UseProductionChatReturn {
   refreshChats: () => Promise<void>;
   refreshMessages: () => Promise<void>;
   retry: (operation: string) => Promise<void>;
+  
+  // New chat management functions
+  renameChat: (chatId: string, newTitle: string) => Promise<void>;
+  archiveChat: (chatId: string, archive: boolean) => Promise<void>;
+  deleteChat: (chatId: string, permanent?: boolean) => Promise<void>;
 }
 
 const MAX_RETRIES = 3;
@@ -108,9 +113,10 @@ export const useProductionChat = (): UseProductionChatReturn => {
       
       const { data, error } = await withRetry(
         async () => {
-          const result = await supabase.rpc('rpc_list_chats', {
+          const result = await supabase.rpc('rpc_list_chats_enhanced', {
             limit_n: 30,
-            offset_n: chatsOffsetRef.current
+            offset_n: chatsOffsetRef.current,
+            include_archived: false
           });
           return result;
         },
@@ -121,20 +127,24 @@ export const useProductionChat = (): UseProductionChatReturn => {
 
       const newChats = (data || []).map((chat: any): Chat => ({
         id: chat.chat_id,
-        name: chat.chat_title,
-        chat_type: chat.chat_is_group ? 'group' : 'private',
+        name: chat.display_title || 'Chat',
+        display_title: chat.display_title,
+        chat_type: chat.chat_type,
         created_by: '',
         team_id: null,
-        is_archived: false,
-        is_pinned: false,
-        last_message_at: chat.last_msg_at,
-        created_at: '',
-        updated_at: '',
+        is_archived: chat.is_archived || false,
+        is_pinned: chat.is_pinned || false,
+        last_message_at: chat.last_activity_at,
+        last_activity_at: chat.last_activity_at,
+        created_at: chat.last_activity_at,
+        updated_at: chat.last_activity_at,
         status: 'active',
-        last_message_content: chat.last_msg,
+        last_message_content: chat.last_message_content,
         last_message_sender: '',
-        unread_count: Number(chat.unread_count),
-        participant_count: 0
+        unread_count: Number(chat.unread_count || 0),
+        participant_count: Number(chat.member_count || 0),
+        member_count: Number(chat.member_count || 0),
+        is_admin: chat.is_admin || false
       }));
       
       if (isLoadMore) {
@@ -395,6 +405,73 @@ export const useProductionChat = (): UseProductionChatReturn => {
     }
   }, [refreshChats, refreshMessages]);
 
+  // Chat management functions
+  const renameChat = useCallback(async (chatId: string, newTitle: string) => {
+    try {
+      const { error } = await supabase.rpc('rpc_update_chat_meta', {
+        p_chat_id: chatId,
+        p_new_title: newTitle
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Chat renamed successfully"
+      });
+
+      await refreshChats();
+    } catch (err) {
+      handleError(err, 'rename chat');
+    }
+  }, [handleError, toast, refreshChats]);
+
+  const archiveChat = useCallback(async (chatId: string, archive: boolean) => {
+    try {
+      const { error } = await supabase.rpc('rpc_update_chat_meta', {
+        p_chat_id: chatId,
+        p_new_status: archive ? 'archived' : 'active'
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Chat ${archive ? 'archived' : 'unarchived'} successfully`
+      });
+
+      await refreshChats();
+    } catch (err) {
+      handleError(err, archive ? 'archive chat' : 'unarchive chat');
+    }
+  }, [handleError, toast, refreshChats]);
+
+  const deleteChat = useCallback(async (chatId: string, permanent = false) => {
+    try {
+      const { error } = await supabase.rpc('rpc_delete_chat', {
+        p_chat_id: chatId,
+        p_permanent: permanent
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Chat ${permanent ? 'permanently deleted' : 'deleted'} successfully`
+      });
+
+      await refreshChats();
+      
+      // Clear selected chat if it was deleted
+      if (selectedChat?.id === chatId) {
+        setSelectedChat(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      handleError(err, permanent ? 'permanently delete chat' : 'delete chat');
+    }
+  }, [handleError, toast, refreshChats, selectedChat]);
+
   // Setup realtime subscriptions
   useEffect(() => {
     if (!user) return;
@@ -493,6 +570,9 @@ export const useProductionChat = (): UseProductionChatReturn => {
     markAsRead,
     refreshChats,
     refreshMessages,
-    retry
+    retry,
+    renameChat,
+    archiveChat,
+    deleteChat
   };
 };

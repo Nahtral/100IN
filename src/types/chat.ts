@@ -26,6 +26,11 @@ export interface Chat {
   unread_count: number;
   participant_count: number;
   participants?: ChatParticipant[];
+  // Enhanced fields from database view
+  display_title?: string;
+  member_count?: number;
+  last_activity_at?: string;
+  is_admin?: boolean;
 }
 
 export interface ChatMessage {
