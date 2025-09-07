@@ -4632,12 +4632,14 @@ export type Database = {
         Returns: Json
       }
       rpc_create_chat: {
-        Args: {
-          chat_name: string
-          chat_type_param: string
-          participant_ids: string[]
-          team_id_param?: string
-        }
+        Args:
+          | {
+              chat_name: string
+              chat_type_param: string
+              participant_ids: string[]
+              team_id_param?: string
+            }
+          | { p_is_group: boolean; p_participants: string[]; p_title: string }
         Returns: string
       }
       rpc_duplicate_event: {

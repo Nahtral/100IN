@@ -150,61 +150,57 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
 
     setLoading(true);
     try {
-      console.log('Creating chat with data:', {
+      console.log('Creating chat with atomic RPC:', {
         chatType,
         chatName,
         selectedUsers,
         user: user?.id
       });
       
-      const chatData = {
-        name: chatName.trim() || (chatType === 'private' ? 'Private Chat' : 'New Chat'),
-        chat_type: chatType,
-        created_by: user.id,
-        team_id: chatType === 'team' ? selectedTeam : null
-      };
+      // Use atomic RPC function for reliable chat creation
+      const { data: chatId, error } = await supabase.rpc('rpc_create_chat', {
+        p_title: chatType === 'group' ? chatName.trim() : null,
+        p_is_group: chatType === 'group',
+        p_participants: selectedUsers
+      });
 
-      console.log('Chat data to insert:', chatData);
+      console.log('Chat creation result:', { chatId, error });
 
-      const { data: newChat, error: chatError } = await supabase
-        .from('chats')
-        .insert(chatData)
-        .select()
-        .single();
+      if (error) {
+        console.error('RPC error:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Failed to create chat: ${error.message}`
+        });
+        onChatCreated(null);
+        return;
+      }
 
-      console.log('Chat creation result:', { newChat, chatError });
-
-      if (chatError) throw chatError;
-
-      // Add participants including the creator
-      const participants = [
-        { chat_id: newChat.id, user_id: user.id, role: 'admin' },
-        ...selectedUsers.map(userId => ({
-          chat_id: newChat.id,
-          user_id: userId,
-          role: 'member'
-        }))
-      ];
-
-      const { error: participantsError } = await supabase
-        .from('chat_participants')
-        .insert(participants);
-
-      if (participantsError) throw participantsError;
+      if (!chatId) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create chat: No chat ID returned"
+        });
+        onChatCreated(null);
+        return;
+      }
 
       toast({
         title: "Success",
         description: "Chat created successfully"
       });
 
-      onChatCreated(newChat.id);
+      onChatCreated(chatId);
       resetForm();
     } catch (error) {
       console.error('Error creating chat:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create chat"
+        description: `Failed to create chat: ${errorMessage}`
       });
       onChatCreated(null);
     } finally {
