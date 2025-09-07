@@ -4350,38 +4350,53 @@ export type Database = {
       v_chat_display: {
         Row: {
           chat_id: string | null
+          chat_type: string | null
           created_at: string | null
-          display_name: string | null
+          display_title: string | null
+          is_admin: boolean | null
           is_archived: boolean | null
-          is_group: boolean | null
           is_pinned: boolean | null
+          last_activity_at: string | null
           last_message_at: string | null
+          last_message_content: string | null
+          member_count: number | null
           original_name: string | null
           status: string | null
+          unread_count: number | null
           updated_at: string | null
         }
         Insert: {
           chat_id?: string | null
+          chat_type?: string | null
           created_at?: string | null
-          display_name?: never
+          display_title?: never
+          is_admin?: never
           is_archived?: boolean | null
-          is_group?: never
           is_pinned?: boolean | null
+          last_activity_at?: never
           last_message_at?: string | null
+          last_message_content?: never
+          member_count?: never
           original_name?: string | null
           status?: string | null
+          unread_count?: never
           updated_at?: string | null
         }
         Update: {
           chat_id?: string | null
+          chat_type?: string | null
           created_at?: string | null
-          display_name?: never
+          display_title?: never
+          is_admin?: never
           is_archived?: boolean | null
-          is_group?: never
           is_pinned?: boolean | null
+          last_activity_at?: never
           last_message_at?: string | null
+          last_message_content?: never
+          member_count?: never
           original_name?: string | null
           status?: string | null
+          unread_count?: never
           updated_at?: string | null
         }
         Relationships: []
@@ -4703,6 +4718,10 @@ export type Database = {
           | { p_is_group: boolean; p_participants: string[]; p_title: string }
         Returns: string
       }
+      rpc_delete_chat: {
+        Args: { p_chat_id: string; p_permanent?: boolean }
+        Returns: undefined
+      }
       rpc_duplicate_event: {
         Args: {
           copy_teams?: boolean
@@ -4773,6 +4792,25 @@ export type Database = {
           unread_count: number
         }[]
       }
+      rpc_list_chats_enhanced: {
+        Args: {
+          include_archived?: boolean
+          limit_n?: number
+          offset_n?: number
+        }
+        Returns: {
+          chat_id: string
+          chat_type: string
+          display_title: string
+          is_admin: boolean
+          is_archived: boolean
+          is_pinned: boolean
+          last_activity_at: string
+          last_message_content: string
+          member_count: number
+          unread_count: number
+        }[]
+      }
       rpc_mark_read: {
         Args: { chat: string }
         Returns: undefined
@@ -4791,6 +4829,10 @@ export type Database = {
       }
       rpc_update_chat: {
         Args: { p_chat_id: string; p_status?: string; p_title?: string }
+        Returns: undefined
+      }
+      rpc_update_chat_meta: {
+        Args: { p_chat_id: string; p_new_status?: string; p_new_title?: string }
         Returns: undefined
       }
       user_created_chat: {
