@@ -70,3 +70,17 @@ export interface ChatError {
   message: string;
   details?: any;
 }
+
+// Legacy type aliases for compatibility
+export type Message = ChatMessage;
+export interface TypingIndicator {
+  userId: string;
+  userName: string;
+  timestamp: string;
+}
+
+export interface ChatSettings {
+  notifications: boolean;
+  sound: boolean;
+  theme: 'light' | 'dark';
+}

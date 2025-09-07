@@ -107,16 +107,22 @@ export const useProductionChat = (): UseProductionChatReturn => {
       }
       
       const { data, error } = await withRetry(
-        () => supabase.rpc('rpc_list_chats', {
-          limit_n: 30,
-          offset_n: chatsOffsetRef.current
-        }),
+        async () => {
+          const result = await supabase.rpc('rpc_list_chats', {
+            limit_n: 30,
+            offset_n: chatsOffsetRef.current
+          });
+          return result;
+        },
         'load_chats'
       );
 
       if (error) throw error;
 
-      const newChats = data || [];
+      const newChats = (data || []).map((chat: any): Chat => ({
+        ...chat,
+        chat_type: chat.chat_type as 'private' | 'group' | 'team'
+      }));
       
       if (isLoadMore) {
         setChats(prev => [...prev, ...newChats]);
@@ -143,17 +149,24 @@ export const useProductionChat = (): UseProductionChatReturn => {
       }
       
       const { data, error } = await withRetry(
-        () => supabase.rpc('rpc_get_messages', {
-          chat_id_param: chatId,
-          limit_n: 50,
-          before_cursor: messagesBeforeCursorRef.current
-        }),
+        async () => {
+          const result = await supabase.rpc('rpc_get_messages', {
+            chat_id_param: chatId,
+            limit_n: 50,
+            before_cursor: messagesBeforeCursorRef.current
+          });
+          return result;
+        },
         'load_messages'
       );
 
       if (error) throw error;
 
-      const newMessages = (data || []).reverse(); // Messages come in DESC order, reverse for chronological
+      const newMessages = (data || []).map((msg: any): ChatMessage => ({
+        ...msg,
+        reactions: Array.isArray(msg.reactions) ? msg.reactions : [],
+        message_type: msg.message_type as 'text' | 'image' | 'file' | 'system'
+      })).reverse(); // Messages come in DESC order, reverse for chronological
       
       if (isLoadMore) {
         setMessages(prev => [...newMessages, ...prev]);
@@ -194,12 +207,15 @@ export const useProductionChat = (): UseProductionChatReturn => {
 
     try {
       const { data: chatId, error } = await withRetry(
-        () => supabase.rpc('rpc_create_chat', {
-          chat_name: data.name,
-          chat_type_param: data.type,
-          participant_ids: data.participants,
-          team_id_param: data.team_id || null
-        }),
+        async () => {
+          const result = await supabase.rpc('rpc_create_chat', {
+            chat_name: data.name,
+            chat_type_param: data.type,
+            participant_ids: data.participants,
+            team_id_param: data.team_id || null
+          });
+          return result;
+        },
         'create_chat'
       );
 
@@ -251,12 +267,15 @@ export const useProductionChat = (): UseProductionChatReturn => {
 
     try {
       const { data: messageId, error } = await withRetry(
-        () => supabase.rpc('rpc_send_message', {
-          chat_id_param: selectedChat.id,
-          content_param: content,
-          message_type_param: type,
-          attachment_url_param: attachmentUrl || null
-        }),
+        async () => {
+          const result = await supabase.rpc('rpc_send_message', {
+            chat_id_param: selectedChat.id,
+            content_param: content,
+            message_type_param: type,
+            attachment_url_param: attachmentUrl || null
+          });
+          return result;
+        },
         'send_message'
       );
 
