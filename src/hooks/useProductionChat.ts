@@ -96,7 +96,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
     }
   }, []);
 
-  // Load chats with pagination
+  // Load chats with pagination (schema-safe)
   const loadChats = useCallback(async (isLoadMore = false) => {
     if (!user) return;
     
@@ -120,8 +120,20 @@ export const useProductionChat = (): UseProductionChatReturn => {
       if (error) throw error;
 
       const newChats = (data || []).map((chat: any): Chat => ({
-        ...chat,
-        chat_type: chat.chat_type as 'private' | 'group' | 'team'
+        id: chat.chat_id,
+        name: chat.chat_title,
+        chat_type: chat.chat_is_group ? 'group' : 'private',
+        created_by: '',
+        team_id: null,
+        is_archived: false,
+        is_pinned: false,
+        last_message_at: chat.last_msg_at,
+        created_at: '',
+        updated_at: '',
+        last_message_content: chat.last_msg,
+        last_message_sender: '',
+        unread_count: Number(chat.unread_count),
+        participant_count: 0
       }));
       
       if (isLoadMore) {
@@ -140,7 +152,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
     }
   }, [user, withRetry, handleError]);
 
-  // Load messages with pagination
+  // Load messages with pagination (schema-safe)
   const loadMessages = useCallback(async (chatId: string, isLoadMore = false) => {
     try {
       if (!isLoadMore) {
@@ -151,9 +163,9 @@ export const useProductionChat = (): UseProductionChatReturn => {
       const { data, error } = await withRetry(
         async () => {
           const result = await supabase.rpc('rpc_get_messages', {
-            chat_id_param: chatId,
+            chat: chatId,
             limit_n: 50,
-            before_cursor: messagesBeforeCursorRef.current
+            before: messagesBeforeCursorRef.current
           });
           return result;
         },
@@ -163,9 +175,20 @@ export const useProductionChat = (): UseProductionChatReturn => {
       if (error) throw error;
 
       const newMessages = (data || []).map((msg: any): ChatMessage => ({
-        ...msg,
+        id: msg.id,
+        chat_id: msg.chat_id,
+        sender_id: msg.sender_id,
+        content: msg.body,
+        message_type: msg.message_type as 'text' | 'image' | 'file' | 'system',
+        attachment_url: msg.attachment_url,
+        is_edited: false,
+        is_deleted: false,
+        edited_at: msg.edited_at,
+        created_at: msg.created_at,
+        sender_name: msg.sender_name,
+        sender_email: msg.sender_email,
         reactions: Array.isArray(msg.reactions) ? msg.reactions : [],
-        message_type: msg.message_type as 'text' | 'image' | 'file' | 'system'
+        delivery_status: 'delivered'
       })).reverse(); // Messages come in DESC order, reverse for chronological
       
       if (isLoadMore) {
@@ -311,11 +334,11 @@ export const useProductionChat = (): UseProductionChatReturn => {
     }
   }, [user, selectedChat, withRetry, handleError]);
 
-  // Mark as read
+  // Mark as read (schema-safe)
   const markAsRead = useCallback(async (chatId: string) => {
     try {
       const { error } = await supabase.rpc('rpc_mark_read', {
-        chat_id_param: chatId
+        chat: chatId
       });
 
       if (error) throw error;

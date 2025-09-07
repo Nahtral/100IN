@@ -1,6 +1,6 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import { ProductionChatTests } from '@/components/chat/ProductionChatTests';
+import { ChatTests as ChatTestsComponent } from '@/components/chat/ChatTests';
 
 const ChatTests: React.FC = () => {
   return (
@@ -14,7 +14,7 @@ const ChatTests: React.FC = () => {
           </p>
         </div>
         
-        <ProductionChatTests />
+        <ChatTestsComponent />
         
         <div className="mt-8 p-4 bg-muted/50 rounded-lg">
           <h3 className="font-semibold mb-2">Test Coverage</h3>

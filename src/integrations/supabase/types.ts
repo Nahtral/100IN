@@ -4672,25 +4672,16 @@ export type Database = {
         }[]
       }
       rpc_get_messages: {
-        Args: {
-          before_cursor?: string
-          chat_id_param: string
-          limit_n?: number
-        }
+        Args: { before?: string; chat: string; limit_n?: number }
         Returns: {
-          attachment_name: string
-          attachment_size: number
           attachment_url: string
+          body: string
           chat_id: string
-          content: string
           created_at: string
           edited_at: string
           id: string
-          is_deleted: boolean
-          is_edited: boolean
           message_type: string
           reactions: Json
-          reply_to_id: string
           sender_email: string
           sender_id: string
           sender_name: string
@@ -4699,24 +4690,16 @@ export type Database = {
       rpc_list_chats: {
         Args: { limit_n?: number; offset_n?: number }
         Returns: {
-          chat_type: string
-          created_at: string
-          created_by: string
-          id: string
-          is_archived: boolean
-          is_pinned: boolean
-          last_message_at: string
-          last_message_content: string
-          last_message_sender: string
-          name: string
-          participant_count: number
-          team_id: string
+          chat_id: string
+          chat_is_group: boolean
+          chat_title: string
+          last_msg: string
+          last_msg_at: string
           unread_count: number
-          updated_at: string
         }[]
       }
       rpc_mark_read: {
-        Args: { chat_id_param: string }
+        Args: { chat: string }
         Returns: undefined
       }
       rpc_send_message: {
