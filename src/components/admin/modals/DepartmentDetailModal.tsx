@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,6 +93,9 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogDescription className="sr-only">
+          Department details and management for {department.name}
+        </DialogDescription>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-3">
@@ -251,12 +254,34 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Department analytics and performance metrics will be displayed here</p>
-                  <Button className="mt-4" variant="outline">
-                    View Detailed Analytics
-                  </Button>
+                <div className="space-y-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Analytics for {department.name}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        // Open detailed analytics
+                        alert(`Opening detailed analytics for ${department.name}`);
+                      }}
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      View Detailed Analytics
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        // Export department data
+                        alert(`Exporting data for ${department.name}`);
+                      }}
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Export Data
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

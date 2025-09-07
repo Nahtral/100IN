@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -174,6 +174,9 @@ export const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogDescription className="sr-only">
+          Detailed analytics for {metricTitle}
+        </DialogDescription>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-3">
@@ -299,12 +302,32 @@ export const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Trend analysis and historical data will be displayed here</p>
-                  <Button className="mt-4" variant="outline">
-                    View Detailed Trends
-                  </Button>
+                <div className="space-y-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Trend analysis for {metricTitle}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        alert(`Opening detailed trends for ${metricTitle}`);
+                      }}
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      View Detailed Trends
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        alert(`Generating trend report for ${metricTitle}`);
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Generate Report
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

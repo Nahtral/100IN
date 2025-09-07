@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +13,8 @@ import {
   MapPin, 
   Clock,
   Edit,
-  Users
+  Users,
+  UserPlus
 } from 'lucide-react';
 
 interface StaffMember {
@@ -66,6 +67,9 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogDescription className="sr-only">
+          Staff member details and information for {staff.first_name} {staff.last_name}
+        </DialogDescription>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-3">
@@ -184,12 +188,34 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Schedule details will be loaded here</p>
-                  <Button className="mt-4" variant="outline">
-                    View Full Schedule
-                  </Button>
+                <div className="space-y-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Schedule management for {staff.first_name} {staff.last_name}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      className="w-full" 
+                      onClick={() => {
+                        // Navigate to schedule management for this staff member
+                        window.open(`/schedule?staff=${staff.id}`, '_blank');
+                      }}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      View Full Schedule
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        // Open schedule assignment modal (placeholder for now)
+                        alert(`Opening schedule assignment for ${staff.first_name} ${staff.last_name}`);
+                      }}
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Assign Shift
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -200,16 +226,38 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Phone className="h-5 w-5" />
-                  Emergency Contact
+                  Emergency Contact Information
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Emergency contact information will be displayed here</p>
-                  <Button className="mt-4" variant="outline">
-                    Add Emergency Contact
-                  </Button>
+                <div className="space-y-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Emergency contact management for {staff.first_name} {staff.last_name}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        // Open emergency contact form
+                        alert(`Opening emergency contact form for ${staff.first_name} ${staff.last_name}`);
+                      }}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Emergency Contact
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        // View existing emergency contacts
+                        alert(`Viewing emergency contacts for ${staff.first_name} ${staff.last_name}`);
+                      }}
+                    >
+                      <Phone className="h-4 w-4 mr-2" />
+                      View Contacts
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
