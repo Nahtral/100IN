@@ -10,6 +10,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { StaffDetailModal } from './modals/StaffDetailModal';
 import { StaffEditModal } from './modals/StaffEditModal';
 import { CreateStaffModal } from './modals/CreateStaffModal';
+import { DepartmentDetailModal } from './modals/DepartmentDetailModal';
+import { DepartmentEditModal } from './modals/DepartmentEditModal';
+import { CreateDepartmentModal } from './modals/CreateDepartmentModal';
+import { AnalyticsDetailModal } from './modals/AnalyticsDetailModal';
 import { 
   UserPlus, 
   Users, 
@@ -37,6 +41,9 @@ interface StaffMember {
   position: string;
   employment_status: string;
   hire_date: string;
+  payment_type: string;
+  hourly_rate?: number;
+  salary?: number;
   has_compensation_access: boolean;
 }
 
@@ -63,6 +70,20 @@ export const StaffManagement = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Department modals
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [showDepartmentDetailModal, setShowDepartmentDetailModal] = useState(false);
+  const [showDepartmentEditModal, setShowDepartmentEditModal] = useState(false);
+  const [showCreateDepartmentModal, setShowCreateDepartmentModal] = useState(false);
+  
+  // Analytics modals
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [analyticsMetric, setAnalyticsMetric] = useState<{
+    type: 'total_staff' | 'departments' | 'active_staff' | 'avg_per_dept';
+    title: string;
+    value: number | string;
+  } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -110,6 +131,7 @@ export const StaffManagement = () => {
       
       const staffWithAccess = data?.map(staff => ({
         ...staff,
+        payment_type: staff.payment_type || 'hourly',
         has_compensation_access: true // Super admin has access to compensation data
       })) || [];
       
@@ -209,6 +231,29 @@ export const StaffManagement = () => {
 
   const handleCreateSuccess = () => {
     fetchData();
+  };
+
+  // Department handlers
+  const handleDepartmentClick = (department: Department) => {
+    setSelectedDepartment(department);
+    setShowDepartmentDetailModal(true);
+  };
+
+  const handleDepartmentEdit = (department: Department) => {
+    setSelectedDepartment(department);
+    setShowDepartmentEditModal(true);
+  };
+
+  const handleDepartmentUpdate = (updatedDepartment: Department) => {
+    setDepartments(prev => prev.map(dept => 
+      dept.id === updatedDepartment.id ? updatedDepartment : dept
+    ));
+  };
+
+  // Analytics handlers
+  const handleAnalyticsClick = (type: 'total_staff' | 'departments' | 'active_staff' | 'avg_per_dept', title: string, value: number | string) => {
+    setAnalyticsMetric({ type, title, value });
+    setShowAnalyticsModal(true);
   };
 
   const navigateToHRSection = (section: string) => {
@@ -425,12 +470,7 @@ export const StaffManagement = () => {
                   <Building className="h-5 w-5 text-green-600" />
                   Department Management
                 </CardTitle>
-                <Button onClick={() => {
-                  toast({
-                    title: "Add Department",
-                    description: "Department creation modal would open here",
-                  });
-                }}>
+                <Button onClick={() => setShowCreateDepartmentModal(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Department
                 </Button>
@@ -442,12 +482,7 @@ export const StaffManagement = () => {
                   <div 
                     key={dept.id} 
                     className="p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => {
-                      toast({
-                        title: "Department Details",
-                        description: `Viewing details for ${dept.name}`,
-                      });
-                    }}
+                    onClick={() => handleDepartmentClick(dept)}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -471,10 +506,7 @@ export const StaffManagement = () => {
                         size="sm" 
                         onClick={(e) => {
                           e.stopPropagation();
-                          toast({
-                            title: "Department Details",
-                            description: `Viewing details for ${dept.name}`,
-                          });
+                          handleDepartmentClick(dept);
                         }}
                       >
                         <Eye className="h-4 w-4 mr-1" />
@@ -485,10 +517,7 @@ export const StaffManagement = () => {
                         size="sm" 
                         onClick={(e) => {
                           e.stopPropagation();
-                          toast({
-                            title: "Edit Department",
-                            description: `Editing ${dept.name}`,
-                          });
+                          handleDepartmentEdit(dept);
                         }}
                       >
                         <Edit className="h-4 w-4 mr-1" />
@@ -612,7 +641,10 @@ export const StaffManagement = () => {
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('total_staff', 'Total Staff', staffMembers.length)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Total Staff</CardTitle>
               </CardHeader>
@@ -622,7 +654,10 @@ export const StaffManagement = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('departments', 'Departments', departments.length)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Departments</CardTitle>
               </CardHeader>
@@ -632,7 +667,10 @@ export const StaffManagement = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('active_staff', 'Active Staff', staffMembers.filter(s => s.employment_status === 'active').length)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Active Staff</CardTitle>
               </CardHeader>
@@ -644,7 +682,10 @@ export const StaffManagement = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('avg_per_dept', 'Average per Department', departments.length > 0 ? Math.round(staffMembers.length / departments.length) : 0)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Avg per Dept</CardTitle>
               </CardHeader>
@@ -686,6 +727,73 @@ export const StaffManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Staff Modals */}
+      {selectedStaff && (
+        <StaffDetailModal
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          staff={selectedStaff}
+          onEdit={() => {
+            setShowDetailModal(false);
+            setShowEditModal(true);
+          }}
+        />
+      )}
+
+      {selectedStaff && (
+        <StaffEditModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          staff={selectedStaff}
+          onSave={handleStaffUpdate}
+        />
+      )}
+
+      <CreateStaffModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {/* Department Modals */}
+      {selectedDepartment && (
+        <DepartmentDetailModal
+          isOpen={showDepartmentDetailModal}
+          onClose={() => setShowDepartmentDetailModal(false)}
+          department={selectedDepartment}
+          onEdit={() => {
+            setShowDepartmentDetailModal(false);
+            setShowDepartmentEditModal(true);
+          }}
+        />
+      )}
+
+      {selectedDepartment && (
+        <DepartmentEditModal
+          isOpen={showDepartmentEditModal}
+          onClose={() => setShowDepartmentEditModal(false)}
+          department={selectedDepartment}
+          onSave={handleDepartmentUpdate}
+        />
+      )}
+
+      <CreateDepartmentModal
+        isOpen={showCreateDepartmentModal}
+        onClose={() => setShowCreateDepartmentModal(false)}
+        onSuccess={fetchData}
+      />
+
+      {/* Analytics Modal */}
+      {analyticsMetric && (
+        <AnalyticsDetailModal
+          isOpen={showAnalyticsModal}
+          onClose={() => setShowAnalyticsModal(false)}
+          metricType={analyticsMetric.type}
+          metricTitle={analyticsMetric.title}
+          metricValue={analyticsMetric.value}
+        />
+      )}
     </div>
   );
 };
