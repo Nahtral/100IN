@@ -62,7 +62,7 @@ const Players = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isSuperAdmin } = useOptimizedAuth();
+  const { isSuperAdmin, primaryRole } = useOptimizedAuth();
   const { currentUser } = useCurrentUser();
   const { settings: teamGridSettings } = useTeamGridSettings();
 
@@ -87,8 +87,7 @@ const Players = () => {
       const sortColumn = validSortColumns.includes(requestedSortColumn) ? requestedSortColumn : 'created_at';
       const sortDirection = teamGridSettings?.sort_direction === 'desc' ? false : true;
       
-      // First fetch all players with their profiles (only approved users)
-      const { data: playersData, error: playersError } = await supabase
+      let query = supabase
         .from('players')
         .select(`
           *,
@@ -100,7 +99,14 @@ const Players = () => {
             approval_status
           )
         `)
-        .eq('profiles.approval_status', 'approved')
+        .eq('profiles.approval_status', 'approved');
+
+      // Role-based filtering - players only see themselves
+      if (primaryRole === 'player' && !isSuperAdmin()) {
+        query = query.eq('user_id', user?.id);
+      }
+
+      const { data: playersData, error: playersError } = await query
         .order(sortColumn, { ascending: sortDirection });
 
       console.log('Players query result:', { data: playersData, error: playersError });
@@ -229,7 +235,7 @@ const Players = () => {
             <p className="mobile-text text-muted-foreground">Manage your team roster</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <TeamGridSettingsButton />
+            {(isSuperAdmin() || primaryRole === 'staff' || primaryRole === 'coach') && <TeamGridSettingsButton />}
             {isSuperAdmin() && (
               <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
