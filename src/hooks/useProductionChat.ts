@@ -232,10 +232,9 @@ export const useProductionChat = (): UseProductionChatReturn => {
       const { data: chatId, error } = await withRetry(
         async () => {
           const result = await supabase.rpc('rpc_create_chat', {
-            chat_name: data.name,
-            chat_type_param: data.type,
-            participant_ids: data.participants,
-            team_id_param: data.team_id || null
+            p_title: data.type === 'group' ? data.name : null,
+            p_is_group: data.type === 'group',
+            p_participants: data.participants
           });
           return result;
         },
@@ -249,7 +248,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
         description: "Chat created successfully"
       });
 
-      await refreshChats();
+      await loadChats(false);
       return chatId;
       
     } catch (err) {
