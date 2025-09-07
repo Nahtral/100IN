@@ -772,6 +772,48 @@ export type Database = {
           },
         ]
       }
+      employee_emergency_contacts: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          employee_id: string
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string
+          relationship: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          employee_id: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone: string
+          relationship: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          employee_id?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string
+          relationship?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_leave_requests: {
         Row: {
           approved_at: string | null

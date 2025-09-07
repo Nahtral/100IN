@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmergencyContactsManager } from './EmergencyContactsManager';
+import { ScheduleManager } from './ScheduleManager';
 import { 
   User, 
   Mail, 
@@ -47,6 +49,8 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
   onEdit
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showEmergencyContacts, setShowEmergencyContacts] = useState(false);
+  const [showScheduleManager, setShowScheduleManager] = useState(false);
 
   const formatCurrency = (amount?: number) => {
     if (!amount) return 'Not set';
@@ -196,10 +200,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button 
                       className="w-full" 
-                      onClick={() => {
-                        // Navigate to schedule management for this staff member
-                        window.open(`/schedule?staff=${staff.id}`, '_blank');
-                      }}
+                      onClick={() => setShowScheduleManager(true)}
                     >
                       <Calendar className="h-4 w-4 mr-2" />
                       View Full Schedule
@@ -208,8 +209,8 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                       variant="outline" 
                       className="w-full"
                       onClick={() => {
-                        // Open schedule assignment modal (placeholder for now)
-                        alert(`Opening schedule assignment for ${staff.first_name} ${staff.last_name}`);
+                        // Navigate to schedule page with staff filter
+                        window.open(`/schedule?staff=${staff.id}`, '_blank');
                       }}
                     >
                       <Clock className="h-4 w-4 mr-2" />
@@ -238,10 +239,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button 
                       className="w-full"
-                      onClick={() => {
-                        // Open emergency contact form
-                        alert(`Opening emergency contact form for ${staff.first_name} ${staff.last_name}`);
-                      }}
+                      onClick={() => setShowEmergencyContacts(true)}
                     >
                       <UserPlus className="h-4 w-4 mr-2" />
                       Add Emergency Contact
@@ -249,10 +247,7 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
                     <Button 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => {
-                        // View existing emergency contacts
-                        alert(`Viewing emergency contacts for ${staff.first_name} ${staff.last_name}`);
-                      }}
+                      onClick={() => setShowEmergencyContacts(true)}
                     >
                       <Phone className="h-4 w-4 mr-2" />
                       View Contacts
@@ -264,6 +259,20 @@ export const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
           </TabsContent>
         </Tabs>
       </DialogContent>
+      
+      <EmergencyContactsManager
+        isOpen={showEmergencyContacts}
+        onClose={() => setShowEmergencyContacts(false)}
+        employeeId={staff.id}
+        employeeName={`${staff.first_name} ${staff.last_name}`}
+      />
+      
+      <ScheduleManager
+        isOpen={showScheduleManager}
+        onClose={() => setShowScheduleManager(false)}
+        employeeId={staff.id}
+        employeeName={`${staff.first_name} ${staff.last_name}`}
+      />
     </Dialog>
   );
 };

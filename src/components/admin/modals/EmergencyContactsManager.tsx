@@ -56,15 +56,27 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
   const fetchContacts = async () => {
     setLoading(true);
     try {
+      // Using employees table for now - get emergency contact fields
       const { data, error } = await supabase
-        .from('employee_emergency_contacts')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .order('is_primary', { ascending: false })
-        .order('created_at', { ascending: true });
+        .from('employees')
+        .select('id, emergency_contact_name, emergency_contact_phone')
+        .eq('id', employeeId)
+        .single();
 
       if (error) throw error;
-      setContacts(data || []);
+      
+      // Transform to match our interface
+      const contactsData = data?.emergency_contact_name ? [{
+        id: data.id,
+        employee_id: employeeId,
+        name: data.emergency_contact_name,
+        relationship: 'Emergency Contact',
+        phone: data.emergency_contact_phone || '',
+        is_primary: true,
+        created_at: new Date().toISOString()
+      }] : [];
+      
+      setContacts(contactsData);
     } catch (error) {
       console.error('Error fetching emergency contacts:', error);
       toast({
@@ -83,10 +95,14 @@ export const EmergencyContactsManager: React.FC<EmergencyContactsManagerProps> =
     }
 
     try {
+      // For now, just clear the emergency contact from employees table
       const { error } = await supabase
-        .from('employee_emergency_contacts')
-        .delete()
-        .eq('id', contactId);
+        .from('employees')
+        .update({
+          emergency_contact_name: null,
+          emergency_contact_phone: null
+        })
+        .eq('id', employeeId);
 
       if (error) throw error;
 

@@ -70,11 +70,14 @@ export const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
       };
 
       if (contact?.id) {
-        // Update existing contact
+        // Update existing contact - using employees table for now
         const { error } = await supabase
-          .from('employee_emergency_contacts')
-          .update(contactData)
-          .eq('id', contact.id);
+          .from('employees')
+          .update({
+            emergency_contact_name: formData.name,
+            emergency_contact_phone: formData.phone
+          })
+          .eq('id', employeeId);
 
         if (error) throw error;
 
@@ -83,10 +86,14 @@ export const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
           description: "Emergency contact updated successfully"
         });
       } else {
-        // Create new contact
+        // Create/update emergency contact - using employees table for now
         const { error } = await supabase
-          .from('employee_emergency_contacts')
-          .insert(contactData);
+          .from('employees')
+          .update({
+            emergency_contact_name: formData.name,
+            emergency_contact_phone: formData.phone
+          })
+          .eq('id', employeeId);
 
         if (error) throw error;
 
