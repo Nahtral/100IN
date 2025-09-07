@@ -130,6 +130,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
         last_message_at: chat.last_msg_at,
         created_at: '',
         updated_at: '',
+        status: 'active',
         last_message_content: chat.last_msg,
         last_message_sender: '',
         unread_count: Number(chat.unread_count),
@@ -188,6 +189,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
         sender_name: msg.sender_name,
         sender_email: msg.sender_email,
         reactions: Array.isArray(msg.reactions) ? msg.reactions : [],
+        status: 'visible',
         delivery_status: 'delivered'
       })).reverse(); // Messages come in DESC order, reverse for chronological
       
@@ -279,6 +281,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
       sender_name: user.email || 'You',
       sender_email: user.email || '',
       reactions: [],
+      status: 'visible',
       delivery_status: 'sending',
       _optimistic: true,
       _pending: true
@@ -438,6 +441,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
               sender_name: 'User', // Will be updated by next refresh
               sender_email: '',
               reactions: [],
+              status: 'visible',
               delivery_status: 'delivered'
             }]);
             

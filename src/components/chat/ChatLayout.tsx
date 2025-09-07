@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { ProductionChatSidebar } from './ProductionChatSidebar';
-import { ProductionChatWindow } from './ProductionChatWindow';
+import { EnhancedProductionChatWindow } from './EnhancedProductionChatWindow';
 import { CreateChatModal } from './CreateChatModal';
 import { useProductionChat } from '@/hooks/useProductionChat';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -66,7 +66,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
       {/* Chat Window */}
       {showChatWindow && (
         <div className="flex-1 flex flex-col min-w-0">
-          <ProductionChatWindow
+          <EnhancedProductionChatWindow
             chat={selectedChat}
             messages={messages}
             loading={messagesLoading}

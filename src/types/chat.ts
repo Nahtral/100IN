@@ -20,6 +20,7 @@ export interface Chat {
   last_message_at: string;
   created_at: string;
   updated_at: string;
+  status: 'active' | 'archived' | 'deleted';
   last_message_content?: string;
   last_message_sender?: string;
   unread_count: number;
@@ -44,6 +45,8 @@ export interface ChatMessage {
   sender_name: string;
   sender_email: string;
   reactions: MessageReaction[];
+  status: 'visible' | 'recalled' | 'deleted_sender';
+  language_code?: string;
   // UI states for optimistic updates
   _optimistic?: boolean;
   _pending?: boolean;
