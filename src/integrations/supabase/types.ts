@@ -4631,6 +4631,15 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_create_chat: {
+        Args: {
+          chat_name: string
+          chat_type_param: string
+          participant_ids: string[]
+          team_id_param?: string
+        }
+        Returns: string
+      }
       rpc_duplicate_event: {
         Args: {
           copy_teams?: boolean
@@ -4639,6 +4648,17 @@ export type Database = {
           shift_days?: number
         }
         Returns: string
+      }
+      rpc_get_chat_participants: {
+        Args: { chat_id_param: string }
+        Returns: {
+          id: string
+          joined_at: string
+          role: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
       }
       rpc_get_employees: {
         Args: { lim?: number; off?: number; q?: string }
@@ -4650,6 +4670,66 @@ export type Database = {
           role: string
           role_display: string
         }[]
+      }
+      rpc_get_messages: {
+        Args: {
+          before_cursor?: string
+          chat_id_param: string
+          limit_n?: number
+        }
+        Returns: {
+          attachment_name: string
+          attachment_size: number
+          attachment_url: string
+          chat_id: string
+          content: string
+          created_at: string
+          edited_at: string
+          id: string
+          is_deleted: boolean
+          is_edited: boolean
+          message_type: string
+          reactions: Json
+          reply_to_id: string
+          sender_email: string
+          sender_id: string
+          sender_name: string
+        }[]
+      }
+      rpc_list_chats: {
+        Args: { limit_n?: number; offset_n?: number }
+        Returns: {
+          chat_type: string
+          created_at: string
+          created_by: string
+          id: string
+          is_archived: boolean
+          is_pinned: boolean
+          last_message_at: string
+          last_message_content: string
+          last_message_sender: string
+          name: string
+          participant_count: number
+          team_id: string
+          unread_count: number
+          updated_at: string
+        }[]
+      }
+      rpc_mark_read: {
+        Args: { chat_id_param: string }
+        Returns: undefined
+      }
+      rpc_send_message: {
+        Args: {
+          attachment_name_param?: string
+          attachment_size_param?: number
+          attachment_url_param?: string
+          chat_id_param: string
+          content_param: string
+          message_type_param?: string
+          reply_to_id_param?: string
+        }
+        Returns: string
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }
