@@ -137,89 +137,52 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
     try {
       setProcessing(true);
       
-      let successCount = 0;
-      let errorCount = 0;
-      const errors: string[] = [];
+      console.log(`Starting conversion of ${selectedUsers.length} users...`);
+      
+      // Use the new bulk conversion function for atomic, transaction-safe operations
+      const { data, error } = await supabase.rpc('bulk_convert_users_to_players', {
+        user_ids: selectedUsers
+      });
 
-      for (const userId of selectedUsers) {
-        const user = users.find(u => u.id === userId);
-        if (!user) {
-          errorCount++;
-          errors.push(`User not found: ${userId}`);
-          continue;
-        }
-
-        try {
-          let roleAssigned = false;
-          let playerRecordCreated = false;
-
-          // Assign player role if not already assigned
-          if (!user.roles.includes('player')) {
-            const { error: roleError } = await supabase.rpc('assign_user_role', {
-              target_user_id: userId,
-              target_role: 'player'
-            });
-
-            if (roleError) {
-              throw new Error(`Failed to assign player role: ${roleError.message}`);
-            }
-            roleAssigned = true;
-          }
-
-          // Create player record if it doesn't exist
-          if (!user.has_player_record) {
-            const { error: playerError } = await supabase
-              .from('players')
-              .insert({
-                user_id: userId,
-                is_active: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              });
-
-            if (playerError) {
-              throw new Error(`Failed to create player record: ${playerError.message}`);
-            }
-            playerRecordCreated = true;
-          }
-
-          // If we got here, the user was successfully processed
-          if (roleAssigned || playerRecordCreated) {
-            successCount++;
-            console.log(`Successfully converted ${user.email} to player`);
-          }
-
-        } catch (userError: any) {
-          errorCount++;
-          const errorMsg = `${user.email}: ${userError.message}`;
-          errors.push(errorMsg);
-          console.error(`Error converting ${user.email}:`, userError);
-        }
+      if (error) {
+        console.error('Bulk conversion RPC error:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
 
-      // Show detailed results
-      if (successCount > 0 && errorCount === 0) {
+      if (!data) {
+        throw new Error('No response from bulk conversion function');
+      }
+
+      console.log('Bulk conversion result:', data);
+
+      const result = data as any;
+      const { success_count, error_count, errors, message } = result;
+
+      // Show appropriate results based on conversion outcome
+      if (success_count > 0 && error_count === 0) {
         toast({
           title: "Complete Success",
-          description: `Successfully converted ${successCount} user${successCount !== 1 ? 's' : ''} to players.`,
+          description: `Successfully converted ${success_count} user${success_count !== 1 ? 's' : ''} to players.`,
         });
-      } else if (successCount > 0 && errorCount > 0) {
+      } else if (success_count > 0 && error_count > 0) {
+        console.warn('Conversion errors:', errors);
         toast({
           title: "Partial Success",
-          description: `Converted ${successCount} users successfully, ${errorCount} failed. Check console for details.`,
+          description: `${success_count} users converted, ${error_count} failed. Check console for details.`,
           variant: "destructive",
         });
-      } else if (errorCount > 0) {
+      } else if (error_count > 0) {
+        console.error('All conversions failed:', errors);
         toast({
           title: "Conversion Failed",
-          description: `Failed to convert ${errorCount} user${errorCount !== 1 ? 's' : ''}. Check console for details.`,
+          description: `All ${error_count} conversion${error_count !== 1 ? 's' : ''} failed. Details: ${message}`,
           variant: "destructive",
         });
-      }
-
-      // Log detailed errors for debugging
-      if (errors.length > 0) {
-        console.error('Conversion errors:', errors);
+      } else {
+        toast({
+          title: "No Changes",
+          description: "No users required conversion.",
+        });
       }
 
       // Reset selections and refetch data
@@ -232,10 +195,10 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
       }
 
     } catch (error: any) {
-      console.error('Error converting users to players:', error);
+      console.error('System error during bulk conversion:', error);
       toast({
         title: "System Error",
-        description: `System error during conversion: ${error.message}`,
+        description: `Critical system error: ${error.message}. Please contact support if this persists.`,
         variant: "destructive",
       });
     } finally {
