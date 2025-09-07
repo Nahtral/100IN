@@ -14,6 +14,7 @@ import { DepartmentDetailModal } from './modals/DepartmentDetailModal';
 import { DepartmentEditModal } from './modals/DepartmentEditModal';
 import { CreateDepartmentModal } from './modals/CreateDepartmentModal';
 import { AnalyticsDetailModal } from './modals/AnalyticsDetailModal';
+import { HRFunctionsDashboard } from '@/components/hr/HRFunctionsDashboard';
 import { 
   UserPlus, 
   Users, 
@@ -533,109 +534,17 @@ export const StaffManagement = () => {
 
         {/* HR Functions Tab */}
         <TabsContent value="hr" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4" />
-                  Time & Attendance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage employee time tracking and attendance
-                </p>
-                <Button className="w-full" size="sm">
-                  Open Time Tracking
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4" />
-                  Leave Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Handle time off requests and leave policies
-                </p>
-                <Button className="w-full" size="sm">
-                  Manage Leave
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4" />
-                  Payroll
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Process payroll and manage compensation
-                </p>
-                <Button className="w-full" size="sm">
-                  Payroll Dashboard
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <BriefcaseMedical className="h-4 w-4" />
-                  Benefits
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage employee benefits and enrollment
-                </p>
-                <Button className="w-full" size="sm">
-                  Benefits Admin
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Shield className="h-4 w-4" />
-                  Permissions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage staff roles and access control
-                </p>
-                <Button className="w-full" size="sm">
-                  Staff Permissions
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <UserPlus className="h-4 w-4" />
-                  Onboarding
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  New employee onboarding tasks
-                </p>
-                <Button className="w-full" size="sm">
-                  Onboarding Tasks
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          <HRFunctionsDashboard 
+            staffMembers={staffMembers}
+            onNavigate={navigate}
+            onError={(error) => {
+              toast({
+                title: "Error",
+                description: `${error.code || 'UNKNOWN_ERROR'}: ${error.message}`,
+                variant: "destructive",
+              });
+            }}
+          />
         </TabsContent>
 
         {/* Analytics Tab */}
