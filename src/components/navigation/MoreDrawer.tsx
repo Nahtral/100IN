@@ -99,7 +99,7 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
       href: '/shotiq',
       icon: Target,
       description: 'Shot analysis tool',
-      showForAll: true
+      showCondition: () => actualIsSuperAdmin
     },
     {
       title: 'User Management',

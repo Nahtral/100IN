@@ -64,7 +64,7 @@ export function AppSidebar() {
       title: 'Players',
       href: '/players',
       icon: Users,
-      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
+      showForAll: true,
     },
     {
       title: 'Teams',
@@ -76,7 +76,7 @@ export function AppSidebar() {
       title: 'Schedule',
       href: '/schedule',
       icon: Calendar,
-      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
+      showForAll: true,
     },
     {
       title: 'Analytics',
@@ -94,7 +94,7 @@ export function AppSidebar() {
       title: 'Health & Wellness',
       href: '/health-wellness',
       icon: Heart,
-      showCondition: () => actualIsSuperAdmin || actualHasRole('medical') || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
+      showForAll: true,
     },
     {
       title: 'Partners',
@@ -106,13 +106,19 @@ export function AppSidebar() {
       title: 'Chat',
       href: '/chat',
       icon: MessageCircle,
-      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach') || actualHasRole('player'),
+      showForAll: true,
     },
     {
       title: 'Security',
       href: '/security',
       icon: Shield,
       showCondition: () => actualIsSuperAdmin,
+    },
+    {
+      title: 'News',
+      href: '/news',
+      icon: Newspaper,
+      showForAll: true,
     },
     {
       title: 'Settings',
