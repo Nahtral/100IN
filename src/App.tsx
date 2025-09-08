@@ -22,6 +22,7 @@ const Schedule = React.lazy(() => import("./pages/Schedule"));
 const Analytics = React.lazy(() => import("./pages/Analytics"));
 const Medical = React.lazy(() => import("./pages/Medical"));
 const Partners = React.lazy(() => import("./pages/Partners"));
+const PartnershipManagement = React.lazy(() => import("./pages/PartnershipManagement"));
 const Settings = React.lazy(() => import("./pages/Settings"));
 const Chat = React.lazy(() => import("./pages/Chat"));
 const TeamGrid = React.lazy(() => import("./pages/TeamGrid"));

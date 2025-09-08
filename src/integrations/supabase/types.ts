@@ -2162,6 +2162,112 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_contacts: {
+        Row: {
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          contact_title: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          partner_organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          contact_title?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          partner_organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          contact_title?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          partner_organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_contacts_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_notes: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          note_body: string
+          partner_organization_id: string | null
+          sponsorship_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          note_body: string
+          partner_organization_id?: string | null
+          sponsorship_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          note_body?: string
+          partner_organization_id?: string | null
+          sponsorship_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_notes_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_notes_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_notes_sponsorship_id_fkey"
+            columns: ["sponsorship_id"]
+            isOneToOne: false
+            referencedRelation: "partner_team_sponsorships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_organizations: {
         Row: {
           contact_email: string | null
@@ -2259,6 +2365,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_team_sponsorships_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "partner_team_sponsorships_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -2298,6 +2411,13 @@ export type Database = {
             columns: ["partner_organization_id"]
             isOneToOne: false
             referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_user_relationships_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -4506,6 +4626,29 @@ export type Database = {
         }
         Relationships: []
       }
+      v_partner_summary: {
+        Row: {
+          active_sponsorships: number | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string | null
+          description: string | null
+          earliest_partnership: string | null
+          id: string | null
+          latest_partnership: string | null
+          name: string | null
+          partnership_type: string | null
+          partnership_value: number | null
+          status: string | null
+          total_sponsorship_value: number | null
+          total_sponsorships: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_user_permission: {
@@ -4812,6 +4955,15 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_add_partner_note: {
+        Args: {
+          is_internal?: boolean
+          note_body?: string
+          partner_id?: string
+          sponsorship_id?: string
+        }
+        Returns: string
+      }
       rpc_create_chat: {
         Args:
           | {
@@ -4916,9 +5068,42 @@ export type Database = {
           unread_count: number
         }[]
       }
+      rpc_list_partners: {
+        Args: {
+          limit_n?: number
+          offset_n?: number
+          q?: string
+          status_filter?: string
+        }
+        Returns: {
+          active_sponsorships: number
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          contract_end_date: string
+          contract_start_date: string
+          created_at: string
+          description: string
+          earliest_partnership: string
+          id: string
+          latest_partnership: string
+          name: string
+          partnership_type: string
+          partnership_value: number
+          status: string
+          total_count: number
+          total_sponsorship_value: number
+          total_sponsorships: number
+          updated_at: string
+        }[]
+      }
       rpc_mark_read: {
         Args: { chat: string }
         Returns: undefined
+      }
+      rpc_partner_analytics: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       rpc_send_message: {
         Args: {
@@ -4939,6 +5124,35 @@ export type Database = {
       rpc_update_chat_meta: {
         Args: { p_chat_id: string; p_new_status?: string; p_new_title?: string }
         Returns: undefined
+      }
+      rpc_upsert_partner: {
+        Args: {
+          contact_email?: string
+          contact_person?: string
+          contact_phone?: string
+          contract_end_date?: string
+          contract_start_date?: string
+          description?: string
+          partner_id?: string
+          partner_name?: string
+          partnership_status?: string
+          partnership_type?: string
+          partnership_value?: number
+        }
+        Returns: string
+      }
+      rpc_upsert_sponsorship: {
+        Args: {
+          end_date?: string
+          partner_org_id?: string
+          sponsorship_amount?: number
+          sponsorship_id?: string
+          sponsorship_status?: string
+          sponsorship_type?: string
+          start_date?: string
+          team_id?: string
+        }
+        Returns: string
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }
