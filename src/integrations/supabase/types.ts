@@ -1765,15 +1765,7 @@ export type Database = {
           player_membership_id?: string
           reason?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "membership_adjustments_player_membership_id_fkey"
-            columns: ["player_membership_id"]
-            isOneToOne: false
-            referencedRelation: "player_memberships"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       membership_alerts_sent: {
         Row: {
@@ -1794,51 +1786,88 @@ export type Database = {
           player_membership_id?: string
           sent_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "membership_alerts_sent_player_membership_id_fkey"
-            columns: ["player_membership_id"]
-            isOneToOne: false
-            referencedRelation: "player_memberships"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       membership_types: {
         Row: {
           allocated_classes: number | null
           allocation_type: string
-          created_at: string | null
-          end_date_required: boolean | null
+          created_at: string
+          end_date_required: boolean
           id: string
-          is_active: boolean | null
+          is_active: boolean
           name: string
-          start_date_required: boolean | null
-          updated_at: string | null
+          start_date_required: boolean
+          updated_at: string
         }
         Insert: {
           allocated_classes?: number | null
           allocation_type: string
-          created_at?: string | null
-          end_date_required?: boolean | null
+          created_at?: string
+          end_date_required?: boolean
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name: string
-          start_date_required?: boolean | null
-          updated_at?: string | null
+          start_date_required?: boolean
+          updated_at?: string
         }
         Update: {
           allocated_classes?: number | null
           allocation_type?: string
-          created_at?: string | null
-          end_date_required?: boolean | null
+          created_at?: string
+          end_date_required?: boolean
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name?: string
-          start_date_required?: boolean | null
-          updated_at?: string | null
+          start_date_required?: boolean
+          updated_at?: string
         }
         Relationships: []
+      }
+      membership_usage: {
+        Row: {
+          classes_used: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          player_membership_id: string
+          usage_date: string
+        }
+        Insert: {
+          classes_used?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          player_membership_id: string
+          usage_date?: string
+        }
+        Update: {
+          classes_used?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          player_membership_id?: string
+          usage_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_usage_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "player_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_usage_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_membership_usage_secure"
+            referencedColumns: ["membership_id"]
+          },
+        ]
       }
       message_reactions: {
         Row: {
@@ -2902,45 +2931,45 @@ export type Database = {
       player_memberships: {
         Row: {
           allocated_classes_override: number | null
-          auto_deactivate_when_used_up: boolean | null
-          created_at: string | null
+          auto_deactivate_when_used_up: boolean
+          created_at: string
           end_date: string | null
           id: string
-          manual_override_active: boolean | null
+          manual_override_active: boolean
           membership_type_id: string
           notes: string | null
           player_id: string
           start_date: string
           status: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           allocated_classes_override?: number | null
-          auto_deactivate_when_used_up?: boolean | null
-          created_at?: string | null
+          auto_deactivate_when_used_up?: boolean
+          created_at?: string
           end_date?: string | null
           id?: string
-          manual_override_active?: boolean | null
+          manual_override_active?: boolean
           membership_type_id: string
           notes?: string | null
           player_id: string
-          start_date?: string
+          start_date: string
           status?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           allocated_classes_override?: number | null
-          auto_deactivate_when_used_up?: boolean | null
-          created_at?: string | null
+          auto_deactivate_when_used_up?: boolean
+          created_at?: string
           end_date?: string | null
           id?: string
-          manual_override_active?: boolean | null
+          manual_override_active?: boolean
           membership_type_id?: string
           notes?: string | null
           player_id?: string
           start_date?: string
           status?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -2948,13 +2977,6 @@ export type Database = {
             columns: ["membership_type_id"]
             isOneToOne: false
             referencedRelation: "membership_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_memberships_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
@@ -4649,6 +4671,25 @@ export type Database = {
           total_sponsorship_value: number | null
           total_sponsorships: number | null
           updated_at: string | null
+        }
+        Relationships: []
+      }
+      vw_player_membership_usage_secure: {
+        Row: {
+          allocated_classes: number | null
+          allocation_type: string | null
+          days_left: number | null
+          end_date: string | null
+          is_expired: boolean | null
+          membership_id: string | null
+          membership_type_name: string | null
+          player_id: string | null
+          player_name: string | null
+          remaining_classes: number | null
+          should_deactivate: boolean | null
+          start_date: string | null
+          status: string | null
+          used_classes: number | null
         }
         Relationships: []
       }
