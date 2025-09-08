@@ -4110,6 +4110,30 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       teamgrid_settings: {
         Row: {
           accent_color: string
@@ -4553,6 +4577,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles_simple: {
+        Row: {
+          created_at: string | null
+          is_active: boolean | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          is_active?: boolean | null
+          role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          is_active?: boolean | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_analysis_jobs: {
         Row: {
           analysis_data: Json | null
@@ -4602,51 +4650,36 @@ export type Database = {
           chat_id: string | null
           chat_type: string | null
           created_at: string | null
-          display_title: string | null
-          is_admin: boolean | null
+          display_name: string | null
           is_archived: boolean | null
           is_pinned: boolean | null
-          last_activity_at: string | null
           last_message_at: string | null
-          last_message_content: string | null
-          member_count: number | null
           original_name: string | null
           status: string | null
-          unread_count: number | null
           updated_at: string | null
         }
         Insert: {
           chat_id?: string | null
           chat_type?: string | null
           created_at?: string | null
-          display_title?: never
-          is_admin?: never
+          display_name?: never
           is_archived?: boolean | null
           is_pinned?: boolean | null
-          last_activity_at?: never
           last_message_at?: string | null
-          last_message_content?: never
-          member_count?: never
           original_name?: string | null
           status?: string | null
-          unread_count?: never
           updated_at?: string | null
         }
         Update: {
           chat_id?: string | null
           chat_type?: string | null
           created_at?: string | null
-          display_title?: never
-          is_admin?: never
+          display_name?: never
           is_archived?: boolean | null
           is_pinned?: boolean | null
-          last_activity_at?: never
           last_message_at?: string | null
-          last_message_content?: never
-          member_count?: never
           original_name?: string | null
           status?: string | null
-          unread_count?: never
           updated_at?: string | null
         }
         Relationships: []
@@ -4924,6 +4957,10 @@ export type Database = {
         Args: { target_user_id?: string }
         Returns: Json
       }
+      get_user_auth_data_simple: {
+        Args: { target_user_id?: string }
+        Returns: Json
+      }
       get_user_permissions: {
         Args: { _user_id: string }
         Returns: {
@@ -4936,15 +4973,27 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: string
       }
+      get_user_role_simple: {
+        Args: { uid?: string }
+        Returns: string
+      }
       get_user_roles_and_permissions: {
         Args: { target_user_id: string }
         Returns: Json
+      }
+      get_user_team_memberships: {
+        Args: { target_user_id?: string }
+        Returns: string[]
       }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_role_simple: {
+        Args: { r: string; uid: string }
         Returns: boolean
       }
       is_current_user_super_admin: {
@@ -4957,6 +5006,10 @@ export type Database = {
       }
       is_super_admin: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_super_admin_simple: {
+        Args: { uid?: string }
         Returns: boolean
       }
       is_user_approved: {
@@ -5030,6 +5083,10 @@ export type Database = {
             }
           | { p_is_group: boolean; p_participants: string[]; p_title: string }
         Returns: string
+      }
+      rpc_dashboard_health: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       rpc_delete_chat: {
         Args: { p_chat_id: string; p_permanent?: boolean }
@@ -5209,6 +5266,10 @@ export type Database = {
           team_id?: string
         }
         Returns: string
+      }
+      shares_team_with: {
+        Args: { team_uuid: string; uid: string }
+        Returns: boolean
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }
