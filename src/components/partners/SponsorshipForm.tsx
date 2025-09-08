@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Sponsorship } from '@/hooks/usePartnerData';
+import type { Sponsorship } from '@/hooks/usePartnerData';
 
 const sponsorshipSchema = z.object({
   partner_organization_id: z.string().min(1, 'Partner is required'),
@@ -66,8 +66,8 @@ export const SponsorshipForm: React.FC<SponsorshipFormProps> = ({
   onSave,
   loading = false,
 }) => {
-  const [partners, setPartners] = useState<any[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
+  const [partners, setPartners] = useState<Array<{id: string; name: string}>>([]);
+  const [teams, setTeams] = useState<Array<{id: string; name: string}>>([]);
 
   const form = useForm<SponsorshipFormData>({
     resolver: zodResolver(sponsorshipSchema),

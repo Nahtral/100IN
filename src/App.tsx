@@ -31,7 +31,6 @@ const Evaluations = React.lazy(() => import("./pages/Evaluations"));
 const HealthWellness = React.lazy(() => import("./pages/HealthWellness"));
 const News = React.lazy(() => import("./pages/News"));
 const NewsManager = React.lazy(() => import("./pages/NewsManager"));
-const PartnershipManagement = React.lazy(() => import("./pages/PartnershipManagement"));
 const MedicalManagement = React.lazy(() => import("./pages/MedicalManagement"));
 const ShotIQ = React.lazy(() => import("./pages/ShotIQ"));
 const Security = React.lazy(() => import("./pages/Security"));

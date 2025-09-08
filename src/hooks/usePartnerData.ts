@@ -25,16 +25,16 @@ export interface Partner {
 }
 
 export interface Sponsorship {
-  id: string;
+  id?: string;
   partner_organization_id: string;
   team_id: string;
   sponsorship_type: string;
   sponsorship_amount: number;
   start_date: string;
-  end_date: string;
+  end_date?: string;
   status: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   partner_name?: string;
   team_name?: string;
 }
