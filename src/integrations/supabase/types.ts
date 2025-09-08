@@ -4834,14 +4834,6 @@ export type Database = {
           total_enrolled: number
         }[]
       }
-      get_coach_team_ids: {
-        Args: { coach_user_id: string }
-        Returns: string[]
-      }
-      get_current_user_player_teams: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
