@@ -71,7 +71,7 @@ export const HRFunctionsDashboard: React.FC<HRFunctionsDashboardProps> = ({
       icon: Clock,
       status: 'active',
       count: metrics.activeEmployees,
-      route: '/hr/time-tracking',
+      route: '/admin/staff/hr/time',
       priority: 'high'
     },
     {
@@ -81,7 +81,7 @@ export const HRFunctionsDashboard: React.FC<HRFunctionsDashboardProps> = ({
       icon: Calendar,
       status: 'active',
       count: metrics.pendingTimeOff,
-      route: '/hr/time-off',
+      route: '/admin/staff/hr/leave',
       priority: 'high'
     },
     {
@@ -91,7 +91,7 @@ export const HRFunctionsDashboard: React.FC<HRFunctionsDashboardProps> = ({
       icon: DollarSign,
       status: 'active',
       count: metrics.upcomingPayroll,
-      route: '/hr/payroll',
+      route: '/admin/staff/hr/payroll',
       priority: 'high'
     },
     {
@@ -101,7 +101,7 @@ export const HRFunctionsDashboard: React.FC<HRFunctionsDashboardProps> = ({
       icon: BriefcaseMedical,
       status: 'active',
       count: metrics.benefitEnrollments,
-      route: '/hr/benefits',
+      route: '/admin/staff/hr/benefits',
       priority: 'medium'
     },
     {
@@ -111,7 +111,7 @@ export const HRFunctionsDashboard: React.FC<HRFunctionsDashboardProps> = ({
       icon: Shield,
       status: 'active',
       count: metrics.permissionUpdates,
-      route: '/hr/permissions',
+      route: '/admin/staff/hr/permissions',
       priority: 'medium'
     },
     {
@@ -121,7 +121,7 @@ export const HRFunctionsDashboard: React.FC<HRFunctionsDashboardProps> = ({
       icon: UserPlus,
       status: 'active',
       count: metrics.pendingOnboarding,
-      route: '/hr/onboarding',
+      route: '/admin/staff/hr/onboarding',
       priority: 'low'
     }
   ];
