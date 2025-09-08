@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Calendar, Clock, MapPin, Users, Eye, RefreshCw, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ScheduleForm from '@/components/forms/ScheduleForm';
-import AttendanceModal from '@/components/attendance/AttendanceModal';
+import NewAttendanceModal from '@/components/attendance/NewAttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import DuplicateEventModal from '@/components/schedule/DuplicateEventModal';
@@ -54,14 +54,10 @@ const Schedule = () => {
   const [userTeamIds, setUserTeamIds] = useState<string[]>([]);
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
-    eventId: string;
-    eventTitle: string;
-    teamIds: string[];
+    event: ScheduleEvent | null;
   }>({
     isOpen: false,
-    eventId: '',
-    eventTitle: '',
-    teamIds: []
+    event: null
   });
   const [eventDetailsModal, setEventDetailsModal] = useState<{
     isOpen: boolean;
@@ -222,9 +218,7 @@ const Schedule = () => {
   const openAttendanceModal = (event: ScheduleEvent) => {
     setAttendanceModal({
       isOpen: true,
-      eventId: event.id,
-      eventTitle: event.title,
-      teamIds: event.team_ids || []
+      event
     });
   };
 
@@ -586,12 +580,12 @@ const Schedule = () => {
         />
 
         {/* Attendance Modal */}
-        <AttendanceModal
+        <NewAttendanceModal
           isOpen={attendanceModal.isOpen}
-          onClose={() => setAttendanceModal(prev => ({ ...prev, isOpen: false }))}
-          eventId={attendanceModal.eventId}
-          eventTitle={attendanceModal.eventTitle}
-          teamIds={attendanceModal.teamIds}
+          onClose={() => setAttendanceModal({ isOpen: false, event: null })}
+          eventId={attendanceModal.event?.id || ''}
+          eventTitle={attendanceModal.event?.title || ''}
+          teamIds={attendanceModal.event?.team_ids || []}
         />
 
         {/* Event Details Modal */}
