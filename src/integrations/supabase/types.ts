@@ -4110,6 +4110,30 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       teamgrid_settings: {
         Row: {
           accent_color: string
@@ -4553,6 +4577,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles_simple: {
+        Row: {
+          created_at: string | null
+          is_active: boolean | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          is_active?: boolean | null
+          role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          is_active?: boolean | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_analysis_jobs: {
         Row: {
           analysis_data: Json | null
@@ -4909,6 +4957,10 @@ export type Database = {
         Args: { target_user_id?: string }
         Returns: Json
       }
+      get_user_auth_data_simple: {
+        Args: { target_user_id?: string }
+        Returns: Json
+      }
       get_user_permissions: {
         Args: { _user_id: string }
         Returns: {
@@ -4919,6 +4971,10 @@ export type Database = {
       }
       get_user_requested_role: {
         Args: { user_uuid: string }
+        Returns: string
+      }
+      get_user_role_simple: {
+        Args: { uid?: string }
         Returns: string
       }
       get_user_roles_and_permissions: {
@@ -4936,6 +4992,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role_simple: {
+        Args: { r: string; uid: string }
+        Returns: boolean
+      }
       is_current_user_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -4946,6 +5006,10 @@ export type Database = {
       }
       is_super_admin: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_super_admin_simple: {
+        Args: { uid?: string }
         Returns: boolean
       }
       is_user_approved: {
@@ -5019,6 +5083,10 @@ export type Database = {
             }
           | { p_is_group: boolean; p_participants: string[]; p_title: string }
         Returns: string
+      }
+      rpc_dashboard_health: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       rpc_delete_chat: {
         Args: { p_chat_id: string; p_permanent?: boolean }
@@ -5198,6 +5266,10 @@ export type Database = {
           team_id?: string
         }
         Returns: string
+      }
+      shares_team_with: {
+        Args: { team_uuid: string; uid: string }
+        Returns: boolean
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }

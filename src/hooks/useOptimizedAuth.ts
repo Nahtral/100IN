@@ -56,8 +56,8 @@ export const useOptimizedAuth = () => {
     }
 
     try {
-      // Single optimized database call
-      const { data, error } = await supabase.rpc('get_user_auth_data_secure', {
+      // Use new non-recursive auth data function
+      const { data, error } = await supabase.rpc('get_user_auth_data_simple', {
         target_user_id: userId
       });
 
@@ -81,8 +81,8 @@ export const useOptimizedAuth = () => {
       const parsedData = data as any;
       const authData: UserAuthData = {
         profile: parsedData.profile || null,
-        roles: parsedData.roles || [],
-        primaryRole: parsedData.primaryRole || null,
+        roles: parsedData.role ? [parsedData.role] : [],
+        primaryRole: parsedData.role || null,
         isSuperAdmin: parsedData.isSuperAdmin || false,
         isApproved: parsedData.isApproved || false,
         error: parsedData.error || null
