@@ -149,11 +149,32 @@ const BulkUserManagement: React.FC<BulkUserManagementProps> = ({ onPlayerCreated
       setProcessing(true);
       
       console.log(`Starting conversion of ${selectedUsers.length} users...`);
+      console.log('User IDs to convert:', selectedUsers);
+      
+      // First, let's check if the user is authenticated and is a super admin
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.id, user?.email);
+      
+      // Check if user has super admin role
+      const { data: roleCheck } = await supabase
+        .from('user_roles')
+        .select('role, is_active')
+        .eq('user_id', user?.id)
+        .eq('role', 'super_admin')
+        .eq('is_active', true);
+      
+      console.log('Super admin role check:', roleCheck);
+      
+      if (!roleCheck || roleCheck.length === 0) {
+        throw new Error('You must be a super admin to perform bulk conversions');
+      }
       
       // Use the new bulk conversion function for atomic, transaction-safe operations
       const { data, error } = await supabase.rpc('bulk_convert_users_to_players', {
         user_ids: selectedUsers
       });
+
+      console.log('RPC call response - data:', data, 'error:', error);
 
       if (error) {
         console.error('Bulk conversion RPC error:', error);
