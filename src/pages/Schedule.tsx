@@ -89,6 +89,11 @@ const Schedule = () => {
   const { currentUser } = useCurrentUser();
   const { primaryRole, isSuperAdmin } = useOptimizedAuth();
   const { toast } = useToast();
+  
+  // Role-based access control
+  const isPlayerRole = primaryRole === 'player' && !isSuperAdmin();
+  const canManageEvents = (isSuperAdmin() || primaryRole === 'staff') && !isPlayerRole;
+  const canManageAttendance = (isSuperAdmin() || primaryRole === 'staff' || primaryRole === 'coach') && !isPlayerRole;
 
   // Use cached events with debounced filtering
   const debouncedFilters = useDebounce(filters, 300);
@@ -113,7 +118,7 @@ const Schedule = () => {
 
   const fetchUserTeams = async () => {
     try {
-      if (isSuperAdmin() || primaryRole === 'staff') {
+      if (canManageEvents) {
         // Super admins and staff see all teams
         const { data, error } = await supabase
           .from('teams')
@@ -122,7 +127,7 @@ const Schedule = () => {
         if (error) throw error;
         setUserTeamIds(data?.map(t => t.id) || []);
       } else {
-        // Regular users see only their assigned teams
+        // Players see only their assigned teams
         const { data, error } = await supabase
           .from('players')
           .select('team_id')
@@ -148,7 +153,7 @@ const Schedule = () => {
       }
       
       // Role-based filtering - players only see events for their teams
-      if (primaryRole === 'player' && !isSuperAdmin()) {
+      if (isPlayerRole) {
         // Check if user has any teams assigned and if the event includes those teams
         if (userTeamIds.length > 0 && event.team_ids && event.team_ids.length > 0) {
           return event.team_ids.some(teamId => userTeamIds.includes(teamId));
@@ -177,7 +182,7 @@ const Schedule = () => {
     }
     
     return filtered;
-  }, [events, activeTab, isSuperAdmin]);
+  }, [events, activeTab, isPlayerRole, userTeamIds, canManageEvents]);
 
   const handleNewEventSave = async (eventData: any) => {
     try {
@@ -379,9 +384,6 @@ const Schedule = () => {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const canManageEvents = isSuperAdmin() || primaryRole === 'staff';
-  const canManageAttendance = isSuperAdmin() || primaryRole === 'staff' || primaryRole === 'coach';
-
   return (
     <Layout currentUser={currentUser}>
       <div className="space-y-6">
@@ -420,7 +422,7 @@ const Schedule = () => {
           <TabsList>
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             <TabsTrigger value="past">Past Events</TabsTrigger>
-            {isSuperAdmin() && (
+            {canManageEvents && (
               <>
                 <TabsTrigger value="archived">Archived Events</TabsTrigger>
                 <TabsTrigger value="locations">Locations</TabsTrigger>
