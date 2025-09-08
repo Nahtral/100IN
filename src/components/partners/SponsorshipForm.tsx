@@ -83,35 +83,34 @@ export const SponsorshipForm: React.FC<SponsorshipFormProps> = ({
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch partners
-        const { data: partnersData, error: partnersError } = await supabase
-          .from('partner_organizations')
-          .select('id, name')
-          .eq('partnership_status', 'active')
-          .order('name');
+    if (!open) return;
 
-        if (partnersError) throw partnersError;
-        setPartners(partnersData || []);
-
-        // Fetch teams
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('id, name')
-          .eq('is_active', true)
-          .order('name');
-
-        if (teamsError) throw teamsError;
-        setTeams(teamsData || []);
-      } catch (error) {
-        console.error('Failed to fetch form data:', error);
+    const fetchPartners = async () => {
+      const result = await supabase
+        .from('partner_organizations')
+        .select('id, name')
+        .eq('partnership_status', 'active')
+        .order('name');
+      
+      if (result.data) {
+        setPartners(result.data);
       }
     };
 
-    if (open) {
-      fetchData();
-    }
+    const fetchTeams = async () => {
+      const result = await supabase
+        .from('teams')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (result.data) {
+        setTeams(result.data);
+      }
+    };
+
+    fetchPartners();
+    fetchTeams();
   }, [open]);
 
   React.useEffect(() => {
