@@ -16,7 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 // Lazy load heavy components for better performance
-const Players = React.lazy(() => import("./pages/Players"));
+const PlayersManagement = React.lazy(() => import("./pages/PlayersManagement"));
 const Teams = React.lazy(() => import("./pages/Teams"));
 const Schedule = React.lazy(() => import("./pages/Schedule"));
 const Analytics = React.lazy(() => import("./pages/Analytics"));
@@ -87,7 +87,7 @@ const App = () => (
               } />
               <Route path="/players" element={
                 <ProtectedRoute>
-                  <Players />
+                  <PlayersManagement />
                 </ProtectedRoute>
               } />
               <Route path="/teams" element={
