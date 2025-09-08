@@ -4762,14 +4762,13 @@ export type Database = {
         }[]
       }
       get_approved_players: {
-        Args: { search_term?: string }
+        Args: Record<PropertyKey, never> | { search_term?: string }
         Returns: {
+          avatar_url: string
           email: string
           full_name: string
           id: string
-          latest_tryout_date: string
-          latest_tryout_placement: Database["public"]["Enums"]["tryout_team"]
-          latest_tryout_total: number
+          phone: string
         }[]
       }
       get_benefit_cost_analysis: {
