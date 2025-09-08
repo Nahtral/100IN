@@ -16,8 +16,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTeamGridSettings } from '@/hooks/useTeamGridSettings';
-import BulkUserManagement from '@/components/admin/BulkUserManagement';
-import BulkUserManagementTester from '@/components/admin/BulkUserManagementTester';
 
 interface Player {
   id: string;
@@ -397,13 +395,6 @@ const Players = () => {
           </CardContent>
         </Card>
 
-        {/* Bulk User Management - Super Admin Only */}
-        {isSuperAdmin() && (
-          <>
-            <BulkUserManagement onPlayerCreated={fetchPlayers} />
-            <BulkUserManagementTester />
-          </>
-        )}
 
         {/* Player Details Modal */}
         <PlayerDetailsModal
