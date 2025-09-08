@@ -273,7 +273,6 @@ export const EnhancedNotificationCenter: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/settings/notifications')}
-                className="hidden" // Hide settings for players in notifications
               >
                 <Settings size={14} />
               </Button>

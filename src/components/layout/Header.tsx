@@ -18,12 +18,9 @@ interface HeaderProps {
 }
 
 const Header = ({ currentUser }: HeaderProps) => {
-  const { signOut, userData, primaryRole, isSuperAdmin } = useOptimizedAuth();
+  const { signOut, userData, primaryRole } = useOptimizedAuth();
   const { profile, updateProfile } = useUserProfile();
   const { toast } = useToast();
-  
-  // Role-based access control
-  const isPlayerRole = primaryRole === 'player' && !isSuperAdmin();
 
   const handleSignOut = async () => {
     try {
@@ -53,22 +50,18 @@ const Header = ({ currentUser }: HeaderProps) => {
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {/* Search bar - hidden for players */}
-            {!isPlayerRole && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
-            )}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Notifications - restricted for players */}
-            {!isPlayerRole && <EnhancedNotificationCenter />}
+            <EnhancedNotificationCenter />
             <Button variant="ghost" size="icon" onClick={handleSignOut}>
               <LogOut className="h-5 w-5" />
             </Button>

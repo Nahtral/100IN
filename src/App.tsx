@@ -8,7 +8,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
-import { PlayerRouteGuard } from "@/components/auth/PlayerRouteGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { NotificationToastProvider } from "@/components/notifications/NotificationToast";
 import Home from "./pages/Home";
@@ -66,7 +65,6 @@ const App = () => (
           <Sonner />
           <NotificationToastProvider />
           <BrowserRouter>
-          <PlayerRouteGuard>
           <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
               <div className="animate-pulse">
@@ -93,7 +91,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/teams" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']} requireAll={false}>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
                   <Teams />
                 </RoleProtectedRoute>
               } />
@@ -118,9 +116,9 @@ const App = () => (
                 </RoleProtectedRoute>
               } />
               <Route path="/settings" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
+                <ProtectedRoute>
                   <Settings />
-                </RoleProtectedRoute>
+                </ProtectedRoute>
               } />
               <Route path="/user-management" element={
                 <RoleProtectedRoute allowedRoles={['super_admin']}>
@@ -133,14 +131,14 @@ const App = () => (
                 </RoleProtectedRoute>
               } />
               <Route path="/health-wellness" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'medical', 'staff', 'coach']}>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'medical', 'staff', 'coach', 'player']}>
                   <HealthWellness />
                 </RoleProtectedRoute>
               } />
               <Route path="/news" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
+                <ProtectedRoute>
                   <News />
-                </RoleProtectedRoute>
+                </ProtectedRoute>
               } />
               <Route path="/news-manager" element={
                 <RoleProtectedRoute allowedRoles={['super_admin']}>
@@ -148,7 +146,7 @@ const App = () => (
                 </RoleProtectedRoute>
               } />
               <Route path="/chat" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach', 'player']}>
                   <Chat />
                 </RoleProtectedRoute>
               } />
@@ -215,7 +213,6 @@ const App = () => (
         <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
-          </PlayerRouteGuard>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

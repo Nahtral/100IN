@@ -47,9 +47,6 @@ export function AppSidebar() {
   const actualCanAccessMedical = () => isTestMode ? testCanAccessMedical() : (isSuperAdmin() || hasRole('medical'));
   const actualCanAccessPartners = () => isTestMode ? testCanAccessPartners() : (isSuperAdmin() || hasRole('partner'));
 
-  // Get current user's role for strict navigation control
-  const isPlayerRole = actualHasRole('player') && !actualIsSuperAdmin;
-
   const navItems = [
     {
       title: 'Home',
@@ -73,7 +70,7 @@ export function AppSidebar() {
       title: 'Teams',
       href: '/teams',
       icon: Trophy,
-      showCondition: () => !isPlayerRole && (actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach')),
+      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach'),
     },
     {
       title: 'Schedule',
@@ -85,49 +82,49 @@ export function AppSidebar() {
       title: 'Analytics',
       href: '/analytics',
       icon: BarChart3,
-      showCondition: () => !isPlayerRole && actualIsSuperAdmin,
+      showCondition: () => actualIsSuperAdmin,
     },
     {
       title: 'Medical',
       href: '/medical',
       icon: Shield,
-      showCondition: () => !isPlayerRole && actualCanAccessMedical(),
+      showCondition: () => actualCanAccessMedical(),
     },
     {
       title: 'Health & Wellness',
       href: '/health-wellness',
       icon: Heart,
-      showCondition: () => !isPlayerRole || actualIsSuperAdmin,
+      showForAll: true,
     },
     {
       title: 'Partners',
       href: '/partners',
       icon: Handshake,
-      showCondition: () => !isPlayerRole && actualCanAccessPartners(),
+      showCondition: () => actualCanAccessPartners(),
     },
     {
       title: 'Chat',
       href: '/chat',
       icon: MessageCircle,
-      showCondition: () => !isPlayerRole || actualIsSuperAdmin,
+      showForAll: true,
     },
     {
       title: 'Security',
       href: '/security',
       icon: Shield,
-      showCondition: () => !isPlayerRole && actualIsSuperAdmin,
+      showCondition: () => actualIsSuperAdmin,
     },
     {
       title: 'News',
       href: '/news',
       icon: Newspaper,
-      showCondition: () => !isPlayerRole || actualIsSuperAdmin,
+      showForAll: true,
     },
     {
       title: 'Settings',
       href: '/settings',
       icon: Settings,
-      showCondition: () => !isPlayerRole || actualIsSuperAdmin,
+      showForAll: true,
     },
   ];
 
@@ -288,8 +285,8 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Internal Tools Section - Hidden for players */}
-        {!isPlayerRole && (actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach')) && (
+        {/* Internal Tools Section */}
+        {(actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach')) && (
           <SidebarGroup>
             <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Internal Tools
@@ -323,8 +320,8 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Super Admin Section - Hidden for players */}
-        {!isPlayerRole && actualIsSuperAdmin && (
+        {/* Super Admin Section */}
+        {actualIsSuperAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Administration
@@ -358,8 +355,8 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Role Switcher for Super Admin - Hidden for players */}
-        {!isPlayerRole && isSuperAdmin && (!collapsed || isMobile) && (
+        {/* Role Switcher for Super Admin */}
+        {isSuperAdmin && (!collapsed || isMobile) && (
           <SidebarGroup>
             <SidebarGroupContent>
               <div className="px-3 py-2">
