@@ -143,25 +143,104 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_size: number | null
+          attachment_url: string | null
+          chat_id: string
+          content: string
+          created_at: string | null
+          edited_at: string | null
+          id: string
+          is_deleted: boolean | null
+          is_edited: boolean | null
+          language_code: string | null
+          message_type: string | null
+          reply_to_id: string | null
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
+          chat_id: string
+          content: string
+          created_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          language_code?: string | null
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
+          chat_id?: string
+          content?: string
+          created_at?: string | null
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          language_code?: string | null
+          message_type?: string | null
+          reply_to_id?: string | null
+          sender_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "v_chat_display"
+            referencedColumns: ["chat_id"]
+          },
+          {
+            foreignKeyName: "chat_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_participants: {
         Row: {
           chat_id: string
           id: string
-          joined_at: string
+          joined_at: string | null
+          last_read_at: string | null
           role: string
           user_id: string
         }
         Insert: {
           chat_id: string
           id?: string
-          joined_at?: string
+          joined_at?: string | null
+          last_read_at?: string | null
           role?: string
           user_id: string
         }
         Update: {
           chat_id?: string
           id?: string
-          joined_at?: string
+          joined_at?: string | null
+          last_read_at?: string | null
           role?: string
           user_id?: string
         }
@@ -174,76 +253,55 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_chat_participants_chat_id"
+            foreignKeyName: "chat_participants_chat_id_fkey"
             columns: ["chat_id"]
             isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
+            referencedRelation: "v_chat_display"
+            referencedColumns: ["chat_id"]
           },
         ]
       }
       chats: {
         Row: {
-          archived_at: string | null
-          archived_by: string | null
           chat_type: string
-          created_at: string
+          created_at: string | null
           created_by: string
           id: string
           is_archived: boolean | null
-          is_muted: boolean | null
           is_pinned: boolean | null
-          last_read_at: string | null
-          name: string | null
+          last_message_at: string | null
+          name: string
+          status: string
           team_id: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          archived_at?: string | null
-          archived_by?: string | null
           chat_type: string
-          created_at?: string
+          created_at?: string | null
           created_by: string
           id?: string
           is_archived?: boolean | null
-          is_muted?: boolean | null
           is_pinned?: boolean | null
-          last_read_at?: string | null
-          name?: string | null
+          last_message_at?: string | null
+          name: string
+          status?: string
           team_id?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          archived_at?: string | null
-          archived_by?: string | null
           chat_type?: string
-          created_at?: string
+          created_at?: string | null
           created_by?: string
           id?: string
           is_archived?: boolean | null
-          is_muted?: boolean | null
           is_pinned?: boolean | null
-          last_read_at?: string | null
-          name?: string | null
+          last_message_at?: string | null
+          name?: string
+          status?: string
           team_id?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "chats_archived_by_fkey"
-            columns: ["archived_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chats_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       coach_assignments: {
         Row: {
@@ -707,6 +765,111 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_emergency_contacts: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          employee_id: string
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string
+          relationship: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          employee_id: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone: string
+          relationship: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          employee_id?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string
+          relationship?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employee_leave_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          days_requested: number
+          employee_id: string
+          end_date: string
+          id: string
+          leave_type: string
+          notes: string | null
+          reason: string | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          days_requested: number
+          employee_id: string
+          end_date: string
+          id?: string
+          leave_type: string
+          notes?: string | null
+          reason?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          days_requested?: number
+          employee_id?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          notes?: string | null
+          reason?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_leave_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_leave_requests_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -1602,15 +1765,7 @@ export type Database = {
           player_membership_id?: string
           reason?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "membership_adjustments_player_membership_id_fkey"
-            columns: ["player_membership_id"]
-            isOneToOne: false
-            referencedRelation: "player_memberships"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       membership_alerts_sent: {
         Row: {
@@ -1631,69 +1786,106 @@ export type Database = {
           player_membership_id?: string
           sent_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "membership_alerts_sent_player_membership_id_fkey"
-            columns: ["player_membership_id"]
-            isOneToOne: false
-            referencedRelation: "player_memberships"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       membership_types: {
         Row: {
           allocated_classes: number | null
           allocation_type: string
-          created_at: string | null
-          end_date_required: boolean | null
+          created_at: string
+          end_date_required: boolean
           id: string
-          is_active: boolean | null
+          is_active: boolean
           name: string
-          start_date_required: boolean | null
-          updated_at: string | null
+          start_date_required: boolean
+          updated_at: string
         }
         Insert: {
           allocated_classes?: number | null
           allocation_type: string
-          created_at?: string | null
-          end_date_required?: boolean | null
+          created_at?: string
+          end_date_required?: boolean
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name: string
-          start_date_required?: boolean | null
-          updated_at?: string | null
+          start_date_required?: boolean
+          updated_at?: string
         }
         Update: {
           allocated_classes?: number | null
           allocation_type?: string
-          created_at?: string | null
-          end_date_required?: boolean | null
+          created_at?: string
+          end_date_required?: boolean
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name?: string
-          start_date_required?: boolean | null
-          updated_at?: string | null
+          start_date_required?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
+      membership_usage: {
+        Row: {
+          classes_used: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          player_membership_id: string
+          usage_date: string
+        }
+        Insert: {
+          classes_used?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          player_membership_id: string
+          usage_date?: string
+        }
+        Update: {
+          classes_used?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          player_membership_id?: string
+          usage_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_usage_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "player_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_usage_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_membership_usage_secure"
+            referencedColumns: ["membership_id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
-          created_at: string
+          created_at: string | null
           emoji: string
           id: string
           message_id: string
           user_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           emoji: string
           id?: string
           message_id: string
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           emoji?: string
           id?: string
           message_id?: string
@@ -1701,96 +1893,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_message_reactions_message_id"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "message_reactions_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          chat_id: string
-          content: string | null
-          created_at: string
-          edit_history: Json | null
-          id: string
-          is_archived: boolean | null
-          is_edited: boolean | null
-          is_recalled: boolean | null
-          media_size: number | null
-          media_type: string | null
-          media_url: string | null
-          message_type: string
-          recalled_at: string | null
-          recalled_by: string | null
-          sender_id: string
-          updated_at: string
-        }
-        Insert: {
-          chat_id: string
-          content?: string | null
-          created_at?: string
-          edit_history?: Json | null
-          id?: string
-          is_archived?: boolean | null
-          is_edited?: boolean | null
-          is_recalled?: boolean | null
-          media_size?: number | null
-          media_type?: string | null
-          media_url?: string | null
-          message_type?: string
-          recalled_at?: string | null
-          recalled_by?: string | null
-          sender_id: string
-          updated_at?: string
-        }
-        Update: {
-          chat_id?: string
-          content?: string | null
-          created_at?: string
-          edit_history?: Json | null
-          id?: string
-          is_archived?: boolean | null
-          is_edited?: boolean | null
-          is_recalled?: boolean | null
-          media_size?: number | null
-          media_type?: string | null
-          media_url?: string | null
-          message_type?: string
-          recalled_at?: string | null
-          recalled_by?: string | null
-          sender_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_messages_chat_id"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_recalled_by_fkey"
-            columns: ["recalled_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -2085,6 +2191,112 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_contacts: {
+        Row: {
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          contact_title: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          partner_organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          contact_title?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          partner_organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          contact_title?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          partner_organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_contacts_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_notes: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          note_body: string
+          partner_organization_id: string | null
+          sponsorship_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          note_body: string
+          partner_organization_id?: string | null
+          sponsorship_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          note_body?: string
+          partner_organization_id?: string | null
+          sponsorship_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_notes_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_notes_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_notes_sponsorship_id_fkey"
+            columns: ["sponsorship_id"]
+            isOneToOne: false
+            referencedRelation: "partner_team_sponsorships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_organizations: {
         Row: {
           contact_email: string | null
@@ -2182,6 +2394,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_team_sponsorships_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "partner_team_sponsorships_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -2221,6 +2440,13 @@ export type Database = {
             columns: ["partner_organization_id"]
             isOneToOne: false
             referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_user_relationships_partner_organization_id_fkey"
+            columns: ["partner_organization_id"]
+            isOneToOne: false
+            referencedRelation: "v_partner_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -2705,45 +2931,45 @@ export type Database = {
       player_memberships: {
         Row: {
           allocated_classes_override: number | null
-          auto_deactivate_when_used_up: boolean | null
-          created_at: string | null
+          auto_deactivate_when_used_up: boolean
+          created_at: string
           end_date: string | null
           id: string
-          manual_override_active: boolean | null
+          manual_override_active: boolean
           membership_type_id: string
           notes: string | null
           player_id: string
           start_date: string
           status: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           allocated_classes_override?: number | null
-          auto_deactivate_when_used_up?: boolean | null
-          created_at?: string | null
+          auto_deactivate_when_used_up?: boolean
+          created_at?: string
           end_date?: string | null
           id?: string
-          manual_override_active?: boolean | null
+          manual_override_active?: boolean
           membership_type_id: string
           notes?: string | null
           player_id: string
-          start_date?: string
+          start_date: string
           status?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           allocated_classes_override?: number | null
-          auto_deactivate_when_used_up?: boolean | null
-          created_at?: string | null
+          auto_deactivate_when_used_up?: boolean
+          created_at?: string
           end_date?: string | null
           id?: string
-          manual_override_active?: boolean | null
+          manual_override_active?: boolean
           membership_type_id?: string
           notes?: string | null
           player_id?: string
           start_date?: string
           status?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -2751,13 +2977,6 @@ export type Database = {
             columns: ["membership_type_id"]
             isOneToOne: false
             referencedRelation: "membership_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_memberships_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
@@ -2958,7 +3177,7 @@ export type Database = {
           {
             foreignKeyName: "fk_players_profiles"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3942,6 +4161,7 @@ export type Database = {
           coach_id: string | null
           created_at: string | null
           id: string
+          is_active: boolean
           name: string
           season: string
           updated_at: string | null
@@ -3951,6 +4171,7 @@ export type Database = {
           coach_id?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean
           name: string
           season: string
           updated_at?: string | null
@@ -3960,6 +4181,7 @@ export type Database = {
           coach_id?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean
           name?: string
           season?: string
           updated_at?: string | null
@@ -4375,7 +4597,102 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_chat_display: {
+        Row: {
+          chat_id: string | null
+          chat_type: string | null
+          created_at: string | null
+          display_title: string | null
+          is_admin: boolean | null
+          is_archived: boolean | null
+          is_pinned: boolean | null
+          last_activity_at: string | null
+          last_message_at: string | null
+          last_message_content: string | null
+          member_count: number | null
+          original_name: string | null
+          status: string | null
+          unread_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          chat_type?: string | null
+          created_at?: string | null
+          display_title?: never
+          is_admin?: never
+          is_archived?: boolean | null
+          is_pinned?: boolean | null
+          last_activity_at?: never
+          last_message_at?: string | null
+          last_message_content?: never
+          member_count?: never
+          original_name?: string | null
+          status?: string | null
+          unread_count?: never
+          updated_at?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          chat_type?: string | null
+          created_at?: string | null
+          display_title?: never
+          is_admin?: never
+          is_archived?: boolean | null
+          is_pinned?: boolean | null
+          last_activity_at?: never
+          last_message_at?: string | null
+          last_message_content?: never
+          member_count?: never
+          original_name?: string | null
+          status?: string | null
+          unread_count?: never
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_partner_summary: {
+        Row: {
+          active_sponsorships: number | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string | null
+          description: string | null
+          earliest_partnership: string | null
+          id: string | null
+          latest_partnership: string | null
+          name: string | null
+          partnership_type: string | null
+          partnership_value: number | null
+          status: string | null
+          total_sponsorship_value: number | null
+          total_sponsorships: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      vw_player_membership_usage_secure: {
+        Row: {
+          allocated_classes: number | null
+          allocation_type: string | null
+          days_left: number | null
+          end_date: string | null
+          is_expired: boolean | null
+          membership_id: string | null
+          membership_type_name: string | null
+          player_id: string | null
+          player_name: string | null
+          remaining_classes: number | null
+          should_deactivate: boolean | null
+          start_date: string | null
+          status: string | null
+          used_classes: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_user_permission: {
@@ -4396,7 +4713,9 @@ export type Database = {
         Returns: Json
       }
       bulk_convert_users_to_players: {
-        Args: { converted_by_user_id?: string; user_ids: string[] }
+        Args:
+          | { converted_by_user_id?: string; user_ids: string[] }
+          | { user_ids: string[] }
         Returns: Json
       }
       check_api_rate_limit: {
@@ -4486,14 +4805,13 @@ export type Database = {
         }[]
       }
       get_approved_players: {
-        Args: { search_term?: string }
+        Args: Record<PropertyKey, never> | { search_term?: string }
         Returns: {
+          avatar_url: string
           email: string
           full_name: string
           id: string
-          latest_tryout_date: string
-          latest_tryout_placement: Database["public"]["Enums"]["tryout_team"]
-          latest_tryout_total: number
+          phone: string
         }[]
       }
       get_benefit_cost_analysis: {
@@ -4515,6 +4833,14 @@ export type Database = {
           total_cost: number
           total_enrolled: number
         }[]
+      }
+      get_coach_team_ids: {
+        Args: { coach_user_id: string }
+        Returns: string[]
+      }
+      get_current_user_player_teams: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
@@ -4577,6 +4903,17 @@ export type Database = {
           type_id: string
           type_name: string
           user_id: string
+        }[]
+      }
+      get_player_team_assignments: {
+        Args: { player_user_id: string }
+        Returns: {
+          assigned_at: string
+          assignment_id: string
+          is_active: boolean
+          role_on_team: string
+          team_id: string
+          team_name: string
         }[]
       }
       get_safe_profile_info: {
@@ -4682,6 +5019,30 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_add_partner_note: {
+        Args: {
+          is_internal?: boolean
+          note_body?: string
+          partner_id?: string
+          sponsorship_id?: string
+        }
+        Returns: string
+      }
+      rpc_create_chat: {
+        Args:
+          | {
+              chat_name: string
+              chat_type_param: string
+              participant_ids: string[]
+              team_id_param?: string
+            }
+          | { p_is_group: boolean; p_participants: string[]; p_title: string }
+        Returns: string
+      }
+      rpc_delete_chat: {
+        Args: { p_chat_id: string; p_permanent?: boolean }
+        Returns: undefined
+      }
       rpc_duplicate_event: {
         Args: {
           copy_teams?: boolean
@@ -4690,6 +5051,29 @@ export type Database = {
           shift_days?: number
         }
         Returns: string
+      }
+      rpc_edit_or_recall_message: {
+        Args: {
+          p_message_id: string
+          p_new_content?: string
+          p_recall?: boolean
+        }
+        Returns: undefined
+      }
+      rpc_forward_message: {
+        Args: { p_source_message_id: string; p_target_chat_ids: string[] }
+        Returns: undefined
+      }
+      rpc_get_chat_participants: {
+        Args: { chat_id_param: string }
+        Returns: {
+          id: string
+          joined_at: string
+          role: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
       }
       rpc_get_employees: {
         Args: { lim?: number; off?: number; q?: string }
@@ -4701,6 +5085,138 @@ export type Database = {
           role: string
           role_display: string
         }[]
+      }
+      rpc_get_messages: {
+        Args: { before?: string; chat: string; limit_n?: number }
+        Returns: {
+          attachment_url: string
+          body: string
+          chat_id: string
+          created_at: string
+          edited_at: string
+          id: string
+          message_type: string
+          reactions: Json
+          sender_email: string
+          sender_id: string
+          sender_name: string
+        }[]
+      }
+      rpc_list_chats: {
+        Args: { limit_n?: number; offset_n?: number }
+        Returns: {
+          chat_id: string
+          chat_is_group: boolean
+          chat_title: string
+          last_msg: string
+          last_msg_at: string
+          unread_count: number
+        }[]
+      }
+      rpc_list_chats_enhanced: {
+        Args: {
+          include_archived?: boolean
+          limit_n?: number
+          offset_n?: number
+        }
+        Returns: {
+          chat_id: string
+          chat_type: string
+          display_title: string
+          is_admin: boolean
+          is_archived: boolean
+          is_pinned: boolean
+          last_activity_at: string
+          last_message_content: string
+          member_count: number
+          unread_count: number
+        }[]
+      }
+      rpc_list_partners: {
+        Args: {
+          limit_n?: number
+          offset_n?: number
+          q?: string
+          status_filter?: string
+        }
+        Returns: {
+          active_sponsorships: number
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          contract_end_date: string
+          contract_start_date: string
+          created_at: string
+          description: string
+          earliest_partnership: string
+          id: string
+          latest_partnership: string
+          name: string
+          partnership_type: string
+          partnership_value: number
+          status: string
+          total_count: number
+          total_sponsorship_value: number
+          total_sponsorships: number
+          updated_at: string
+        }[]
+      }
+      rpc_mark_read: {
+        Args: { chat: string }
+        Returns: undefined
+      }
+      rpc_partner_analytics: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      rpc_send_message: {
+        Args: {
+          attachment_name_param?: string
+          attachment_size_param?: number
+          attachment_url_param?: string
+          chat_id_param: string
+          content_param: string
+          message_type_param?: string
+          reply_to_id_param?: string
+        }
+        Returns: string
+      }
+      rpc_update_chat: {
+        Args: { p_chat_id: string; p_status?: string; p_title?: string }
+        Returns: undefined
+      }
+      rpc_update_chat_meta: {
+        Args: { p_chat_id: string; p_new_status?: string; p_new_title?: string }
+        Returns: undefined
+      }
+      rpc_upsert_partner: {
+        Args: {
+          contact_email?: string
+          contact_person?: string
+          contact_phone?: string
+          contract_end_date?: string
+          contract_start_date?: string
+          description?: string
+          partner_id?: string
+          partner_name?: string
+          partnership_status?: string
+          partnership_type?: string
+          partnership_value?: number
+        }
+        Returns: string
+      }
+      rpc_upsert_sponsorship: {
+        Args: {
+          end_date?: string
+          partner_org_id?: string
+          sponsorship_amount?: number
+          sponsorship_id?: string
+          sponsorship_status?: string
+          sponsorship_type?: string
+          start_date?: string
+          team_id?: string
+        }
+        Returns: string
       }
       user_created_chat: {
         Args: { chat_id: string; user_id: string }
