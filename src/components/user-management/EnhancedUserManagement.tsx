@@ -612,9 +612,6 @@ const EnhancedUserManagement = () => {
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
-          {/* Bulk User Management for Player Setup */}
-          <BulkUserManagement onPlayerCreated={fetchUsers} />
-          
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
@@ -744,6 +741,10 @@ const EnhancedUserManagement = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="bulk" className="space-y-4">
+          <BulkUserManagement onPlayerCreated={fetchUsers} />
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-4">
