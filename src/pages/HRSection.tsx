@@ -1,27 +1,40 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Clock, 
   Calendar, 
   DollarSign, 
-  FileText, 
+  BriefcaseMedical, 
   Users, 
-  Settings,
+  Shield,
   ArrowLeft
 } from 'lucide-react';
 
-interface HRSectionProps {
-  section: string;
-}
+// Import the actual functional components
+import TimeTracking from '@/components/hr/TimeTracking';
+import TimeOffManagement from '@/components/hr/TimeOffManagement';
+import PayrollDashboard from '@/components/hr/PayrollDashboard';
+import BenefitsManagement from '@/components/hr/BenefitsManagement';
+import OnboardingTasks from '@/components/hr/OnboardingTasks';
+import { PermissionsManagement } from '@/components/admin/PermissionsManagement';
 
-const HRSectionPage: React.FC<HRSectionProps> = ({ section }) => {
+// Route handler component
+const HRSection = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({});
+
+  const currentPath = location.pathname;
+  const section = currentPath.split('/').pop();
+
+  const updateStats = () => {
+    // Callback for components to trigger stats updates
+    setStats({});
+  };
 
   const getSectionConfig = () => {
     switch (section) {
@@ -30,92 +43,55 @@ const HRSectionPage: React.FC<HRSectionProps> = ({ section }) => {
           title: 'Time & Attendance',
           icon: Clock,
           description: 'Manage employee time tracking and attendance records',
-          features: [
-            'Clock in/out tracking',
-            'Break time management', 
-            'Overtime calculations',
-            'Attendance reports'
-          ]
+          component: <TimeTracking onStatsUpdate={updateStats} />
         };
       case 'leave':
         return {
           title: 'Leave Management',
           icon: Calendar,
           description: 'Handle time off requests and leave policies',
-          features: [
-            'Leave request submissions',
-            'Approval workflows',
-            'Leave balance tracking',
-            'Holiday management'
-          ]
+          component: <TimeOffManagement onStatsUpdate={updateStats} />
         };
       case 'payroll':
         return {
           title: 'Payroll Dashboard',
           icon: DollarSign,
           description: 'Process payroll and manage compensation',
-          features: [
-            'Payroll processing',
-            'Salary management',
-            'Tax calculations',
-            'Payment reports'
-          ]
+          component: <PayrollDashboard onStatsUpdate={updateStats} />
         };
       case 'benefits':
         return {
           title: 'Benefits Administration',
-          icon: FileText,
+          icon: BriefcaseMedical,
           description: 'Manage employee benefits and enrollment',
-          features: [
-            'Benefit plan management',
-            'Employee enrollment',
-            'Coverage tracking',
-            'Claims processing'
-          ]
+          component: <BenefitsManagement onStatsUpdate={updateStats} />
         };
       case 'permissions':
         return {
           title: 'Staff Permissions',
-          icon: Settings,
+          icon: Shield,
           description: 'Manage staff roles and access control',
-          features: [
-            'Role assignments',
-            'Permission management',
-            'Access control',
-            'Security settings'
-          ]
+          component: <PermissionsManagement />
         };
       case 'onboarding':
         return {
           title: 'Onboarding Tasks',
           icon: Users,
           description: 'Manage new employee onboarding tasks',
-          features: [
-            'Task assignments',
-            'Progress tracking',
-            'Completion monitoring',
-            'New hire checklists'
-          ]
+          component: <OnboardingTasks onStatsUpdate={updateStats} />
         };
       default:
         return {
           title: 'HR Section',
           icon: Users,
           description: 'HR management functionality',
-          features: []
+          component: <HROverview />
         };
     }
   };
 
   const sectionConfig = getSectionConfig();
   const IconComponent = sectionConfig.icon;
-
-  const handleFeatureClick = (feature: string) => {
-    toast({
-      title: "Feature Available",
-      description: `${feature} functionality is ready for implementation`,
-    });
-  };
 
   return (
     <div className="space-y-6 p-6">
@@ -140,47 +116,95 @@ const HRSectionPage: React.FC<HRSectionProps> = ({ section }) => {
         </div>
       </div>
 
-      {/* Features Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sectionConfig.features.map((feature, index) => (
-          <Card 
-            key={index}
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/50"
-            onClick={() => handleFeatureClick(feature)}
-          >
-            <CardHeader>
-              <CardTitle className="text-lg">{feature}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Click to access {feature.toLowerCase()} functionality
-              </p>
-              <Button className="w-full" variant="outline">
-                Open {feature}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Render the actual functional component */}
+      {sectionConfig.component}
+    </div>
+  );
+};
 
-      {/* Section-specific content */}
+// HR Overview component for the default route
+const HROverview = () => {
+  const navigate = useNavigate();
+
+  const hrFunctions = [
+    {
+      title: 'Time & Attendance',
+      description: 'Manage employee time tracking and attendance',
+      icon: Clock,
+      route: '/admin/staff/hr/time',
+      status: 'active'
+    },
+    {
+      title: 'Leave Management',
+      description: 'Handle time off requests and leave policies',
+      icon: Calendar,
+      route: '/admin/staff/hr/leave',
+      status: 'active'
+    },
+    {
+      title: 'Payroll',
+      description: 'Process payroll and manage compensation',
+      icon: DollarSign,
+      route: '/admin/staff/hr/payroll',
+      status: 'active'
+    },
+    {
+      title: 'Benefits',
+      description: 'Manage employee benefits and enrollment',
+      icon: BriefcaseMedical,
+      route: '/admin/staff/hr/benefits',
+      status: 'active'
+    },
+    {
+      title: 'Permissions',
+      description: 'Manage staff roles and access control',
+      icon: Shield,
+      route: '/admin/staff/hr/permissions',
+      status: 'active'
+    },
+    {
+      title: 'Onboarding',
+      description: 'New employee onboarding tasks',
+      icon: Users,
+      route: '/admin/staff/hr/onboarding',
+      status: 'active'
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Getting Started</CardTitle>
+          <CardTitle>HR Functions Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            Welcome to the {sectionConfig.title} section. This area provides comprehensive tools for managing 
-            all aspects of {sectionConfig.title.toLowerCase()}. Each feature above represents a fully functional 
-            module that can be implemented based on your specific business requirements.
+          <p className="text-muted-foreground mb-6">
+            Welcome to the HR management system. Select a function below to access its full functionality.
           </p>
-          <div className="mt-4 flex gap-2">
-            <Button>
-              View Documentation
-            </Button>
-            <Button variant="outline">
-              Contact Support
-            </Button>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {hrFunctions.map((func) => (
+              <Card
+                key={func.route}
+                className="cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all duration-200"
+                onClick={() => navigate(func.route)}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <func.icon className="h-4 w-4" />
+                    {func.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {func.description}
+                  </p>
+                  <Button className="w-full" size="sm">
+                    Access {func.title}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -188,26 +212,4 @@ const HRSectionPage: React.FC<HRSectionProps> = ({ section }) => {
   );
 };
 
-// Route handler component
-const HRRouter = () => {
-  const navigate = useNavigate();
-  const currentPath = window.location.pathname;
-  const section = currentPath.split('/').pop();
-
-  React.useEffect(() => {
-    // Valid HR sections
-    const validSections = ['time', 'leave', 'payroll', 'benefits', 'permissions', 'onboarding'];
-    
-    if (!section || !validSections.includes(section)) {
-      navigate('/admin/staff');
-    }
-  }, [section, navigate]);
-
-  if (!section) {
-    return null;
-  }
-
-  return <HRSectionPage section={section} />;
-};
-
-export default HRRouter;
+export default HRSection;

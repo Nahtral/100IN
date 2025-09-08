@@ -200,6 +200,11 @@ const App = () => (
             <StaffManagement />
           </RoleProtectedRoute>
         } />
+        <Route path="/admin/staff/hr" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <HRSection />
+          </RoleProtectedRoute>
+        } />
         <Route path="/admin/staff/hr/*" element={
           <RoleProtectedRoute allowedRoles={['super_admin']}>
             <HRSection />
