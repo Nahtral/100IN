@@ -241,10 +241,10 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({
                   const canToggle = userPermState?.source !== 'role' || !userPermState.hasPermission;
                   
                   return (
-                    <div
-                      key={permission.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
+                     <div
+                       key={`${permission.id}-${permission.name}`}
+                       className="flex items-center justify-between p-3 border rounded-lg"
+                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium">{permission.name}</h4>

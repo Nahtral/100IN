@@ -4672,7 +4672,9 @@ export type Database = {
         Returns: Json
       }
       bulk_convert_users_to_players: {
-        Args: { converted_by_user_id?: string; user_ids: string[] }
+        Args:
+          | { converted_by_user_id?: string; user_ids: string[] }
+          | { user_ids: string[] }
         Returns: Json
       }
       check_api_rate_limit: {
