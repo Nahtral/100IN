@@ -4139,6 +4139,7 @@ export type Database = {
           coach_id: string | null
           created_at: string | null
           id: string
+          is_active: boolean
           name: string
           season: string
           updated_at: string | null
@@ -4148,6 +4149,7 @@ export type Database = {
           coach_id?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean
           name: string
           season: string
           updated_at?: string | null
@@ -4157,6 +4159,7 @@ export type Database = {
           coach_id?: string | null
           created_at?: string | null
           id?: string
+          is_active?: boolean
           name?: string
           season?: string
           updated_at?: string | null
@@ -4850,6 +4853,17 @@ export type Database = {
           type_id: string
           type_name: string
           user_id: string
+        }[]
+      }
+      get_player_team_assignments: {
+        Args: { player_user_id: string }
+        Returns: {
+          assigned_at: string
+          assignment_id: string
+          is_active: boolean
+          role_on_team: string
+          team_id: string
+          team_name: string
         }[]
       }
       get_safe_profile_info: {
