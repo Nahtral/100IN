@@ -61,6 +61,25 @@ const HealthWellness = () => {
         }
 
         setPlayerProfile(playerData);
+      } else if (primaryRole === 'parent') {
+        // For parents, we might need to fetch their child's data based on relationships
+        // This ensures parents only see their children's health data
+        const { data: childrenData, error } = await supabase
+          .from('parent_child_relationships')
+          .select(`
+            child_id,
+            players(*)
+          `)
+          .eq('parent_id', user?.id);
+
+        if (error) {
+          console.error('Error fetching children data:', error);
+        }
+        
+        // For now, we'll use the first child if multiple exist
+        if (childrenData && childrenData.length > 0) {
+          setPlayerProfile(childrenData[0].players);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

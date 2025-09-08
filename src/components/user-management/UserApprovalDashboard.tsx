@@ -118,7 +118,7 @@ export const UserApprovalDashboard = () => {
 
   const fetchTeams = async () => {
     try {
-      // Use the RPC function to avoid TypeScript issues
+      // Use the RPC function to get active teams
       const { data: teamsData, error } = await supabase.rpc('get_active_teams');
 
       if (error) {
@@ -127,16 +127,11 @@ export const UserApprovalDashboard = () => {
         return;
       }
       
-      // Simple mapping without complex type inference
-      const teams: TeamOption[] = [];
-      if (teamsData && Array.isArray(teamsData)) {
-        teamsData.forEach((team: any) => {
-          teams.push({
-            id: team.id,
-            name: team.name
-          });
-        });
-      }
+      // Map the team data to our interface
+      const teams: TeamOption[] = (teamsData || []).map((team: any) => ({
+        id: team.id,
+        name: team.name
+      }));
       
       setAvailableTeams(teams);
     } catch (error) {

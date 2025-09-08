@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { StaffDetailModal } from './modals/StaffDetailModal';
+import { StaffEditModal } from './modals/StaffEditModal';
+import { CreateStaffModal } from './modals/CreateStaffModal';
+import { DepartmentDetailModal } from './modals/DepartmentDetailModal';
+import { DepartmentEditModal } from './modals/DepartmentEditModal';
+import { CreateDepartmentModal } from './modals/CreateDepartmentModal';
+import { AnalyticsDetailModal } from './modals/AnalyticsDetailModal';
+import { HRFunctionsDashboard } from '@/components/hr/HRFunctionsDashboard';
 import { 
   UserPlus, 
   Users, 
@@ -17,7 +26,9 @@ import {
   Eye,
   Edit,
   Building,
-  Plus
+  Plus,
+  BarChart3,
+  TrendingUp
 } from 'lucide-react';
 
 interface StaffMember {
@@ -31,6 +42,9 @@ interface StaffMember {
   position: string;
   employment_status: string;
   hire_date: string;
+  payment_type: string;
+  hourly_rate?: number;
+  salary?: number;
   has_compensation_access: boolean;
 }
 
@@ -46,11 +60,31 @@ interface Department {
 
 export const StaffManagement = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('staff');
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Department modals
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [showDepartmentDetailModal, setShowDepartmentDetailModal] = useState(false);
+  const [showDepartmentEditModal, setShowDepartmentEditModal] = useState(false);
+  const [showCreateDepartmentModal, setShowCreateDepartmentModal] = useState(false);
+  
+  // Analytics modals
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [analyticsMetric, setAnalyticsMetric] = useState<{
+    type: 'total_staff' | 'departments' | 'active_staff' | 'avg_per_dept';
+    title: string;
+    value: number | string;
+  } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -61,7 +95,8 @@ export const StaffManagement = () => {
     try {
       await Promise.all([
         fetchStaffMembers(),
-        fetchDepartments()
+        fetchDepartments(),
+        fetchAnalytics()
       ]);
     } finally {
       setLoading(false);
@@ -97,6 +132,7 @@ export const StaffManagement = () => {
       
       const staffWithAccess = data?.map(staff => ({
         ...staff,
+        payment_type: staff.payment_type || 'hourly',
         has_compensation_access: true // Super admin has access to compensation data
       })) || [];
       
@@ -153,6 +189,76 @@ export const StaffManagement = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      // For now, calculate analytics from local data until RPC is available
+      const totalStaff = staffMembers.length;
+      const activeDepartments = departments.length;
+      const departmentDistribution = departments.map(dept => ({
+        department: dept.name,
+        count: dept.staff_count,
+        budget: dept.budget_allocation
+      }));
+
+      setAnalytics({
+        total_staff: totalStaff,
+        active_staff: staffMembers.filter(s => s.employment_status === 'active').length,
+        total_departments: activeDepartments,
+        avg_staff_per_department: activeDepartments > 0 ? Math.round(totalStaff / activeDepartments) : 0,
+        department_distribution: departmentDistribution
+      });
+    } catch (error) {
+      console.error('Error calculating analytics:', error);
+    }
+  };
+
+  const handleStaffClick = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setShowDetailModal(true);
+  };
+
+  const handleEditClick = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setShowEditModal(true);
+  };
+
+  const handleStaffUpdate = (updatedStaff: StaffMember) => {
+    setStaffMembers(prev => prev.map(staff => 
+      staff.id === updatedStaff.id ? updatedStaff : staff
+    ));
+  };
+
+  const handleCreateSuccess = () => {
+    fetchData();
+  };
+
+  // Department handlers
+  const handleDepartmentClick = (department: Department) => {
+    setSelectedDepartment(department);
+    setShowDepartmentDetailModal(true);
+  };
+
+  const handleDepartmentEdit = (department: Department) => {
+    setSelectedDepartment(department);
+    setShowDepartmentEditModal(true);
+  };
+
+  const handleDepartmentUpdate = (updatedDepartment: Department) => {
+    setDepartments(prev => prev.map(dept => 
+      dept.id === updatedDepartment.id ? updatedDepartment : dept
+    ));
+  };
+
+  // Analytics handlers
+  const handleAnalyticsClick = (type: 'total_staff' | 'departments' | 'active_staff' | 'avg_per_dept', title: string, value: number | string) => {
+    setAnalyticsMetric({ type, title, value });
+    setShowAnalyticsModal(true);
+  };
+
+  const navigateToHRSection = (section: string) => {
+    navigate(`/admin/staff/hr/${section}`);
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -244,12 +350,7 @@ export const StaffManagement = () => {
                   <Users className="h-5 w-5 text-blue-600" />
                   Staff Directory
                 </CardTitle>
-                <Button onClick={() => {
-                  toast({
-                    title: "Add Staff Member",
-                    description: "Staff creation functionality is now active and ready for production use.",
-                  });
-                }}>
+                <Button onClick={() => setShowCreateModal(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add Staff Member
                 </Button>
@@ -271,10 +372,14 @@ export const StaffManagement = () => {
                   </h3>
                   <div className="space-y-3">
                     {departmentStaff.map((staff) => (
-                      <div key={staff.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div 
+                        key={staff.id} 
+                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => handleStaffClick(staff)}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-blue-600" />
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <p className="font-medium">{staff.first_name} {staff.last_name}</p>
@@ -288,7 +393,14 @@ export const StaffManagement = () => {
                                 {staff.employment_status}
                               </Badge>
                               {staff.has_compensation_access && (
-                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStaffClick(staff);
+                                  }}
+                                >
                                   <DollarSign className="h-3 w-3 mr-1" />
                                   Compensation Data
                                 </Badge>
@@ -297,30 +409,39 @@ export const StaffManagement = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Staff Details",
-                              description: `Viewing details for ${staff.first_name} ${staff.last_name} - Production ready`,
-                            });
-                          }}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStaffClick(staff);
+                            }}
+                          >
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Edit Staff Member",
-                              description: `Editing ${staff.first_name} ${staff.last_name} - All database functions active`,
-                            });
-                          }}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(staff);
+                            }}
+                          >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Schedule Management",
-                              description: `Managing schedule for ${staff.first_name} ${staff.last_name} - Production ready`,
-                            });
-                          }}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toast({
+                                title: "Schedule Management",
+                                description: `Managing schedule for ${staff.first_name} ${staff.last_name}`,
+                              });
+                            }}
+                          >
                             <Calendar className="h-4 w-4 mr-1" />
                             Schedule
                           </Button>
@@ -350,7 +471,7 @@ export const StaffManagement = () => {
                   <Building className="h-5 w-5 text-green-600" />
                   Department Management
                 </CardTitle>
-                <Button>
+                <Button onClick={() => setShowCreateDepartmentModal(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Department
                 </Button>
@@ -359,7 +480,11 @@ export const StaffManagement = () => {
             <CardContent>
               <div className="grid gap-4">
                 {departments.map((dept) => (
-                  <div key={dept.id} className="p-4 border border-border rounded-lg">
+                  <div 
+                    key={dept.id} 
+                    className="p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => handleDepartmentClick(dept)}
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="font-semibold">{dept.name}</h3>
@@ -370,18 +495,32 @@ export const StaffManagement = () => {
                           {dept.staff_count} Staff
                         </Badge>
                         {dept.budget_allocation && (
-                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                          <Badge variant="outline" className="bg-success/10 text-success">
                             ${dept.budget_allocation.toLocaleString()} Budget
                           </Badge>
                         )}
                       </div>
                     </div>
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDepartmentClick(dept);
+                        }}
+                      >
                         <Eye className="h-4 w-4 mr-1" />
                         View Details
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDepartmentEdit(dept);
+                        }}
+                      >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
@@ -395,115 +534,26 @@ export const StaffManagement = () => {
 
         {/* HR Functions Tab */}
         <TabsContent value="hr" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4" />
-                  Time & Attendance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage employee time tracking and attendance
-                </p>
-                <Button className="w-full" size="sm">
-                  Open Time Tracking
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4" />
-                  Leave Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Handle time off requests and leave policies
-                </p>
-                <Button className="w-full" size="sm">
-                  Manage Leave
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4" />
-                  Payroll
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Process payroll and manage compensation
-                </p>
-                <Button className="w-full" size="sm">
-                  Payroll Dashboard
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <BriefcaseMedical className="h-4 w-4" />
-                  Benefits
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage employee benefits and enrollment
-                </p>
-                <Button className="w-full" size="sm">
-                  Benefits Admin
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Shield className="h-4 w-4" />
-                  Permissions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage staff roles and access control
-                </p>
-                <Button className="w-full" size="sm">
-                  Staff Permissions
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <UserPlus className="h-4 w-4" />
-                  Onboarding
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  New employee onboarding tasks
-                </p>
-                <Button className="w-full" size="sm">
-                  Onboarding Tasks
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          <HRFunctionsDashboard 
+            staffMembers={staffMembers}
+            onNavigate={navigate}
+            onError={(error) => {
+              toast({
+                title: "Error",
+                description: `${error.code || 'UNKNOWN_ERROR'}: ${error.message}`,
+                variant: "destructive",
+              });
+            }}
+          />
         </TabsContent>
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('total_staff', 'Total Staff', staffMembers.length)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Total Staff</CardTitle>
               </CardHeader>
@@ -513,7 +563,10 @@ export const StaffManagement = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('departments', 'Departments', departments.length)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Departments</CardTitle>
               </CardHeader>
@@ -523,7 +576,10 @@ export const StaffManagement = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('active_staff', 'Active Staff', staffMembers.filter(s => s.employment_status === 'active').length)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Active Staff</CardTitle>
               </CardHeader>
@@ -535,7 +591,10 @@ export const StaffManagement = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleAnalyticsClick('avg_per_dept', 'Average per Department', departments.length > 0 ? Math.round(staffMembers.length / departments.length) : 0)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">Avg per Dept</CardTitle>
               </CardHeader>
@@ -577,6 +636,73 @@ export const StaffManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Staff Modals */}
+      {selectedStaff && (
+        <StaffDetailModal
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          staff={selectedStaff}
+          onEdit={() => {
+            setShowDetailModal(false);
+            setShowEditModal(true);
+          }}
+        />
+      )}
+
+      {selectedStaff && (
+        <StaffEditModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          staff={selectedStaff}
+          onSave={handleStaffUpdate}
+        />
+      )}
+
+      <CreateStaffModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {/* Department Modals */}
+      {selectedDepartment && (
+        <DepartmentDetailModal
+          isOpen={showDepartmentDetailModal}
+          onClose={() => setShowDepartmentDetailModal(false)}
+          department={selectedDepartment}
+          onEdit={() => {
+            setShowDepartmentDetailModal(false);
+            setShowDepartmentEditModal(true);
+          }}
+        />
+      )}
+
+      {selectedDepartment && (
+        <DepartmentEditModal
+          isOpen={showDepartmentEditModal}
+          onClose={() => setShowDepartmentEditModal(false)}
+          department={selectedDepartment}
+          onSave={handleDepartmentUpdate}
+        />
+      )}
+
+      <CreateDepartmentModal
+        isOpen={showCreateDepartmentModal}
+        onClose={() => setShowCreateDepartmentModal(false)}
+        onSuccess={fetchData}
+      />
+
+      {/* Analytics Modal */}
+      {analyticsMetric && (
+        <AnalyticsDetailModal
+          isOpen={showAnalyticsModal}
+          onClose={() => setShowAnalyticsModal(false)}
+          metricType={analyticsMetric.type}
+          metricTitle={analyticsMetric.title}
+          metricValue={analyticsMetric.value}
+        />
+      )}
     </div>
   );
 };

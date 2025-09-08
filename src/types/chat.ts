@@ -1,53 +1,58 @@
 export interface ChatParticipant {
   id: string;
   user_id: string;
-  chat_id?: string;
-  role: string;
+  chat_id: string;
+  role: 'admin' | 'member';
   joined_at: string;
-  profiles?: {
-    id: string;
-    full_name: string;
-    email: string;
-  };
+  last_read_at: string;
+  user_name?: string;
+  user_email?: string;
 }
 
 export interface Chat {
   id: string;
   name: string;
-  chat_type: string;
+  chat_type: 'private' | 'group' | 'team';
   created_by: string;
+  team_id?: string;
+  is_archived: boolean;
+  is_pinned: boolean;
+  last_message_at: string;
   created_at: string;
   updated_at: string;
-  is_archived: boolean;
-  is_pinned?: boolean;
-  team_id?: string;
-  last_message_at?: string;
-  unread_count?: number;
-  chat_participants: ChatParticipant[];
+  status: 'active' | 'archived' | 'deleted';
+  last_message_content?: string;
+  last_message_sender?: string;
+  unread_count: number;
+  participant_count: number;
+  participants?: ChatParticipant[];
+  // Enhanced fields from database view
+  display_title?: string;
+  member_count?: number;
+  last_activity_at?: string;
+  is_admin?: boolean;
 }
 
-export interface Message {
+export interface ChatMessage {
   id: string;
   chat_id: string;
   sender_id: string;
   content: string;
-  message_type: string;
-  media_url?: string;
-  media_type?: string;
-  media_size?: number;
+  message_type: 'text' | 'image' | 'file' | 'system';
+  attachment_url?: string;
+  attachment_name?: string;
+  attachment_size?: number;
   reply_to_id?: string;
   is_edited: boolean;
-  is_recalled: boolean;
-  is_archived: boolean;
-  created_at: string;
+  is_deleted: boolean;
   edited_at?: string;
-  edit_history?: any;
-  sender_profile?: {
-    id: string;
-    full_name: string;
-    email: string;
-  };
-  reactions?: MessageReaction[];
+  created_at: string;
+  sender_name: string;
+  sender_email: string;
+  reactions: MessageReaction[];
+  status: 'visible' | 'recalled' | 'deleted_sender';
+  language_code?: string;
+  // UI states for optimistic updates
   _optimistic?: boolean;
   _pending?: boolean;
   _failed?: boolean;
@@ -56,43 +61,34 @@ export interface Message {
 
 export interface MessageReaction {
   id: string;
-  message_id?: string;
-  user_id: string;
   emoji: string;
+  user_id: string;
   created_at: string;
+}
+
+export interface CreateChatData {
+  name: string;
+  type: 'private' | 'group' | 'team';
+  participants: string[];
+  team_id?: string;
+}
+
+export interface ChatError {
+  code: string;
+  message: string;
+  details?: any;
+}
+
+// Legacy type aliases for compatibility
+export type Message = ChatMessage;
+export interface TypingIndicator {
+  userId: string;
+  userName: string;
+  timestamp: string;
 }
 
 export interface ChatSettings {
   notifications: boolean;
   sound: boolean;
-  message_preview: boolean;
-  typing_indicators: boolean;
-  read_receipts: boolean;
-  auto_archive_days: number;
-  theme: 'light' | 'dark' | 'auto';
-}
-
-export interface ChatNotification {
-  id: string;
-  chat_id: string;
-  user_id: string;
-  type: 'mention' | 'message' | 'join' | 'leave';
-  title: string;
-  message: string;
-  data: Record<string, any>;
-  created_at: string;
-  read: boolean;
-}
-
-export interface TypingIndicator {
-  user_id: string;
-  chat_id: string;
-  typing: boolean;
-  timestamp: number;
-}
-
-export interface ChatPresence {
-  user_id: string;
-  online: boolean;
-  last_seen: string;
+  theme: 'light' | 'dark';
 }

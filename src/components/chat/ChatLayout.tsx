@@ -1,14 +1,9 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { ChatSidebar } from './ChatSidebar';
-import { ChatWindow } from './ChatWindow';
-import { ChatSearch } from './ChatSearch';
+import { ProductionChatSidebar } from './ProductionChatSidebar';
+import { EnhancedProductionChatWindow } from './EnhancedProductionChatWindow';
 import { CreateChatModal } from './CreateChatModal';
-import { ChatSettingsModal } from './ChatSettingsModal';
-import { ArchivedChatsModal } from './ArchivedChatsModal';
-import { ChatMembersModal } from './ChatMembersModal';
-import { useChat } from '@/hooks/useChat';
-import { useChatNotifications } from '@/hooks/useChatNotifications';
+import { useProductionChat } from '@/hooks/useProductionChat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatLayoutProps {
@@ -18,9 +13,6 @@ interface ChatLayoutProps {
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
   const isMobile = useIsMobile();
   
-  // Initialize chat notifications
-  useChatNotifications();
-  
   const {
     chats,
     loading,
@@ -28,36 +20,22 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     messages,
     messagesLoading,
     hasMore,
+    error,
     selectChat,
     createChat,
     sendMessage,
-    editMessage,
-    deleteMessage,
-    archiveChat,
-    unarchiveChat,
-    deleteChat,
-    addReaction,
-    removeReaction,
     loadMoreMessages,
+    loadMoreChats,
+    markAsRead,
     refreshChats,
     refreshMessages,
-    updateChat
-  } = useChat();
+    retry,
+    renameChat,
+    archiveChat,
+    deleteChat
+  } = useProductionChat();
 
   const [showCreateModal, setShowCreateModal] = React.useState(false);
-  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
-  const [showArchivedModal, setShowArchivedModal] = React.useState(false);
-  const [showSearch, setShowSearch] = React.useState(false);
-  const [showMembers, setShowMembers] = React.useState(false);
-
-  const renameChat = async (chatId: string, newName: string) => {
-    try {
-      await updateChat(chatId, { name: newName });
-    } catch (error) {
-      console.error('Error renaming chat:', error);
-      throw error;
-    }
-  };
 
   // Mobile: show chat window when chat is selected
   const showChatWindow = selectedChat && (isMobile ? true : true);
@@ -74,41 +52,38 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
           "border-r border-border bg-card",
           isMobile ? "w-full" : "w-80 min-w-80"
         )}>
-          <ChatSidebar
-            chats={chats}
-            loading={loading}
-            selectedChatId={selectedChat?.id || null}
-            onSelectChat={selectChat}
-            onCreateChat={() => setShowCreateModal(true)}
-            onShowSettings={() => setShowSettingsModal(true)}
-            onShowArchived={() => setShowArchivedModal(true)}
-            onShowSearch={() => setShowSearch(true)}
-            onArchiveChat={archiveChat}
-            onDeleteChat={deleteChat}
-            onRefresh={refreshChats}
-          />
+      <ProductionChatSidebar
+        chats={chats}
+        loading={loading}
+        error={error}
+        selectedChatId={selectedChat?.id || null}
+        onSelectChat={selectChat}
+        onCreateChat={() => setShowCreateModal(true)}
+        onRefresh={refreshChats}
+        onLoadMore={loadMoreChats}
+        onRetry={retry}
+        onRenameChat={renameChat}
+        onArchiveChat={archiveChat}
+        onDeleteChat={deleteChat}
+      />
         </div>
       )}
 
       {/* Chat Window */}
       {showChatWindow && (
         <div className="flex-1 flex flex-col min-w-0">
-          <ChatWindow
+          <EnhancedProductionChatWindow
             chat={selectedChat}
             messages={messages}
             loading={messagesLoading}
             hasMore={hasMore}
+            error={error}
             onSendMessage={sendMessage}
-            onEditMessage={editMessage}
-            onDeleteMessage={deleteMessage}
-            onAddReaction={addReaction}
-            onRemoveReaction={removeReaction}
             onLoadMore={loadMoreMessages}
             onRefresh={refreshMessages}
             onBack={isMobile ? () => selectChat('') : undefined}
-            onShowMembers={() => setShowMembers(true)}
-            onSearchMessages={() => setShowSearch(true)}
-            onShowSettings={() => setShowSettingsModal(true)}
+            onMarkAsRead={() => selectedChat && markAsRead(selectedChat.id)}
+            onRetry={retry}
           />
         </div>
       )}
@@ -145,36 +120,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
           }
         }}
       />
-
-      <ChatSettingsModal
-        open={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        currentChatId={selectedChat?.id}
-        currentChatName={selectedChat?.name}
-        onRenameChat={renameChat}
-      />
-
-      <ArchivedChatsModal
-        open={showArchivedModal}
-        onClose={() => setShowArchivedModal(false)}
-        onChatRestored={refreshChats}
-      />
-
-      <ChatMembersModal
-        open={showMembers}
-        onClose={() => setShowMembers(false)}
-        chat={selectedChat}
-      />
-
-      {showSearch && (
-        <ChatSearch
-          onClose={() => setShowSearch(false)}
-          onSelectChat={(chatId) => {
-            setShowSearch(false);
-            selectChat(chatId);
-          }}
-        />
-      )}
     </div>
   );
 };

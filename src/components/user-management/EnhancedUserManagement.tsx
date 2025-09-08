@@ -20,8 +20,6 @@ import UserDetailsView from './UserDetailsView';
 import { UserApprovalDashboard } from './UserApprovalDashboard';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 import PermissionManager from './PermissionManager';
-import BulkUserManagement from '../admin/BulkUserManagement';
-import BulkUserManagementTester from '../admin/BulkUserManagementTester';
 import { EnhancedProductionReadiness } from '../admin/EnhancedProductionReadiness';
 
 interface UserProfile {
@@ -584,22 +582,14 @@ const EnhancedUserManagement = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-6 w-fit">
+        <TabsList className="grid grid-cols-4 w-fit">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Users
           </TabsTrigger>
-          <TabsTrigger value="bulk" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Bulk Actions
-          </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Templates
-          </TabsTrigger>
-          <TabsTrigger value="testing" className="flex items-center gap-2">
-            <TestTube className="w-4 h-4" />
-            System Testing
           </TabsTrigger>
           <TabsTrigger value="production" className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
@@ -612,9 +602,6 @@ const EnhancedUserManagement = () => {
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
-          {/* Bulk User Management for Player Setup */}
-          <BulkUserManagement onPlayerCreated={fetchUsers} />
-          
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
@@ -746,6 +733,7 @@ const EnhancedUserManagement = () => {
           </Card>
         </TabsContent>
 
+
         <TabsContent value="templates" className="space-y-4">
           <Card>
             <CardHeader>
@@ -792,9 +780,6 @@ const EnhancedUserManagement = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="testing" className="space-y-4">
-          <BulkUserManagementTester />
-        </TabsContent>
 
         <TabsContent value="production" className="space-y-4">
           <EnhancedProductionReadiness />

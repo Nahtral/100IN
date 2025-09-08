@@ -10,7 +10,7 @@ import { Users, Calendar, Trophy, BarChart3, Settings, UserPlus, Edit, Trash2, A
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import EnhancedTeamForm from '@/components/forms/EnhancedTeamForm';
-import PlayerForm from '@/components/forms/PlayerForm';
+import PlayerSelectionForm from '@/components/forms/PlayerSelectionForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Player {
@@ -109,27 +109,28 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      // For manual entry by super admin, create player record directly without profile
+      // Check if this is a registered user or manual entry
+      const playerData = {
+        user_id: data.selected_user_id || null,
+        team_id: team.id,
+        jersey_number: data.jersey_number ? parseInt(data.jersey_number.toString()) : null,
+        position: data.position || null,
+        height: data.height || null,
+        weight: data.weight || null,
+        date_of_birth: data.date_of_birth || null,
+        emergency_contact_name: data.emergency_contact_name || null,
+        emergency_contact_phone: data.emergency_contact_phone || null,
+        medical_notes: data.medical_notes || null,
+        is_active: true,
+        // Store manual entry data if no user_id (manual entry)
+        manual_entry_name: !data.selected_user_id ? data.full_name : null,
+        manual_entry_email: !data.selected_user_id ? data.email : null,
+        manual_entry_phone: !data.selected_user_id ? data.phone : null,
+      };
+
       const { error: playerError } = await supabase
         .from('players')
-        .insert({
-          // user_id is now nullable for manual entries
-          user_id: null,
-          team_id: team.id,
-          jersey_number: data.jerseyNumber ? parseInt(data.jerseyNumber) : null,
-          position: data.position || null,
-          height: data.height || null,
-          weight: data.weight || null,
-          date_of_birth: data.dateOfBirth || null,
-          emergency_contact_name: data.emergencyContactName || null,
-          emergency_contact_phone: data.emergencyContactPhone || null,
-          medical_notes: data.medicalNotes || null,
-          is_active: true,
-          // Store manual entry data in the new fields
-          manual_entry_name: data.fullName,
-          manual_entry_email: data.email || null,
-          manual_entry_phone: data.phone || null,
-        });
+        .insert(playerData);
 
       if (playerError) {
         console.error('Error creating player:', playerError);
@@ -434,10 +435,9 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
                 Cancel
               </Button>
             </div>
-            <PlayerForm
+            <PlayerSelectionForm
               onSubmit={handleAddPlayer}
               isLoading={isSubmitting}
-              isRequiredFieldsOnly={false}
             />
           </div>
         ) : (

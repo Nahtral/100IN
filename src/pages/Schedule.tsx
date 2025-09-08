@@ -89,6 +89,11 @@ const Schedule = () => {
   const { currentUser } = useCurrentUser();
   const { primaryRole, isSuperAdmin } = useOptimizedAuth();
   const { toast } = useToast();
+  
+  // Role-based access control
+  const isPlayerRole = primaryRole === 'player' && !isSuperAdmin();
+  const canManageEvents = (isSuperAdmin() || primaryRole === 'staff') && !isPlayerRole;
+  const canManageAttendance = (isSuperAdmin() || primaryRole === 'staff' || primaryRole === 'coach') && !isPlayerRole;
 
   // Use cached events with debounced filtering
   const debouncedFilters = useDebounce(filters, 300);
@@ -113,7 +118,7 @@ const Schedule = () => {
 
   const fetchUserTeams = async () => {
     try {
-      if (isSuperAdmin() || primaryRole === 'staff') {
+      if (canManageEvents) {
         // Super admins and staff see all teams
         const { data, error } = await supabase
           .from('teams')
@@ -122,7 +127,7 @@ const Schedule = () => {
         if (error) throw error;
         setUserTeamIds(data?.map(t => t.id) || []);
       } else {
-        // Regular users see only their assigned teams
+        // Players see only their assigned teams
         const { data, error } = await supabase
           .from('players')
           .select('team_id')
@@ -146,6 +151,17 @@ const Schedule = () => {
       if (event.status === 'deleted' && !isSuperAdmin()) {
         return false;
       }
+      
+      // Role-based filtering - players only see events for their teams
+      if (isPlayerRole) {
+        // Check if user has any teams assigned and if the event includes those teams
+        if (userTeamIds.length > 0 && event.team_ids && event.team_ids.length > 0) {
+          return event.team_ids.some(teamId => userTeamIds.includes(teamId));
+        }
+        // If no team assignments or event has no team restrictions, show to all
+        return true;
+      }
+      
       return true;
     });
     
@@ -166,7 +182,7 @@ const Schedule = () => {
     }
     
     return filtered;
-  }, [events, activeTab, isSuperAdmin]);
+  }, [events, activeTab, isPlayerRole, userTeamIds, canManageEvents]);
 
   const handleNewEventSave = async (eventData: any) => {
     try {
@@ -368,9 +384,6 @@ const Schedule = () => {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const canManageEvents = isSuperAdmin() || primaryRole === 'staff';
-  const canManageAttendance = isSuperAdmin() || primaryRole === 'staff' || primaryRole === 'coach';
-
   return (
     <Layout currentUser={currentUser}>
       <div className="space-y-6">
@@ -409,7 +422,7 @@ const Schedule = () => {
           <TabsList>
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             <TabsTrigger value="past">Past Events</TabsTrigger>
-            {isSuperAdmin() && (
+            {canManageEvents && (
               <>
                 <TabsTrigger value="archived">Archived Events</TabsTrigger>
                 <TabsTrigger value="locations">Locations</TabsTrigger>
@@ -522,25 +535,34 @@ const Schedule = () => {
                            )}
                          </div>
 
-                          <div className="flex items-center gap-2 ml-4">
-                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                              <EventActionMenu
-                                event={event}
-                                onEdit={() => {
-                                  setEditingEvent(event);
-                                  setIsFormOpen(true);
-                                }}
-                                onDuplicate={() => setDuplicateModal({ isOpen: true, event })}
-                                onArchive={() => handleArchiveEvent(event.id)}
-                                onUnarchive={() => handleUnarchiveEvent(event.id)}
-                                onDelete={() => handleDeleteEvent(event.id)}
-                                onAttendance={() => openAttendanceModal(event)}
-                                onImageUpload={() => setImageUploadModal({ isOpen: true, event })}
-                                isSuperAdmin={isSuperAdmin()}
-                                canManageAttendance={canManageAttendance}
-                              />
-                            </div>
-                          </div>
+                           <div className="flex items-center gap-2 ml-4">
+                             {/* Only show action menu for authorized users */}
+                             {(canManageEvents || canManageAttendance) && (
+                               <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                 <EventActionMenu
+                                   event={event}
+                                   onEdit={() => {
+                                     setEditingEvent(event);
+                                     setIsFormOpen(true);
+                                   }}
+                                   onDuplicate={() => setDuplicateModal({ isOpen: true, event })}
+                                   onArchive={() => handleArchiveEvent(event.id)}
+                                   onUnarchive={() => handleUnarchiveEvent(event.id)}
+                                   onDelete={() => handleDeleteEvent(event.id)}
+                                   onAttendance={() => openAttendanceModal(event)}
+                                   onImageUpload={() => setImageUploadModal({ isOpen: true, event })}
+                                   isSuperAdmin={isSuperAdmin()}
+                                   canManageAttendance={canManageAttendance}
+                                 />
+                               </div>
+                             )}
+                             {/* Show view-only indicator for players */}
+                             {primaryRole === 'player' && !canManageEvents && (
+                               <div className="flex items-center gap-1">
+                                 <Eye className="h-4 w-4 text-muted-foreground" />
+                               </div>
+                             )}
+                           </div>
                         </div>
                       </CardContent>
                     </Card>

@@ -16,8 +16,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTeamGridSettings } from '@/hooks/useTeamGridSettings';
-import BulkUserManagement from '@/components/admin/BulkUserManagement';
-import BulkUserManagementTester from '@/components/admin/BulkUserManagementTester';
 
 interface Player {
   id: string;
@@ -62,9 +60,14 @@ const Players = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isSuperAdmin } = useOptimizedAuth();
+  const { isSuperAdmin, primaryRole } = useOptimizedAuth();
   const { currentUser } = useCurrentUser();
   const { settings: teamGridSettings } = useTeamGridSettings();
+  
+  // Role-based access control
+  const isPlayerRole = primaryRole === 'player' && !isSuperAdmin();
+  const canManagePlayers = isSuperAdmin() || primaryRole === 'staff';
+  const canViewTeamGridSettings = (isSuperAdmin() || primaryRole === 'staff' || primaryRole === 'coach') && !isPlayerRole;
 
   useEffect(() => {
     fetchPlayers();
@@ -87,8 +90,7 @@ const Players = () => {
       const sortColumn = validSortColumns.includes(requestedSortColumn) ? requestedSortColumn : 'created_at';
       const sortDirection = teamGridSettings?.sort_direction === 'desc' ? false : true;
       
-      // First fetch all players with their profiles (only approved users)
-      const { data: playersData, error: playersError } = await supabase
+      let query = supabase
         .from('players')
         .select(`
           *,
@@ -100,7 +102,14 @@ const Players = () => {
             approval_status
           )
         `)
-        .eq('profiles.approval_status', 'approved')
+        .eq('profiles.approval_status', 'approved');
+
+      // Role-based filtering - players only see themselves and same team members
+      if (isPlayerRole) {
+        query = query.eq('user_id', user?.id);
+      }
+
+      const { data: playersData, error: playersError } = await query
         .order(sortColumn, { ascending: sortDirection });
 
       console.log('Players query result:', { data: playersData, error: playersError });
@@ -229,8 +238,8 @@ const Players = () => {
             <p className="mobile-text text-muted-foreground">Manage your team roster</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <TeamGridSettingsButton />
-            {isSuperAdmin() && (
+            {canViewTeamGridSettings && <TeamGridSettingsButton />}
+            {canManagePlayers && (
               <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={openAddForm} size="lg" className="w-full sm:w-auto">
@@ -313,8 +322,8 @@ const Players = () => {
                           </div>
                         </div>
                         
-                        {/* Action buttons for mobile */}
-                        {isSuperAdmin() && (
+                        {/* Action buttons - only for authorized users */}
+                        {canManagePlayers && (
                           <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
@@ -343,8 +352,8 @@ const Players = () => {
                       </div>
                       
                       <div className="mobile-list-content">
-                        {/* Email (only for authorized users) */}
-                        {(isSuperAdmin() || player.user_id === user?.id) && player.profiles?.email && (
+                        {/* Email (only for authorized users or own data) */}
+                        {(canManagePlayers || player.user_id === user?.id) && player.profiles?.email && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <span className="mobile-text-sm">{player.profiles.email}</span>
                           </div>
@@ -375,8 +384,8 @@ const Players = () => {
                           <span className="mobile-text-sm text-muted-foreground">No ShotIQ data yet</span>
                         )}
                         
-                        {/* Emergency contact (only for authorized users) */}
-                        {(isSuperAdmin() || player.user_id === user?.id) && (player.emergency_contact_name || player.emergency_contact_phone) && (
+                        {/* Emergency contact (only for authorized users or own data) */}
+                        {(canManagePlayers || player.user_id === user?.id) && (player.emergency_contact_name || player.emergency_contact_phone) && (
                           <div className="mobile-text-sm text-muted-foreground">
                             <span>Emergency: </span>
                             {player.emergency_contact_name && <span>{player.emergency_contact_name}</span>}
@@ -391,13 +400,6 @@ const Players = () => {
           </CardContent>
         </Card>
 
-        {/* Bulk User Management - Super Admin Only */}
-        {isSuperAdmin() && (
-          <>
-            <BulkUserManagement onPlayerCreated={fetchPlayers} />
-            <BulkUserManagementTester />
-          </>
-        )}
 
         {/* Player Details Modal */}
         <PlayerDetailsModal

@@ -4940,10 +4940,6 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
-      get_user_team_memberships: {
-        Args: { target_user_id?: string }
-        Returns: string[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]

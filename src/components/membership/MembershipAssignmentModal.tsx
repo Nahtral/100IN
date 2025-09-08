@@ -123,29 +123,27 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
             </Popover>
           </div>
 
-          {/* End Date (for DATE_RANGE types) */}
-          {requiresEndDate && (
-            <div className="space-y-2">
-              <Label>End Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, 'PPP') : 'Select end date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    disabled={(date) => date < startDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
+          {/* End Date */}
+          <div className="space-y-2">
+            <Label>End Date (optional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, 'PPP') : 'Select end date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  disabled={(date) => date < startDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {/* Class Override (for CLASS_COUNT types) */}
           {allowsClassOverride && (

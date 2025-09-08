@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
+import { PlayerRouteGuard } from "@/components/auth/PlayerRouteGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { NotificationToastProvider } from "@/components/notifications/NotificationToast";
 import Home from "./pages/Home";
@@ -22,6 +23,7 @@ const Schedule = React.lazy(() => import("./pages/Schedule"));
 const Analytics = React.lazy(() => import("./pages/Analytics"));
 const Medical = React.lazy(() => import("./pages/Medical"));
 const Partners = React.lazy(() => import("./pages/Partners"));
+const PartnershipManagement = React.lazy(() => import("./pages/PartnershipManagement"));
 const Settings = React.lazy(() => import("./pages/Settings"));
 const Chat = React.lazy(() => import("./pages/Chat"));
 const TeamGrid = React.lazy(() => import("./pages/TeamGrid"));
@@ -30,7 +32,6 @@ const Evaluations = React.lazy(() => import("./pages/Evaluations"));
 const HealthWellness = React.lazy(() => import("./pages/HealthWellness"));
 const News = React.lazy(() => import("./pages/News"));
 const NewsManager = React.lazy(() => import("./pages/NewsManager"));
-const PartnershipManagement = React.lazy(() => import("./pages/PartnershipManagement"));
 const MedicalManagement = React.lazy(() => import("./pages/MedicalManagement"));
 const ShotIQ = React.lazy(() => import("./pages/ShotIQ"));
 const Security = React.lazy(() => import("./pages/Security"));
@@ -38,6 +39,8 @@ const TeamGridSettings = React.lazy(() => import("./pages/TeamGridSettings"));
 const TryoutRubric = React.lazy(() => import("./pages/TryoutRubric"));
 const NotificationSettings = React.lazy(() => import("./pages/NotificationSettings"));
 const MembershipTypes = React.lazy(() => import("./pages/MembershipTypes"));
+const StaffManagement = React.lazy(() => import("./pages/StaffManagement"));
+const HRSection = React.lazy(() => import("./pages/HRSection"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +66,7 @@ const App = () => (
           <Sonner />
           <NotificationToastProvider />
           <BrowserRouter>
+          <PlayerRouteGuard>
           <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
               <div className="animate-pulse">
@@ -89,7 +93,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/teams" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']} requireAll={false}>
                   <Teams />
                 </RoleProtectedRoute>
               } />
@@ -114,9 +118,9 @@ const App = () => (
                 </RoleProtectedRoute>
               } />
               <Route path="/settings" element={
-                <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
                   <Settings />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               } />
               <Route path="/user-management" element={
                 <RoleProtectedRoute allowedRoles={['super_admin']}>
@@ -129,14 +133,14 @@ const App = () => (
                 </RoleProtectedRoute>
               } />
               <Route path="/health-wellness" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'medical', 'staff', 'coach', 'player']}>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'medical', 'staff', 'coach']}>
                   <HealthWellness />
                 </RoleProtectedRoute>
               } />
               <Route path="/news" element={
-                <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
                   <News />
-                </ProtectedRoute>
+                </RoleProtectedRoute>
               } />
               <Route path="/news-manager" element={
                 <RoleProtectedRoute allowedRoles={['super_admin']}>
@@ -144,7 +148,7 @@ const App = () => (
                 </RoleProtectedRoute>
               } />
               <Route path="/chat" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach', 'player']}>
+                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
                   <Chat />
                 </RoleProtectedRoute>
               } />
@@ -193,9 +197,25 @@ const App = () => (
             <TryoutRubric />
           </RoleProtectedRoute>
         } />
+        <Route path="/admin/staff" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <StaffManagement />
+          </RoleProtectedRoute>
+        } />
+        <Route path="/admin/staff/hr" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <HRSection />
+          </RoleProtectedRoute>
+        } />
+        <Route path="/admin/staff/hr/*" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <HRSection />
+          </RoleProtectedRoute>
+        } />
         <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </PlayerRouteGuard>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
