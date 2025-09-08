@@ -136,7 +136,6 @@ export function AppSidebar() {
       title: 'TeamGrid',
       href: '/teamgrid',
       icon: Users,
-      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach'),
     },
   ];
 
@@ -288,15 +287,15 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Internal Tools Section - Hidden for players */}
-        {!isPlayerRole && (actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach')) && (
+        {/* Internal Tools Section - SUPER ADMIN ONLY */}
+        {actualIsSuperAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Internal Tools
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {internalToolsItems.filter(shouldShowItem).map((item) => (
+                {internalToolsItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild>
                         <NavLink
@@ -323,8 +322,8 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Super Admin Section - Hidden for players */}
-        {!isPlayerRole && actualIsSuperAdmin && (
+        {/* Administration Section - SUPER ADMIN ONLY */}
+        {actualIsSuperAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Administration
@@ -358,8 +357,8 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Role Switcher for Super Admin - Hidden for players */}
-        {!isPlayerRole && isSuperAdmin && (!collapsed || isMobile) && (
+        {/* Role Switcher - SUPER ADMIN ONLY */}
+        {isSuperAdmin && (!collapsed || isMobile) && (
           <SidebarGroup>
             <SidebarGroupContent>
               <div className="px-3 py-2">
