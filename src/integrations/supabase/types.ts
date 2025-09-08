@@ -4602,51 +4602,36 @@ export type Database = {
           chat_id: string | null
           chat_type: string | null
           created_at: string | null
-          display_title: string | null
-          is_admin: boolean | null
+          display_name: string | null
           is_archived: boolean | null
           is_pinned: boolean | null
-          last_activity_at: string | null
           last_message_at: string | null
-          last_message_content: string | null
-          member_count: number | null
           original_name: string | null
           status: string | null
-          unread_count: number | null
           updated_at: string | null
         }
         Insert: {
           chat_id?: string | null
           chat_type?: string | null
           created_at?: string | null
-          display_title?: never
-          is_admin?: never
+          display_name?: never
           is_archived?: boolean | null
           is_pinned?: boolean | null
-          last_activity_at?: never
           last_message_at?: string | null
-          last_message_content?: never
-          member_count?: never
           original_name?: string | null
           status?: string | null
-          unread_count?: never
           updated_at?: string | null
         }
         Update: {
           chat_id?: string | null
           chat_type?: string | null
           created_at?: string | null
-          display_title?: never
-          is_admin?: never
+          display_name?: never
           is_archived?: boolean | null
           is_pinned?: boolean | null
-          last_activity_at?: never
           last_message_at?: string | null
-          last_message_content?: never
-          member_count?: never
           original_name?: string | null
           status?: string | null
-          unread_count?: never
           updated_at?: string | null
         }
         Relationships: []
@@ -4939,6 +4924,10 @@ export type Database = {
       get_user_roles_and_permissions: {
         Args: { target_user_id: string }
         Returns: Json
+      }
+      get_user_team_memberships: {
+        Args: { target_user_id?: string }
+        Returns: string[]
       }
       has_role: {
         Args: {
