@@ -84,28 +84,32 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const fetchPlayersAndAttendance = async () => {
     setLoading(true);
     try {
-      // Fetch players from selected teams with their profile info and team info
+      // Fetch players from selected teams using the player_teams junction table
       const { data: playersData, error: playersError } = await supabase
-        .from('players')
+        .from('player_teams')
         .select(`
-          id,
-          user_id,
+          player_id,
           team_id,
-          jersey_number,
-          position,
-          height,
-          weight,
-          date_of_birth,
-          emergency_contact_name,
-          emergency_contact_phone,
-          medical_notes,
-          is_active,
-          created_at,
-          updated_at,
-          profiles(full_name, email, phone),
+          players!inner(
+            id,
+            user_id,
+            jersey_number,
+            position,
+            height,
+            weight,
+            date_of_birth,
+            emergency_contact_name,
+            emergency_contact_phone,
+            medical_notes,
+            is_active,
+            created_at,
+            updated_at,
+            profiles(full_name, email, phone)
+          ),
           teams(name, season)
         `)
         .in('team_id', teamIds)
+        .eq('players.is_active', true)
         .eq('is_active', true);
 
       if (playersError) {
@@ -121,11 +125,18 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
       if (attendanceError) throw attendanceError;
 
-      setPlayers((playersData as unknown as Player[]) || []);
+      // Transform the data from junction table format to Player format
+      const transformedPlayers: Player[] = playersData?.map((item: any) => ({
+        ...item.players,
+        teams: item.teams,
+        team_id: item.team_id // Set team_id from the junction table
+      })) || [];
+
+      setPlayers(transformedPlayers);
       
       // Initialize attendance state
       const attendanceMap: Record<string, AttendanceRecord> = {};
-      playersData?.forEach(player => {
+      transformedPlayers?.forEach(player => {
         const existingRecord = attendanceData?.find(a => a.player_id === player.id);
         attendanceMap[player.id] = {
           player_id: player.id,
