@@ -392,8 +392,18 @@ export const UserDetailsView: React.FC<UserDetailsViewProps> = ({ user, onClose 
           </div>
           <div>
             <h4 className="font-medium text-muted-foreground mb-1">Account Status</h4>
-            <Badge variant={user.approval_status === 'approved' ? 'default' : 'secondary'}>
-              {user.approval_status}
+            <Badge variant={
+              user.approval_status === 'approved' && userRoles.some(role => role.is_active) 
+                ? 'default' 
+                : user.approval_status === 'approved' && !userRoles.some(role => role.is_active)
+                ? 'destructive'
+                : 'secondary'
+            }>
+              {user.approval_status === 'approved' && userRoles.some(role => role.is_active) 
+                ? 'active' 
+                : user.approval_status === 'approved' && !userRoles.some(role => role.is_active)
+                ? 'approved (inactive roles)'
+                : user.approval_status}
             </Badge>
           </div>
         </CardContent>
