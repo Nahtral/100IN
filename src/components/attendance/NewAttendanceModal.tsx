@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-interface PlayerProfile {
+interface PlayerWithAttendance {
   id: string;
   user_id: string;
   jersey_number?: number;
@@ -23,12 +23,9 @@ interface PlayerProfile {
   phone?: string;
   team_name: string;
   team_id: string;
-}
-
-interface AttendanceRecord {
-  player_id: string;
   status: 'present' | 'absent' | 'late' | 'excused';
   notes?: string;
+  hasExistingRecord: boolean;
 }
 
 interface NewAttendanceModalProps {
@@ -46,8 +43,7 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
   eventTitle,
   teamIds
 }) => {
-  const [players, setPlayers] = useState<PlayerProfile[]>([]);
-  const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
+  const [players, setPlayers] = useState<PlayerWithAttendance[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
   const [loading, setLoading] = useState(true);
@@ -57,37 +53,37 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Fetch players using separate queries to avoid relationship issues
-  const fetchPlayersAndAttendance = useCallback(async () => {
+  // Single comprehensive query to fetch all necessary data
+  const fetchAttendanceData = useCallback(async () => {
     if (!teamIds?.length) {
-      setError('No teams selected');
+      setError('No teams selected for this event');
       setLoading(false);
       return;
     }
 
+    console.log('🔍 Fetching attendance data for teams:', teamIds);
     setLoading(true);
     setError(null);
     
     try {
-      // Step 1: Get player-team relationships
-      const { data: playerTeamData, error: playerTeamError } = await supabase
+      // Step 1: Get player-team relationships for the selected teams
+      const { data: playerTeams, error: ptError } = await supabase
         .from('player_teams')
         .select('player_id, team_id')
         .in('team_id', teamIds)
         .eq('is_active', true);
 
-      if (playerTeamError) throw playerTeamError;
+      console.log('👥 Player teams:', { playerTeams, ptError });
 
-      if (!playerTeamData?.length) {
+      if (ptError) throw ptError;
+      if (!playerTeams?.length) {
         setPlayers([]);
-        setAttendance({});
-        setLoading(false);
         return;
       }
 
-      const playerIds = [...new Set(playerTeamData.map(pt => pt.player_id))];
+      const playerIds = [...new Set(playerTeams.map(pt => pt.player_id))];
       
-      // Step 2: Get player details (only approved players)
+      // Step 2: Get player details with profiles (only approved)
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select(`
@@ -95,74 +91,106 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
           user_id,
           jersey_number,
           position,
-          profiles!inner(
-            full_name,
-            email,
-            phone,
-            approval_status
-          )
+          is_active
         `)
         .in('id', playerIds)
-        .eq('is_active', true)
-        .eq('profiles.approval_status', 'approved');
+        .eq('is_active', true);
+
+      console.log('🏀 Players data:', { playersData, playersError });
 
       if (playersError) throw playersError;
+      if (!playersData?.length) {
+        setPlayers([]);
+        return;
+      }
 
-      // Step 3: Get team names
+      const userIds = playersData.map(p => p.user_id);
+
+      // Step 3: Get profiles (only approved)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone, approval_status')
+        .in('id', userIds)
+        .eq('approval_status', 'approved');
+
+      console.log('👤 Profiles data:', { profilesData, profilesError });
+
+      if (profilesError) throw profilesError;
+      if (!profilesData?.length) {
+        setPlayers([]);
+        setError('No approved players found for the selected teams');
+        return;
+      }
+
+      // Step 4: Get team names
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select('id, name')
-        .in('id', teamIds);
+        .select('id, name, is_active')
+        .in('id', teamIds)
+        .eq('is_active', true);
+
+      console.log('🏆 Teams data:', { teamsData, teamsError });
 
       if (teamsError) throw teamsError;
 
-      // Step 4: Get existing attendance records
-      const { data: attendanceData, error: attendanceError } = await supabase
+      // Step 5: Get existing attendance records
+      const { data: existingAttendance, error: attendanceError } = await supabase
         .from('player_attendance')
         .select('player_id, status, notes')
         .eq('schedule_id', eventId);
 
+      console.log('📝 Existing attendance:', { existingAttendance, attendanceError });
+
       if (attendanceError) throw attendanceError;
 
-      // Combine all data
-      const teamsMap = new Map(teamsData?.map(t => [t.id, t.name]) || []);
-      const playerTeamMap = new Map(playerTeamData.map(pt => [pt.player_id, pt.team_id]));
+      // Build lookup maps
+      const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+      const teamsMap = new Map((teamsData || []).map(t => [t.id, t.name]));
+      const playerTeamMap = new Map(playerTeams.map(pt => [pt.player_id, pt.team_id]));
+      const attendanceMap = new Map((existingAttendance || []).map(att => [att.player_id, att]));
 
-      const combinedPlayers: PlayerProfile[] = (playersData || []).map(player => {
-        const teamId = playerTeamMap.get(player.id) || '';
-        return {
-          id: player.id,
-          user_id: player.user_id,
-          jersey_number: player.jersey_number || undefined,
-          position: player.position || undefined,
-          full_name: player.profiles?.full_name || 'Unknown Player',
-          email: player.profiles?.email || '',
-          phone: player.profiles?.phone || undefined,
-          team_name: teamsMap.get(teamId) || 'Unknown Team',
-          team_id: teamId
-        };
-      });
+      // Combine all data - only include players with approved profiles
+      const combinedPlayers: PlayerWithAttendance[] = playersData
+        .filter(player => profilesMap.has(player.user_id))
+        .map(player => {
+          const profile = profilesMap.get(player.user_id)!;
+          const teamId = playerTeamMap.get(player.id) || '';
+          const existingRecord = attendanceMap.get(player.id);
+          
+          return {
+            id: player.id,
+            user_id: player.user_id,
+            jersey_number: player.jersey_number || undefined,
+            position: player.position || undefined,
+            full_name: profile.full_name || 'Unknown Player',
+            email: profile.email || '',
+            phone: profile.phone || undefined,
+            team_name: teamsMap.get(teamId) || 'Unknown Team',
+            team_id: teamId,
+            status: (existingRecord?.status as any) || 'present',
+            notes: existingRecord?.notes || '',
+            hasExistingRecord: !!existingRecord
+          };
+        });
 
-      // Initialize attendance state
-      const attendanceMap: Record<string, AttendanceRecord> = {};
-      combinedPlayers.forEach(player => {
-        const existingRecord = attendanceData?.find(a => a.player_id === player.id);
-        attendanceMap[player.id] = {
-          player_id: player.id,
-          status: (existingRecord?.status as 'present' | 'absent' | 'late' | 'excused') || 'present',
-          notes: existingRecord?.notes || ''
-        };
-      });
+      console.log(`✅ Successfully processed ${combinedPlayers.length} players:`, combinedPlayers);
 
       setPlayers(combinedPlayers);
-      setAttendance(attendanceMap);
+      
+      // Show success message
+      if (combinedPlayers.length > 0) {
+        console.log(`🎉 Found ${combinedPlayers.length} approved players across ${teamIds.length} teams`);
+      } else {
+        console.warn('⚠️ No approved players found for the selected teams');
+        setError('No approved players found for the selected teams. Please check team assignments and player approval status.');
+      }
       
     } catch (error: any) {
-      console.error('Error fetching attendance data:', error);
-      setError(error.message || 'Failed to load attendance data');
+      console.error('💥 Fatal error fetching attendance data:', error);
+      setError(`Failed to load attendance data: ${error.message}`);
       toast({
-        title: "Error",
-        description: "Failed to load players and attendance data.",
+        title: "Error Loading Data",
+        description: error.message || 'Failed to load players and attendance data.',
         variant: "destructive",
       });
     } finally {
@@ -172,24 +200,27 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchPlayersAndAttendance();
+      console.log('🚀 Modal opened, starting data fetch...');
+      fetchAttendanceData();
     } else {
       // Reset state when modal closes
+      console.log('🔄 Modal closed, resetting state...');
       setPlayers([]);
-      setAttendance({});
       setSelectedPlayers(new Set());
       setError(null);
     }
-  }, [isOpen, fetchPlayersAndAttendance]);
+  }, [isOpen, fetchAttendanceData]);
 
-  const updateAttendance = useCallback((playerId: string, field: keyof AttendanceRecord, value: any) => {
-    setAttendance(prev => ({
-      ...prev,
-      [playerId]: {
-        ...prev[playerId],
-        [field]: value
-      }
-    }));
+  const updatePlayerStatus = useCallback((playerId: string, status: 'present' | 'absent' | 'late' | 'excused') => {
+    setPlayers(prev => prev.map(player => 
+      player.id === playerId ? { ...player, status } : player
+    ));
+  }, []);
+
+  const updatePlayerNotes = useCallback((playerId: string, notes: string) => {
+    setPlayers(prev => prev.map(player => 
+      player.id === playerId ? { ...player, notes } : player
+    ));
   }, []);
 
   const togglePlayerSelection = useCallback((playerId: string) => {
@@ -222,9 +253,9 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
       return;
     }
 
-    selectedPlayers.forEach(playerId => {
-      updateAttendance(playerId, 'status', bulkStatus);
-    });
+    setPlayers(prev => prev.map(player => 
+      selectedPlayers.has(player.id) ? { ...player, status: bulkStatus } : player
+    ));
 
     toast({
       title: "Bulk Status Applied",
@@ -232,12 +263,12 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
     });
 
     setSelectedPlayers(new Set());
-  }, [selectedPlayers, bulkStatus, updateAttendance, toast]);
+  }, [selectedPlayers, bulkStatus, toast]);
 
   const saveAttendance = useCallback(async () => {
     if (!user?.id) {
       toast({
-        title: "Error",
+        title: "Authentication Error",
         description: "You must be logged in to save attendance.",
         variant: "destructive",
       });
@@ -247,14 +278,16 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
     setSaving(true);
     
     try {
-      const attendanceRecords = Object.values(attendance).map(record => ({
-        player_id: record.player_id,
+      const attendanceRecords = players.map(player => ({
+        player_id: player.id,
         schedule_id: eventId,
-        status: record.status,
-        notes: record.notes || null,
+        status: player.status,
+        notes: player.notes?.trim() || null,
         marked_by: user.id,
         marked_at: new Date().toISOString()
       }));
+
+      console.log('💾 Saving attendance records:', attendanceRecords);
 
       const { error } = await supabase
         .from('player_attendance')
@@ -266,22 +299,22 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: `Attendance saved for ${attendanceRecords.length} player(s).`,
+        title: "Attendance Saved",
+        description: `Successfully saved attendance for ${attendanceRecords.length} player(s).`,
       });
       
       onClose();
     } catch (error: any) {
-      console.error('Error saving attendance:', error);
+      console.error('💥 Error saving attendance:', error);
       toast({
-        title: "Error",
-        description: "Failed to save attendance. Please try again.",
+        title: "Save Failed",
+        description: error.message || "Failed to save attendance. Please try again.",
         variant: "destructive",
       });
     } finally {
       setSaving(false);
     }
-  }, [attendance, eventId, user?.id, onClose, toast]);
+  }, [players, eventId, user?.id, onClose, toast]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -294,8 +327,7 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
   };
 
   const attendanceStats = players.reduce((stats, player) => {
-    const status = attendance[player.id]?.status || 'present';
-    stats[status] = (stats[status] || 0) + 1;
+    stats[player.status] = (stats[player.status] || 0) + 1;
     return stats;
   }, {} as Record<string, number>);
 
@@ -307,8 +339,8 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
         ))}
       </div>
       <div className="space-y-3">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
+        {[...Array(5)].map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full" />
         ))}
       </div>
     </div>
@@ -332,9 +364,10 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
               <Button 
                 variant="link" 
                 className="p-0 h-auto ml-2" 
-                onClick={fetchPlayersAndAttendance}
+                onClick={fetchAttendanceData}
+                disabled={loading}
               >
-                Retry
+                Try Again
               </Button>
             </AlertDescription>
           </Alert>
@@ -374,7 +407,12 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  No players found for the selected teams. Make sure players are assigned to these teams.
+                  No approved players found for the selected teams. Please verify:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Players are assigned to these teams</li>
+                    <li>Players have approved status</li>
+                    <li>Players are marked as active</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
             ) : (
@@ -442,13 +480,18 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
                               onCheckedChange={() => togglePlayerSelection(player.id)}
                             />
                             <div className="flex items-center gap-2">
-                              {getStatusIcon(attendance[player.id]?.status || 'present')}
+                              {getStatusIcon(player.status)}
                               <div>
                                 <p className="font-medium">{player.full_name}</p>
                                 <p className="text-sm text-muted-foreground">
                                   {player.jersey_number ? `#${player.jersey_number}` : 'No Jersey'} • 
                                   {player.position || 'No Position'} • 
                                   {player.team_name}
+                                  {player.hasExistingRecord && (
+                                    <span className="ml-2 text-xs bg-primary/10 text-primary px-1 rounded">
+                                      Previously Recorded
+                                    </span>
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -456,8 +499,8 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
                           
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                             <Select
-                              value={attendance[player.id]?.status || 'present'}
-                              onValueChange={(value) => updateAttendance(player.id, 'status', value)}
+                              value={player.status}
+                              onValueChange={(value: any) => updatePlayerStatus(player.id, value)}
                             >
                               <SelectTrigger className="w-full sm:w-32">
                                 <SelectValue />
@@ -472,8 +515,8 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
                             
                             <Textarea
                               placeholder="Notes (optional)"
-                              value={attendance[player.id]?.notes || ''}
-                              onChange={(e) => updateAttendance(player.id, 'notes', e.target.value)}
+                              value={player.notes || ''}
+                              onChange={(e) => updatePlayerNotes(player.id, e.target.value)}
                               className="w-full sm:w-48 min-h-[40px] max-h-[80px]"
                               rows={1}
                             />
@@ -488,16 +531,20 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={onClose} disabled={saving}>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={saveAttendance} 
+              <Button
+                onClick={saveAttendance}
                 disabled={saving || players.length === 0}
                 className="flex items-center gap-2"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {saving ? 'Saving...' : 'Save Attendance'}
+                {saving ? 'Saving...' : `Save Attendance (${players.length})`}
               </Button>
             </div>
           </div>
