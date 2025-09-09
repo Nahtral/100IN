@@ -148,8 +148,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  // Check if user can manage events (super admin, staff, or coach only)
-  const canManageEvents = isSuperAdmin || hasRole('staff') || hasRole('coach');
+  // Check if user can manage attendance (super admin, staff, or coach)
+  const canManageAttendance = isSuperAdmin() || hasRole('staff') || hasRole('coach');
 
   if (!event) return null;
 
@@ -216,7 +216,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                   </div>
                 </div>
 
-                {canManageEvents && (
+                {isSuperAdmin() && (
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -319,7 +319,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     <Users className="h-5 w-5" />
                     Teams & Players ({players.length} players)
                   </CardTitle>
-                  {canManageEvents && (
+                  {canManageAttendance && (
                     <Button
                       variant="outline"
                       size="sm"
