@@ -43,13 +43,12 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
     canSwitchRoles 
   } = useRoleSwitcher();
 
-  // Determine actual permissions based on test mode
-  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
+  // Determine actual permissions based on test mode for non-restricted items only
   const actualCanAccessMedical = isTestMode ? testCanAccessMedical() : (isSuperAdmin() || hasRole('medical'));
   const actualCanAccessPartners = isTestMode ? testCanAccessPartners() : (isSuperAdmin() || hasRole('partner'));
   const actualCanAccessHR = isTestMode ? 
     (effectiveIsSuperAdmin || hasRole('staff') || hasRole('coach')) : 
-    (isSuperAdmin || hasRole('staff') || hasRole('coach'));
+    (isSuperAdmin() || hasRole('staff') || hasRole('coach'));
 
   const moreItems = [
     {
@@ -57,7 +56,7 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
       href: '/analytics',
       icon: BarChart3,
       description: 'Team performance metrics',
-      showCondition: () => actualIsSuperAdmin
+      showCondition: () => isSuperAdmin()
     },
     {
       title: 'Health & Wellness',
@@ -99,28 +98,28 @@ export const MoreDrawer: React.FC<MoreDrawerProps> = ({ isOpen, onClose }) => {
       href: '/shotiq',
       icon: Target,
       description: 'Shot analysis tool',
-      showCondition: () => actualIsSuperAdmin
+      showCondition: () => isSuperAdmin()
     },
     {
       title: 'User Management',
       href: '/user-management',
       icon: Users2,
       description: 'Manage users',
-      showCondition: () => actualIsSuperAdmin
+      showCondition: () => isSuperAdmin()
     },
     {
       title: 'Evaluations',
       href: '/evaluations',
       icon: ClipboardList,
       description: 'Player evaluations',
-      showCondition: () => actualIsSuperAdmin
+      showCondition: () => isSuperAdmin()
     },
     {
       title: 'News Manager',
       href: '/news-manager',
       icon: Newspaper,
       description: 'Manage news posts',
-      showCondition: () => actualIsSuperAdmin
+      showCondition: () => isSuperAdmin()
     },
     {
       title: 'Settings',

@@ -41,8 +41,7 @@ export function AppSidebar() {
   const { isSuperAdmin, hasRole, loading, initialized } = useOptimizedAuth();
   const { isTestMode, effectiveIsSuperAdmin, testHasRole, testCanAccessMedical, testCanAccessPartners } = useRoleSwitcher();
 
-  // Use effective permissions based on test mode
-  const actualIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
+  // Use effective permissions based on test mode for non-restricted items only
   const actualHasRole = (role: string) => isTestMode ? testHasRole(role) : hasRole(role);
   const actualCanAccessMedical = () => isTestMode ? testCanAccessMedical() : (isSuperAdmin() || hasRole('medical'));
   const actualCanAccessPartners = () => isTestMode ? testCanAccessPartners() : (isSuperAdmin() || hasRole('partner'));
@@ -70,7 +69,7 @@ export function AppSidebar() {
       title: 'Teams',
       href: '/teams',
       icon: Trophy,
-      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach'),
+      showCondition: () => isSuperAdmin() || actualHasRole('staff') || actualHasRole('coach'),
     },
     {
       title: 'Schedule',
@@ -82,7 +81,7 @@ export function AppSidebar() {
       title: 'Analytics',
       href: '/analytics',
       icon: BarChart3,
-      showCondition: () => actualIsSuperAdmin,
+      showCondition: () => isSuperAdmin(),
     },
     {
       title: 'Medical',
@@ -112,7 +111,7 @@ export function AppSidebar() {
       title: 'Security',
       href: '/security',
       icon: Shield,
-      showCondition: () => actualIsSuperAdmin,
+      showCondition: () => isSuperAdmin(),
     },
     {
       title: 'News',
@@ -133,7 +132,7 @@ export function AppSidebar() {
       title: 'TeamGrid',
       href: '/teamgrid',
       icon: Users,
-      showCondition: () => actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach'),
+      showCondition: () => isSuperAdmin() || actualHasRole('staff') || actualHasRole('coach'),
     },
   ];
 
@@ -286,7 +285,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Internal Tools Section */}
-        {(actualIsSuperAdmin || actualHasRole('staff') || actualHasRole('coach')) && (
+        {(isSuperAdmin() || actualHasRole('staff') || actualHasRole('coach')) && (
           <SidebarGroup>
             <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Internal Tools
@@ -321,7 +320,7 @@ export function AppSidebar() {
         )}
 
         {/* Super Admin Section */}
-        {actualIsSuperAdmin && (
+        {isSuperAdmin() && (
           <SidebarGroup>
             <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
               Administration
