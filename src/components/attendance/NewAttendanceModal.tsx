@@ -87,7 +87,7 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
 
       const playerIds = [...new Set(playerTeamData.map(pt => pt.player_id))];
       
-      // Step 2: Get player details
+      // Step 2: Get player details (only approved players)
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select(`
@@ -98,11 +98,13 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
           profiles!inner(
             full_name,
             email,
-            phone
+            phone,
+            approval_status
           )
         `)
         .in('id', playerIds)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('profiles.approval_status', 'approved');
 
       if (playersError) throw playersError;
 
