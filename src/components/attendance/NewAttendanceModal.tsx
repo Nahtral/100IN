@@ -106,12 +106,11 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
 
       const userIds = playersData.map(p => p.user_id);
 
-      // Step 3: Get profiles (only approved)
+      // Step 3: Get profiles (all players - RLS handles security)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email, phone, approval_status')
-        .in('id', userIds)
-        .eq('approval_status', 'approved');
+        .in('id', userIds);
 
       console.log('👤 Profiles data:', { profilesData, profilesError });
 
