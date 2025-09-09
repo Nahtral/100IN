@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Calendar, Clock, MapPin, Users, Eye, RefreshCw, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ScheduleForm from '@/components/forms/ScheduleForm';
-import NewAttendanceModal from '@/components/attendance/NewAttendanceModal';
+import { RebuildAttendanceModal } from '@/components/attendance/RebuildAttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import DuplicateEventModal from '@/components/schedule/DuplicateEventModal';
@@ -580,7 +580,7 @@ const Schedule = () => {
         />
 
         {/* Attendance Modal */}
-        <NewAttendanceModal
+        <RebuildAttendanceModal
           isOpen={attendanceModal.isOpen}
           onClose={() => setAttendanceModal({ isOpen: false, event: null })}
           eventId={attendanceModal.event?.id || ''}
