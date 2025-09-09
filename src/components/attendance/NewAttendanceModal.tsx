@@ -105,6 +105,7 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
       }
 
       const userIds = playersData.map(p => p.user_id);
+      console.log('🔍 Looking for profiles with IDs:', userIds);
 
       // Step 3: Get profiles (all players - RLS handles security)
       const { data: profilesData, error: profilesError } = await supabase
@@ -114,10 +115,17 @@ const NewAttendanceModal: React.FC<NewAttendanceModalProps> = ({
 
       console.log('👤 Profiles data:', { profilesData, profilesError });
 
+      // DIAGNOSTIC: Check what profiles exist vs what we're looking for
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, approval_status')
+        .limit(10);
+      console.log('🔍 Sample of all profiles in database:', allProfiles);
+
       if (profilesError) throw profilesError;
       if (!profilesData?.length) {
         setPlayers([]);
-        setError('No approved players found for the selected teams');
+        setError(`No profiles found for user IDs: ${userIds.join(', ')}. Check if profiles exist for these users.`);
         return;
       }
 
