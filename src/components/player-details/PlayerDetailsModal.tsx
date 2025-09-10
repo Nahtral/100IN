@@ -358,15 +358,17 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                              <Users className="h-4 w-4 mr-1" />
                              Teams
                            </Button>
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={handleArchive}
-                             disabled={loading}
-                           >
-                             <Archive className="h-4 w-4 mr-1" />
-                             Archive
-                           </Button>
+                           {isSuperAdmin() && (
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={handleArchive}
+                               disabled={loading}
+                             >
+                               <Archive className="h-4 w-4 mr-1" />
+                               Archive
+                             </Button>
+                           )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button

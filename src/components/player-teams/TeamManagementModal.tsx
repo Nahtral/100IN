@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, UserCheck } from 'lucide-react';
+import { Trash2, Plus, UserCheck, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface Team {
   id: string;
@@ -42,6 +43,9 @@ export const TeamManagementModal = ({
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('player');
   const [loading, setLoading] = useState(false);
+  
+  const { isSuperAdmin } = useOptimizedAuth();
+  const isReadOnly = !isSuperAdmin();
 
   useEffect(() => {
     if (isOpen) {
@@ -191,10 +195,19 @@ export const TeamManagementModal = ({
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Manage Teams for {playerName}
+            {isReadOnly ? <Lock className="h-5 w-5" /> : <UserCheck className="h-5 w-5" />}
+            {isReadOnly ? `Team Information for ${playerName}` : `Manage Teams for ${playerName}`}
           </DialogTitle>
         </DialogHeader>
+
+        {isReadOnly && (
+          <div className="bg-muted/50 border border-muted rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Lock className="h-4 w-4" />
+              <span>Read-only view - Only Super Admins can modify team assignments</span>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Current Teams */}
@@ -223,7 +236,7 @@ export const TeamManagementModal = ({
                         <Select
                           value={playerTeam.role_on_team}
                           onValueChange={(newRole) => handleUpdateRole(playerTeam.id, newRole)}
-                          disabled={loading}
+                          disabled={loading || isReadOnly}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
@@ -235,14 +248,16 @@ export const TeamManagementModal = ({
                             <SelectItem value="substitute">Substitute</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveTeam(playerTeam.id, playerTeam.team_name || 'Team')}
-                          disabled={loading}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!isReadOnly && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveTeam(playerTeam.id, playerTeam.team_name || 'Team')}
+                            disabled={loading}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -251,55 +266,57 @@ export const TeamManagementModal = ({
             </CardContent>
           </Card>
 
-          {/* Add New Team */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Add to Team</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="team-select">Team</Label>
-                  <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getUnassignedTeams().map((team) => (
-                        <SelectItem key={team.id} value={team.id}>
-                          {team.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          {/* Add New Team - Only visible to Super Admins */}
+          {!isReadOnly && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Add to Team</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="team-select">Team</Label>
+                    <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getUnassignedTeams().map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="role-select">Role</Label>
+                    <Select value={selectedRole} onValueChange={setSelectedRole}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="player">Player</SelectItem>
+                        <SelectItem value="captain">Captain</SelectItem>
+                        <SelectItem value="co-captain">Co-Captain</SelectItem>
+                        <SelectItem value="substitute">Substitute</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={handleAddTeam} 
+                      disabled={loading || !selectedTeam}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add to Team
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="role-select">Role</Label>
-                  <Select value={selectedRole} onValueChange={setSelectedRole}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="player">Player</SelectItem>
-                      <SelectItem value="captain">Captain</SelectItem>
-                      <SelectItem value="co-captain">Co-Captain</SelectItem>
-                      <SelectItem value="substitute">Substitute</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <Button 
-                    onClick={handleAddTeam} 
-                    disabled={loading || !selectedTeam}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add to Team
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Summary */}
           <div className="flex justify-between items-center pt-4 border-t">
