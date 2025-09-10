@@ -20,8 +20,10 @@ import {
   FileText,
   Plus,
   TrendingUp,
-  Shield
+  Shield,
+  AlertCircle
 } from 'lucide-react';
+import { HealthProvider } from '@/contexts/HealthContext';
 import HealthDashboard from '@/components/health/HealthDashboard';
 import DailyCheckIn from '@/components/health/DailyCheckIn';
 import InjuryReporting from '@/components/health/InjuryReporting';
@@ -29,6 +31,7 @@ import MedicalLog from '@/components/health/MedicalLog';
 import HealthCommunication from '@/components/health/HealthCommunication';
 import HealthAnalytics from '@/components/health/HealthAnalytics';
 import QuickCheckIn from '@/components/health/QuickCheckIn';
+import HealthSyncIndicator from '@/components/health/HealthSyncIndicator';
 
 const HealthWellness = () => {
   const { user } = useAuth();
@@ -40,7 +43,7 @@ const HealthWellness = () => {
   const [loading, setLoading] = useState(true);
 
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!roleLoading && user) {
       fetchUserData();
     }
@@ -167,150 +170,168 @@ const HealthWellness = () => {
 
   return (
     <Layout currentUser={currentUser}>
-      <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Health & Wellness</h1>
-            <p className="text-gray-600">Comprehensive health tracking and communication hub</p>
+      <HealthProvider>
+        <div className="space-y-6 animate-fade-in">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Health & Wellness</h1>
+              <p className="text-gray-600">Comprehensive health tracking and communication hub</p>
+            </div>
+            <Button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              EMERGENCY
+            </Button>
           </div>
-          <Button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            EMERGENCY
-          </Button>
-        </div>
 
-        {/* Navigation Tabs and Quick Check-in */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="border-b border-gray-200">
-                <TabsList className="h-auto p-0 bg-transparent border-0">
-                  <div className="flex flex-wrap gap-1 sm:gap-0 sm:space-x-8">
-                <TabsTrigger 
-                  value="dashboard" 
-                  className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
-                >
-                  <Heart className="h-4 w-4 mr-2" />
-                  Dashboard
-                </TabsTrigger>
-                
-                {(primaryRole === 'player' || primaryRole === 'parent') && (
+          {/* Navigation Tabs and Quick Check-in */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <div className="border-b border-gray-200">
+                  <TabsList className="h-auto p-0 bg-transparent border-0">
+                    <div className="flex flex-wrap gap-1 sm:gap-0 sm:space-x-8">
                   <TabsTrigger 
-                    value="daily-checkin" 
-                    className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Daily Check-in
-                  </TabsTrigger>
-                )}
-                
-                <TabsTrigger 
-                  value="injuries" 
-                  className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Injuries
-                </TabsTrigger>
-                
-                <TabsTrigger 
-                  value="medical-log" 
-                  className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Medical Log
-                </TabsTrigger>
-                
-                {(['coach', 'staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
-                  <TabsTrigger 
-                    value="communication" 
+                    value="dashboard" 
                     className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
                   >
                     <Heart className="h-4 w-4 mr-2" />
-                    Communication
+                    Dashboard
                   </TabsTrigger>
-                )}
-                
-                {(['staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
+                  
+                  {(primaryRole === 'player' || primaryRole === 'parent') && (
+                    <TabsTrigger 
+                      value="daily-checkin" 
+                      className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
+                    >
+                      <Activity className="h-4 w-4 mr-2" />
+                      Daily Check-in
+                    </TabsTrigger>
+                  )}
+                  
                   <TabsTrigger 
-                    value="analytics" 
+                    value="injuries" 
                     className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
                   >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Analytics
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Injuries
                   </TabsTrigger>
-                )}
-              </div>
-            </TabsList>
-          </div>
+                  
+                  <TabsTrigger 
+                    value="medical-log" 
+                    className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Medical Log
+                  </TabsTrigger>
+                  
+                  {(['coach', 'staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
+                    <TabsTrigger 
+                      value="communication" 
+                      className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
+                    >
+                      <Heart className="h-4 w-4 mr-2" />
+                      Communication
+                    </TabsTrigger>
+                  )}
+                  
+                  {(['staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
+                    <TabsTrigger 
+                      value="analytics" 
+                      className="py-3 px-4 border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:bg-transparent rounded-none font-medium text-sm transition-all hover:text-orange-600"
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Analytics
+                    </TabsTrigger>
+                  )}
+                </div>
+              </TabsList>
+            </div>
 
-          <div className="mt-6">
-            <TabsContent value="dashboard" className="mt-0">
-              <HealthDashboard 
-                userRole={primaryRole} 
-                isSuperAdmin={isSuperAdmin()}
-                playerProfile={playerProfile}
-              />
-            </TabsContent>
-
-            {(primaryRole === 'player' || primaryRole === 'parent') && (
-              <TabsContent value="daily-checkin" className="mt-0">
-                <DailyCheckIn 
+            <div className="mt-6">
+              <TabsContent value="dashboard" className="mt-0">
+                <HealthDashboard 
+                  userRole={primaryRole} 
+                  isSuperAdmin={isSuperAdmin()}
                   playerProfile={playerProfile}
-                  userRole={primaryRole}
                 />
               </TabsContent>
-            )}
 
-            <TabsContent value="injuries" className="mt-0">
-              <InjuryReporting 
-                userRole={primaryRole}
-                isSuperAdmin={isSuperAdmin()}
-                playerProfile={playerProfile}
-              />
-            </TabsContent>
+              {(primaryRole === 'player' || primaryRole === 'parent') && (
+                <TabsContent value="daily-checkin" className="mt-0">
+                  <DailyCheckIn 
+                    playerProfile={playerProfile}
+                    userRole={primaryRole}
+                  />
+                </TabsContent>
+              )}
 
-            <TabsContent value="medical-log" className="mt-0">
-              <MedicalLog 
-                userRole={primaryRole}
-                isSuperAdmin={isSuperAdmin()}
-                playerProfile={playerProfile}
-              />
-            </TabsContent>
-
-            {(['coach', 'staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
-              <TabsContent value="communication" className="mt-0">
-                 <HealthCommunication 
-                   userRole={primaryRole}
-                    isSuperAdmin={isSuperAdmin()}
-                   playerProfile={playerProfile}
-                 />
-              </TabsContent>
-            )}
-
-            {(['staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
-              <TabsContent value="analytics" className="mt-0">
-                <HealthAnalytics 
+              <TabsContent value="injuries" className="mt-0">
+                <InjuryReporting 
                   userRole={primaryRole}
                   isSuperAdmin={isSuperAdmin()}
+                  playerProfile={playerProfile}
                 />
               </TabsContent>
+
+              <TabsContent value="medical-log" className="mt-0">
+                <MedicalLog 
+                  userRole={primaryRole}
+                  isSuperAdmin={isSuperAdmin()}
+                  playerProfile={playerProfile}
+                />
+              </TabsContent>
+
+              {(['coach', 'staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
+                <TabsContent value="communication" className="mt-0">
+                   <HealthCommunication 
+                     userRole={primaryRole}
+                      isSuperAdmin={isSuperAdmin()}
+                     playerProfile={playerProfile}
+                   />
+                </TabsContent>
+              )}
+
+              {(['staff', 'medical'].includes(primaryRole) || isSuperAdmin()) && (
+                <TabsContent value="analytics" className="mt-0">
+                  <HealthAnalytics 
+                    userRole={primaryRole}
+                    isSuperAdmin={isSuperAdmin()}
+                  />
+                </TabsContent>
+               )}
+               </div>
+             </Tabs>
+           </div>
+           
+           {/* Quick Check-in Sidebar */}
+           <div className="lg:col-span-1 space-y-4">
+             <QuickCheckIn 
+               playerProfile={playerProfile}
+               userRole={primaryRole}
+             />
+             
+             <HealthSyncIndicator />
+             
+             {(['medical', 'staff'].includes(primaryRole) || isSuperAdmin()) && (
+               <Card className="border-amber-200 bg-amber-50">
+                 <CardContent className="p-4">
+                   <div className="flex items-center gap-2 text-amber-800 mb-2">
+                     <AlertCircle className="h-4 w-4" />
+                     <span className="font-medium">System Status</span>
+                   </div>
+                   <p className="text-sm text-amber-600">
+                     Real-time health monitoring active
+                   </p>
+                 </CardContent>
+               </Card>
              )}
-             </div>
-           </Tabs>
-         </div>
-         
-         {/* Quick Check-in Sidebar */}
-         <div className="lg:col-span-1">
-           <QuickCheckIn 
-             playerProfile={playerProfile}
-             userRole={primaryRole}
-           />
+           </div>
          </div>
        </div>
-     </div>
-   </Layout>
- );
+      </HealthProvider>
+    </Layout>
+  );
 };
 
 export default HealthWellness;
