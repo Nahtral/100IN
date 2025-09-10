@@ -6,7 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, UserCheck, UserX, Clock, FileText, CheckSquare, Square } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Users, UserCheck, UserX, Clock, FileText, CheckSquare, Square, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -65,6 +67,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [bulkStatus, setBulkStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoDeductMembership, setAutoDeductMembership] = useState(true);
   const [playerDetailsModal, setPlayerDetailsModal] = useState<{
     isOpen: boolean;
     player: Player | null;
@@ -221,19 +224,90 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         marked_by: user?.id
       }));
 
-      const { error } = await supabase
+      // Save attendance records first
+      const { error: attendanceError } = await supabase
         .from('player_attendance')
         .upsert(attendanceRecords, {
           onConflict: 'player_id,schedule_id',
           ignoreDuplicates: false
         });
 
-      if (error) throw error;
+      if (attendanceError) throw attendanceError;
 
-      toast({
-        title: "Success",
-        description: "Attendance updated successfully.",
-      });
+      // Handle membership deduction if enabled
+      if (autoDeductMembership) {
+        const presentPlayers = attendanceRecords.filter(record => record.status === 'present');
+        let membershipErrors: string[] = [];
+        let successfulDeductions = 0;
+
+        for (const record of presentPlayers) {
+          try {
+            // First, get the player's active membership
+            const { data: membershipData, error: membershipError } = await supabase
+              .rpc('fn_get_membership_summary', { target_player_id: record.player_id });
+
+            if (membershipError) {
+              console.warn(`Failed to check membership for player ${record.player_id}:`, membershipError);
+              continue;
+            }
+
+            const membership = membershipData as any;
+            
+            // Only deduct for CLASS_COUNT type memberships with remaining classes
+            if (membership?.allocation_type === 'CLASS_COUNT' && 
+                membership?.remaining_classes && 
+                membership?.remaining_classes > 0 &&
+                membership?.status === 'ACTIVE') {
+              
+              // Create a membership adjustment record
+              const { error: adjustmentError } = await supabase
+                .from('membership_adjustments')
+                .insert({
+                  player_membership_id: membership.membership_id,
+                  delta: -1,
+                  reason: `Attendance deduction for event: ${eventTitle}`,
+                  created_by: user?.id
+                });
+
+              if (adjustmentError) {
+                console.warn(`Failed to deduct membership for player ${record.player_id}:`, adjustmentError);
+                membershipErrors.push(`Failed to deduct class for ${players.find(p => p.id === record.player_id)?.profiles?.full_name || 'Unknown Player'}`);
+              } else {
+                successfulDeductions++;
+              }
+            }
+          } catch (error) {
+            console.warn(`Error processing membership for player ${record.player_id}:`, error);
+          }
+        }
+
+        // Show feedback about membership deductions
+        if (successfulDeductions > 0 || membershipErrors.length > 0) {
+          let description = '';
+          if (successfulDeductions > 0) {
+            description += `Successfully deducted classes for ${successfulDeductions} player(s). `;
+          }
+          if (membershipErrors.length > 0) {
+            description += `${membershipErrors.length} membership deduction(s) failed. `;
+          }
+          
+          toast({
+            title: "Attendance & Membership Updated",
+            description: description.trim(),
+            variant: membershipErrors.length > 0 ? "destructive" : "default",
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: "Attendance updated successfully.",
+          });
+        }
+      } else {
+        toast({
+          title: "Success",
+          description: "Attendance updated successfully.",
+        });
+      }
       
       onClose();
     } catch (error) {
@@ -323,6 +397,33 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                   <Badge variant="outline" className="transition-all duration-200 hover:scale-105">
                     Total: {players.length}
                   </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Membership Settings */}
+            <Card className="animate-fade-in">
+              <CardHeader>
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Membership Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="auto-deduct" className="text-sm font-medium">
+                      Auto-deduct class usage for present players
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically deduct 1 class from each player's membership when marked present
+                    </p>
+                  </div>
+                  <Switch
+                    id="auto-deduct"
+                    checked={autoDeductMembership}
+                    onCheckedChange={setAutoDeductMembership}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -452,7 +553,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 Cancel
               </Button>
               <Button onClick={saveAttendance} disabled={saving} className="transition-all duration-200 hover:scale-105">
-                {saving ? 'Saving...' : 'Save Attendance'}
+                {saving ? 'Saving...' : (autoDeductMembership ? 'Save Attendance & Deduct Classes' : 'Save Attendance')}
               </Button>
             </div>
           </div>
