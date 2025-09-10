@@ -113,11 +113,28 @@ export const useProductionChat = (): UseProductionChatReturn => {
       
       const { data, error } = await withRetry(
         async () => {
-          const result = await supabase.rpc('rpc_list_chats_enhanced', {
-            limit_n: 30,
-            offset_n: chatsOffsetRef.current,
-            include_archived: false
-          });
+          // Get chats where user is a participant
+          const result = await supabase
+            .from('chats')
+            .select(`
+              id,
+              name,
+              chat_type,
+              created_by,
+              team_id,
+              is_archived,
+              is_pinned,
+              last_message_at,
+              created_at,
+              updated_at,
+              status,
+              chat_participants!inner(user_id, role, last_read_at),
+              chat_messages(content, created_at, sender_id, id)
+            `)
+            .eq('chat_participants.user_id', user.id)
+            .eq('status', 'active')
+            .order('last_message_at', { ascending: false })
+            .range(chatsOffsetRef.current, chatsOffsetRef.current + 29);
           return result;
         },
         'load_chats'
@@ -125,27 +142,39 @@ export const useProductionChat = (): UseProductionChatReturn => {
 
       if (error) throw error;
 
-      const newChats = (data || []).map((chat: any): Chat => ({
-        id: chat.chat_id,
-        name: chat.display_title || 'Chat',
-        display_title: chat.display_title,
-        chat_type: chat.chat_type,
-        created_by: '',
-        team_id: null,
-        is_archived: chat.is_archived || false,
-        is_pinned: chat.is_pinned || false,
-        last_message_at: chat.last_activity_at,
-        last_activity_at: chat.last_activity_at,
-        created_at: chat.last_activity_at,
-        updated_at: chat.last_activity_at,
-        status: 'active',
-        last_message_content: chat.last_message_content,
-        last_message_sender: '',
-        unread_count: Number(chat.unread_count || 0),
-        participant_count: Number(chat.member_count || 0),
-        member_count: Number(chat.member_count || 0),
-        is_admin: chat.is_admin || false
-      }));
+      const newChats = (data || []).map((chat: any): Chat => {
+        // Get latest message content
+        const latestMessage = chat.chat_messages?.[0];
+        const userParticipant = chat.chat_participants?.find((p: any) => p.user_id === user.id);
+        
+        // Count unread messages
+        const unreadCount = chat.chat_messages?.filter((msg: any) => 
+          !userParticipant?.last_read_at || 
+          new Date(msg.created_at) > new Date(userParticipant.last_read_at)
+        ).length || 0;
+
+        return {
+          id: chat.id,
+          name: chat.name || 'Chat',
+          display_title: chat.name,
+          chat_type: chat.chat_type,
+          created_by: chat.created_by,
+          team_id: chat.team_id,
+          is_archived: chat.is_archived || false,
+          is_pinned: chat.is_pinned || false,
+          last_message_at: chat.last_message_at,
+          last_activity_at: chat.last_message_at,
+          created_at: chat.created_at,
+          updated_at: chat.updated_at,
+          status: chat.status || 'active',
+          last_message_content: latestMessage?.content || '',
+          last_message_sender: '',
+          unread_count: unreadCount,
+          participant_count: chat.chat_participants?.length || 0,
+          member_count: chat.chat_participants?.length || 0,
+          is_admin: userParticipant?.role === 'admin'
+        };
+      });
       
       if (isLoadMore) {
         setChats(prev => [...prev, ...newChats]);
@@ -173,12 +202,35 @@ export const useProductionChat = (): UseProductionChatReturn => {
       
       const { data, error } = await withRetry(
         async () => {
-          const result = await supabase.rpc('rpc_get_messages', {
-            chat: chatId,
-            limit_n: 50,
-            before: messagesBeforeCursorRef.current
-          });
-          return result;
+          let query = supabase
+            .from('chat_messages')
+            .select(`
+              id,
+              chat_id,
+              sender_id,
+              content,
+              message_type,
+              attachment_url,
+              attachment_name,
+              attachment_size,
+              reply_to_id,
+              is_edited,
+              is_deleted,
+              edited_at,
+              created_at,
+              status,
+              profiles(full_name, email)
+            `)
+            .eq('chat_id', chatId)
+            .eq('status', 'visible')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+          if (messagesBeforeCursorRef.current) {
+            query = query.lt('created_at', messagesBeforeCursorRef.current);
+          }
+
+          return await query;
         },
         'load_messages'
       );
@@ -189,17 +241,20 @@ export const useProductionChat = (): UseProductionChatReturn => {
         id: msg.id,
         chat_id: msg.chat_id,
         sender_id: msg.sender_id,
-        content: msg.body,
+        content: msg.content,
         message_type: msg.message_type as 'text' | 'image' | 'file' | 'system',
         attachment_url: msg.attachment_url,
-        is_edited: false,
-        is_deleted: false,
+        attachment_name: msg.attachment_name,
+        attachment_size: msg.attachment_size,
+        reply_to_id: msg.reply_to_id,
+        is_edited: msg.is_edited || false,
+        is_deleted: msg.is_deleted || false,
         edited_at: msg.edited_at,
         created_at: msg.created_at,
-        sender_name: msg.sender_name,
-        sender_email: msg.sender_email,
-        reactions: Array.isArray(msg.reactions) ? msg.reactions : [],
-        status: 'visible',
+        sender_name: msg.profiles?.full_name || msg.profiles?.email || 'Unknown User',
+        sender_email: msg.profiles?.email || '',
+        reactions: [],
+        status: msg.status || 'visible',
         delivery_status: 'delivered'
       })).reverse(); // Messages come in DESC order, reverse for chronological
       
@@ -244,9 +299,10 @@ export const useProductionChat = (): UseProductionChatReturn => {
       const { data: chatId, error } = await withRetry(
         async () => {
           const result = await supabase.rpc('rpc_create_chat', {
-            p_title: data.type === 'group' ? data.name : null,
-            p_is_group: data.type === 'group',
-            p_participants: data.participants
+            chat_name: data.name,
+            chat_type_param: data.type,
+            participant_ids: data.participants,
+            team_id_param: data.team_id || null
           });
           return result;
         },
@@ -349,9 +405,11 @@ export const useProductionChat = (): UseProductionChatReturn => {
   // Mark as read (schema-safe)
   const markAsRead = useCallback(async (chatId: string) => {
     try {
-      const { error } = await supabase.rpc('rpc_mark_read', {
-        chat: chatId
-      });
+      const { error } = await supabase
+        .from('chat_participants')
+        .update({ last_read_at: new Date().toISOString() })
+        .eq('chat_id', chatId)
+        .eq('user_id', user?.id);
 
       if (error) throw error;
 
@@ -364,7 +422,7 @@ export const useProductionChat = (): UseProductionChatReturn => {
       console.error('Error marking as read:', err);
       // Don't show toast for this, it's not critical
     }
-  }, []);
+  }, [user]);
 
   // Load more functions
   const loadMoreMessages = useCallback(() => {
@@ -408,9 +466,9 @@ export const useProductionChat = (): UseProductionChatReturn => {
   // Chat management functions
   const renameChat = useCallback(async (chatId: string, newTitle: string) => {
     try {
-      const { error } = await supabase.rpc('rpc_update_chat_meta', {
+      const { error } = await supabase.rpc('rpc_update_chat', {
         p_chat_id: chatId,
-        p_new_title: newTitle
+        p_title: newTitle
       });
 
       if (error) throw error;
@@ -428,9 +486,9 @@ export const useProductionChat = (): UseProductionChatReturn => {
 
   const archiveChat = useCallback(async (chatId: string, archive: boolean) => {
     try {
-      const { error } = await supabase.rpc('rpc_update_chat_meta', {
+      const { error } = await supabase.rpc('rpc_update_chat', {
         p_chat_id: chatId,
-        p_new_status: archive ? 'archived' : 'active'
+        p_status: archive ? 'archived' : 'active'
       });
 
       if (error) throw error;
@@ -448,10 +506,10 @@ export const useProductionChat = (): UseProductionChatReturn => {
 
   const deleteChat = useCallback(async (chatId: string, permanent = false) => {
     try {
-      const { error } = await supabase.rpc('rpc_delete_chat', {
-        p_chat_id: chatId,
-        p_permanent: permanent
-      });
+      const { error } = await supabase
+        .from('chats')
+        .update({ status: permanent ? 'deleted' : 'archived' })
+        .eq('id', chatId);
 
       if (error) throw error;
 
