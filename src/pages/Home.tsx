@@ -70,14 +70,14 @@ const Home = () => {
         };
       } else {
         // Non-super admin users see only their team's data
-        const { data: userPlayer } = await supabase
-          .from('players')
-          .select('team_id')
-          .eq('user_id', user?.id)
+        const { data: userPlayerTeams } = await supabase
+          .from('player_teams')
+          .select('team_id, players!inner(user_id)')
+          .eq('players.user_id', user?.id)
           .eq('is_active', true)
-          .single();
+          .limit(1);
 
-        const userTeamId = userPlayer?.team_id;
+        const userTeamId = userPlayerTeams?.[0]?.team_id;
 
         if (userTeamId) {
           // User is a player, show their team's data using the player_teams junction table
@@ -104,7 +104,7 @@ const Home = () => {
           if (teamIds.length > 0) {
             // User is a coach/staff, show their assigned teams' data
             const [playersResult, upcomingResult] = await Promise.all([
-              supabase.from('players').select('*', { count: 'exact', head: true }).in('team_id', teamIds).eq('is_active', true),
+              supabase.from('player_teams').select('*', { count: 'exact', head: true }).in('team_id', teamIds).eq('is_active', true),
               supabase.from('schedules').select('*', { count: 'exact', head: true }).overlaps('team_ids', teamIds).gte('start_time', new Date().toISOString())
             ]);
 

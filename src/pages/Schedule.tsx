@@ -120,9 +120,9 @@ const Schedule = () => {
       } else {
         // Regular users see only their assigned teams
         const { data, error } = await supabase
-          .from('players')
-          .select('team_id')
-          .eq('user_id', user?.id)
+          .from('player_teams')
+          .select('team_id, players!inner(user_id)')
+          .eq('players.user_id', user?.id)
           .eq('is_active', true);
         
         if (error) throw error;

@@ -80,9 +80,9 @@ export const useDashboardData = () => {
         let userTeamIds: string[] = [];
         if (!canSeeAllData) {
           const { data: playerData, error: playerError } = await supabase
-            .from('players')
-            .select('team_id')
-            .eq('user_id', user.id)
+            .from('player_teams')
+            .select('team_id, players!inner(user_id)')
+            .eq('players.user_id', user.id)
             .eq('is_active', true)
             .abortSignal(abortController.signal);
           

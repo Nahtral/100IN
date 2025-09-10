@@ -31,10 +31,13 @@ interface Player {
     email?: string;
     phone?: string;
   } | null;
-  teams?: {
-    name: string;
-    season?: string;
-  };
+  player_teams?: {
+    team_id: string;
+    teams: {
+      name: string;
+      season?: string;
+    } | null;
+  }[] | null;
 }
 
 interface PlayersListProps {
@@ -52,30 +55,13 @@ export const PlayersList: React.FC<PlayersListProps> = ({ refreshTrigger, userId
     try {
       console.log('Fetching players...');
       
-      let query = supabase
+      const { data: playersData, error } = await supabase
         .from('players')
         .select(`
           *,
-          profiles!inner(
-            id,
-            full_name,
-            email,
-            phone,
-            approval_status
-          ),
-          teams(
-            name,
-            season
-          )
+          profiles(full_name, email, phone, approval_status),
+          player_teams(team_id, teams(name, season))
         `)
-        .eq('profiles.approval_status', 'approved');
-
-      // Role-based filtering
-      if (currentUser?.role === 'player' && userId) {
-        query = query.eq('user_id', userId);
-      }
-
-      const { data: playersData, error } = await query
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -83,8 +69,13 @@ export const PlayersList: React.FC<PlayersListProps> = ({ refreshTrigger, userId
         throw error;
       }
 
-      console.log('Players fetched successfully:', playersData?.length || 0);
-      setPlayers(playersData || []);
+      // Role-based filtering  
+      if (currentUser?.role === 'player' && userId) {
+        const filteredData = playersData?.filter(p => p.user_id === userId) || [];
+        setPlayers(filteredData as unknown as Player[]);
+      } else {
+        setPlayers((playersData || []) as unknown as Player[]);
+      }
     } catch (error: any) {
       console.error('Error fetching players:', error);
       toast({

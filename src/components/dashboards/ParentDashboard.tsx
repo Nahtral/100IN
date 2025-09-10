@@ -43,10 +43,10 @@ const ParentDashboard = () => {
 
         const childUserId = relationships[0].child_id;
 
-        // Get child's player data
+        // Get child's player data using the player_teams junction table
         const { data: player } = await supabase
           .from('players')
-          .select('id, team_id, jersey_number, position')
+          .select('id, jersey_number, position')
           .eq('user_id', childUserId)
           .single();
 
