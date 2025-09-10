@@ -116,37 +116,91 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      // Create player record first
-      const playerData = {
-        user_id: data.selected_user_id || null,
-        jersey_number: data.jersey_number ? parseInt(data.jersey_number.toString()) : null,
-        position: data.position || null,
-        height: data.height || null,
-        weight: data.weight || null,
-        date_of_birth: data.date_of_birth || null,
-        emergency_contact_name: data.emergency_contact_name || null,
-        emergency_contact_phone: data.emergency_contact_phone || null,
-        medical_notes: data.medical_notes || null,
-        is_active: true,
-        // Store manual entry data if no user_id (manual entry)
-        manual_entry_name: !data.selected_user_id ? data.full_name : null,
-        manual_entry_email: !data.selected_user_id ? data.email : null,
-        manual_entry_phone: !data.selected_user_id ? data.phone : null,
-      };
+      let playerId: string;
 
-      const { data: newPlayer, error: playerError } = await supabase
-        .from('players')
-        .insert(playerData)
-        .select('id')
-        .single();
+      if (data.selected_user_id) {
+        // For registered users, check if they have a player record
+        const { data: existingPlayer, error: fetchError } = await supabase
+          .from('players')
+          .select('id')
+          .eq('user_id', data.selected_user_id)
+          .single();
 
-      if (playerError) throw playerError;
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          throw fetchError;
+        }
+
+        if (existingPlayer) {
+          playerId = existingPlayer.id;
+        } else {
+          // Try to create player record (will fail if user not approved)
+          try {
+            const playerData = {
+              user_id: data.selected_user_id,
+              jersey_number: data.jersey_number ? parseInt(data.jersey_number.toString()) : null,
+              position: data.position || null,
+              height: data.height || null,
+              weight: data.weight || null,
+              date_of_birth: data.date_of_birth || null,
+              emergency_contact_name: data.emergency_contact_name || null,
+              emergency_contact_phone: data.emergency_contact_phone || null,
+              medical_notes: data.medical_notes || null,
+              is_active: true,
+            };
+
+            const { data: newPlayer, error: playerError } = await supabase
+              .from('players')
+              .insert(playerData)
+              .select('id')
+              .single();
+
+            if (playerError) throw playerError;
+            playerId = newPlayer.id;
+          } catch (error: any) {
+            if (error.message?.includes('User must be approved first')) {
+              toast({
+                title: "User Not Approved",
+                description: "This user must be approved by a super admin before they can be added as a player.",
+                variant: "destructive",
+              });
+              return;
+            }
+            throw error;
+          }
+        }
+      } else {
+        // For manual entries, create player record directly (no user_id)
+        const playerData = {
+          user_id: null,
+          jersey_number: data.jersey_number ? parseInt(data.jersey_number.toString()) : null,
+          position: data.position || null,
+          height: data.height || null,
+          weight: data.weight || null,
+          date_of_birth: data.date_of_birth || null,
+          emergency_contact_name: data.emergency_contact_name || null,
+          emergency_contact_phone: data.emergency_contact_phone || null,
+          medical_notes: data.medical_notes || null,
+          is_active: true,
+          manual_entry_name: data.full_name || null,
+          manual_entry_email: data.email || null,
+          manual_entry_phone: data.phone || null,
+        };
+
+        const { data: newPlayer, error: playerError } = await supabase
+          .from('players')
+          .insert(playerData)
+          .select('id')
+          .single();
+
+        if (playerError) throw playerError;
+        playerId = newPlayer.id;
+      }
 
       // Create team assignment in player_teams junction table
       const { error: assignmentError } = await supabase
         .from('player_teams')
         .insert({
-          player_id: newPlayer.id,
+          player_id: playerId,
           team_id: team.id,
           is_active: true,
           assigned_at: new Date().toISOString()

@@ -320,19 +320,22 @@ export const UserApprovalDashboard = () => {
         .single();
 
       if (playerFetchError) {
-        // If no player record exists, create one first
-        const { data: newPlayerData, error: playerCreateError } = await supabase
+        // Player record will be created automatically by the approval trigger
+        // So we just need to re-fetch after a brief delay
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const { data: retryPlayerData, error: retryPlayerError } = await supabase
           .from('players')
-          .insert({
-            user_id: userId,
-            is_active: true
-          })
           .select('id')
+          .eq('user_id', userId)
           .single();
 
-        if (playerCreateError) throw playerCreateError;
+        if (retryPlayerError) {
+          console.warn('Player record not found after approval, skipping team assignments for user:', userId);
+          return;
+        }
         
-        const playerId = newPlayerData.id;
+        const playerId = retryPlayerData.id;
         
         // Create team assignments
         const teamInserts = teamAssignments.map(assignment => ({

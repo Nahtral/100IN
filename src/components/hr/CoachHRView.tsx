@@ -94,19 +94,18 @@ const CoachHRView: React.FC = () => {
       if (teams && teams.length > 0) {
         const teamIds = teams.map(t => t.id);
         
-        // Get players from these teams
-        const { data: players, error: playersError } = await supabase
-          .from('players')
-          .select(`
-            user_id,
-            teams (id, name)
-          `)
+        // Get players from these teams via the junction table
+        const { data: playerTeams, error: playersError } = await supabase
+          .from('player_teams')
+          .select('player_id, players(user_id)')
           .in('team_id', teamIds);
 
         if (playersError) throw playersError;
 
-        if (players && players.length > 0) {
-          const userIds = players.map(p => p.user_id);
+        if (playerTeams && playerTeams.length > 0) {
+          const userIds = playerTeams
+            .map((pt: any) => pt.players?.user_id)
+            .filter(Boolean);
           
           // Get employee records for these users
           const { data: employees, error: employeesError } = await supabase
