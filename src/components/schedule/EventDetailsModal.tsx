@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useEventTeamsAndPlayers } from '@/hooks/useEventTeamsAndPlayers';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +9,6 @@ import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Calendar, Clock, MapPin, Users, Edit, Archive, Trash2, Copy, UserPlus, Image as ImageIcon, ArchiveRestore } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleEvent {
   id: string;
@@ -32,21 +31,20 @@ interface ScheduleEvent {
   deleted_at?: string | null;
 }
 
-interface Team {
+interface TeamWithPlayers {
   id: string;
   name: string;
   season?: string;
-}
-
-interface Player {
-  id: string;
-  user_id: string;
-  jersey_number?: number;
-  position?: string;
-  profiles?: {
-    full_name: string;
-    email: string;
-  };
+  players: {
+    id: string;
+    user_id: string;
+    jersey_number?: number;
+    position?: string;
+    profiles?: {
+      full_name: string;
+      email: string;
+    };
+  }[];
 }
 
 interface EventDetailsModalProps {
@@ -74,61 +72,11 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   onUnarchive,
   onRefresh
 }) => {
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const { isSuperAdmin, hasRole } = useOptimizedAuth();
+  const { teams, loading } = useEventTeamsAndPlayers(event?.team_ids);
 
-  useEffect(() => {
-    if (event && event.team_ids && event.team_ids.length > 0) {
-      fetchTeamsAndPlayers();
-    }
-  }, [event]);
-
-  const fetchTeamsAndPlayers = async () => {
-    if (!event?.team_ids) return;
-
-    setLoading(true);
-    try {
-      // Fetch teams
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select('id, name, season')
-        .in('id', event.team_ids);
-
-      if (teamsError) throw teamsError;
-      setTeams(teamsData || []);
-
-      // Fetch players for the teams
-      const { data: playersData, error: playersError } = await supabase
-        .from('players')
-        .select(`
-          id,
-          user_id,
-          jersey_number,
-          position,
-          profiles!inner(
-            full_name,
-            email
-          )
-        `)
-        .in('team_id', event.team_ids)
-        .eq('is_active', true);
-
-      if (playersError) throw playersError;
-      setPlayers(playersData || []);
-    } catch (error) {
-      console.error('Error fetching teams and players:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load team and player data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Calculate total players across all teams
+  const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
 
   // These functions are now handled by parent component
   // Remove the local handleArchive and handleDuplicate functions
@@ -317,7 +265,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Teams & Players ({players.length} players)
+                    Teams & Players ({totalPlayers} players)
                   </CardTitle>
                   {canManageAttendance && (
                     <Button
@@ -333,56 +281,52 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {teams.map((team) => {
-                    const teamPlayers = players.filter(p => 
-                      event.team_ids?.includes(team.id)
-                    );
-                    
-                    return (
-                      <div key={team.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold">{team.name}</h4>
-                            {team.season && (
-                              <p className="text-sm text-muted-foreground">
-                                Season: {team.season}
-                              </p>
-                            )}
-                          </div>
-                          <Badge variant="outline">
-                            {teamPlayers.length} players
-                          </Badge>
+                  {teams.map((team) => (
+                    <div key={team.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold">{team.name}</h4>
+                          {team.season && (
+                            <p className="text-sm text-muted-foreground">
+                              Season: {team.season}
+                            </p>
+                          )}
                         </div>
-                        
-                        {teamPlayers.length > 0 && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {teamPlayers.map((player) => (
-                              <div
-                                key={player.id}
-                                className="flex items-center justify-between p-2 bg-secondary/50 rounded"
-                              >
-                                <div>
-                                  <p className="font-medium text-sm">
-                                    {player.profiles?.full_name || 'Unknown Player'}
+                        <Badge variant="outline">
+                          {team.players.length} players
+                        </Badge>
+                      </div>
+                      
+                      {team.players.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {team.players.map((player) => (
+                            <div
+                              key={player.id}
+                              className="flex items-center justify-between p-2 bg-secondary/50 rounded"
+                            >
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {player.profiles?.full_name || 'Unknown Player'}
+                                </p>
+                                {player.position && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {player.position}
                                   </p>
-                                  {player.position && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {player.position}
-                                    </p>
-                                  )}
-                                </div>
-                                {player.jersey_number && (
-                                  <Badge variant="outline" className="text-xs">
-                                    #{player.jersey_number}
-                                  </Badge>
                                 )}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                              {player.jersey_number && (
+                                <Badge variant="outline" className="text-xs">
+                                  #{player.jersey_number}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No players assigned to this team</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
