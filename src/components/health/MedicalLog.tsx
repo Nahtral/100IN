@@ -20,6 +20,10 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import AppointmentSchedulingModal from './AppointmentSchedulingModal';
 import MedicalClearanceModal from './MedicalClearanceModal';
+import RehabilitationManager from './RehabilitationManager';
+import AppointmentsList from './AppointmentsList';
+import ReturnToPlayStatus from './ReturnToPlayStatus';
+import { useMedicalData } from '@/hooks/useMedicalData';
 
 interface MedicalLogProps {
   userRole: string;
@@ -39,6 +43,13 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
   const [activeTab, setActiveTab] = useState('medical-history');
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [clearanceModalOpen, setClearanceModalOpen] = useState(false);
+
+  // Use the new medical data hook
+  const { 
+    data: medicalData, 
+    loading: medicalDataLoading, 
+    refreshData 
+  } = useMedicalData({ userRole, playerProfile });
 
   useEffect(() => {
     fetchMedicalHistory();
@@ -216,20 +227,26 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                Current Rehabilitation Plan
+                Rehabilitation Plans
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Track progress on assigned exercises and treatments
               </p>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <Activity className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No rehabilitation plan assigned.</h3>
-                <p className="text-gray-600">
-                  Rehabilitation plans and progress tracking will appear here when assigned by medical staff.
-                </p>
-              </div>
+              {medicalDataLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading rehabilitation plans...</p>
+                </div>
+              ) : (
+                <RehabilitationManager
+                  plans={medicalData.rehabilitationPlans}
+                  userRole={userRole}
+                  isSuperAdmin={isSuperAdmin}
+                  onRefresh={refreshData}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -240,27 +257,27 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Upcoming Appointments
+                Medical Appointments
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Medical appointments and therapy sessions
               </p>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No upcoming appointments scheduled.</h3>
-                <p className="text-gray-600 mb-4">
-                  Medical appointments will be displayed here when scheduled.
-                </p>
-                <Button 
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                  onClick={() => setAppointmentModalOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Schedule New Appointment
-                </Button>
-              </div>
+              {medicalDataLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading appointments...</p>
+                </div>
+              ) : (
+                <AppointmentsList
+                  appointments={medicalData.appointments}
+                  userRole={userRole}
+                  isSuperAdmin={isSuperAdmin}
+                  onScheduleNew={() => setAppointmentModalOpen(true)}
+                  onRefresh={refreshData}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -271,37 +288,24 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5" />
-                Return-to-Play Protocol
+                Return-to-Play Status
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Medical clearance process for returning to full activity
+                Medical clearance status for returning to full activity
               </p>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+              {medicalDataLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading return-to-play status...</p>
                 </div>
-                <h3 className="text-2xl font-semibold text-green-800 mb-2">Cleared for Play</h3>
-                <p className="text-green-700 mb-6">
-                  No active injuries. You are cleared for full participation.
-                </p>
-
-                <div className="bg-green-50 rounded-lg p-4 mb-6">
-                  <h4 className="font-semibold text-green-800 mb-2">Current Status</h4>
-                  <p className="text-green-700">
-                    All clear for full participation in training and competition.
-                  </p>
-                </div>
-
-                <Button 
-                  variant="outline" 
-                  className="border-green-200 text-green-700 hover:bg-green-50"
-                  onClick={() => setClearanceModalOpen(true)}
-                >
-                  Request Medical Clearance Assessment
-                </Button>
-              </div>
+              ) : (
+                <ReturnToPlayStatus
+                  status={medicalData.returnToPlayStatus}
+                  onRequestClearance={() => setClearanceModalOpen(true)}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -310,14 +314,20 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
       {/* Modals */}
       <AppointmentSchedulingModal
         isOpen={appointmentModalOpen}
-        onClose={() => setAppointmentModalOpen(false)}
+        onClose={() => {
+          setAppointmentModalOpen(false);
+          refreshData(); // Refresh data when appointment is scheduled
+        }}
         playerProfile={playerProfile}
         isSuperAdmin={isSuperAdmin}
       />
       
       <MedicalClearanceModal
         isOpen={clearanceModalOpen}
-        onClose={() => setClearanceModalOpen(false)}
+        onClose={() => {
+          setClearanceModalOpen(false);
+          refreshData(); // Refresh data when clearance is requested
+        }}
         playerProfile={playerProfile}
       />
     </div>
