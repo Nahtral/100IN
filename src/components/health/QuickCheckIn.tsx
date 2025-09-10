@@ -74,15 +74,15 @@ const QuickCheckIn: React.FC<QuickCheckInProps> = ({ playerProfile, userRole }) 
         player_id: playerProfile.id,
         check_in_date: today,
         sleep_quality: quickData.sleep[0],
-        sleep_hours: 8,
+        sleep_hours: 8, // Default assumption
         energy_level: quickData.energy[0],
-        stress_level: 3,
-        hydration_level: 7,
-        nutrition_quality: 7,
+        stress_level: 5, // Neutral default
+        hydration_level: quickData.energy[0] > 7 ? 8 : 6, // Correlate with energy
+        nutrition_quality: quickData.energy[0] > 6 ? 7 : 5, // Correlate with energy
         overall_mood: quickData.mood,
         pain_level: quickData.pain[0],
         mood: quickData.mood === 'Great' ? 9 : quickData.mood === 'Good' ? 7 : quickData.mood === 'Okay' ? 5 : quickData.mood === 'Tired' ? 4 : quickData.mood === 'Stressed' ? 3 : quickData.mood === 'Unwell' ? 2 : 5,
-        training_readiness: Math.round((quickData.energy[0] + quickData.sleep[0] + 7) / 3), // Using defaults for missing values
+        training_readiness: Math.round((quickData.energy[0] + quickData.sleep[0] + (10 - quickData.pain[0])) / 3), // Factor in pain level
         additional_notes: 'Quick check-in'
       };
 

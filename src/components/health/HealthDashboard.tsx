@@ -13,8 +13,8 @@ import {
   Shield,
   Brain
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHealthMetrics } from '@/hooks/useHealthMetrics';
 import EmergencyAlertModal from './EmergencyAlertModal';
 import AIHealthAnalysisModal from './AIHealthAnalysisModal';
 
@@ -30,71 +30,13 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
   playerProfile 
 }) => {
   const { user } = useAuth();
-  const [healthData, setHealthData] = useState<any>({
-    sleepQuality: 0,
-    energyLevel: 0,
-    totalInjuries: 0,
-    checkinStreak: 0
+  const { metrics, loading, refreshMetrics } = useHealthMetrics({
+    playerProfile,
+    userRole,
+    timeframeDays: 30
   });
-  const [loading, setLoading] = useState(true);
   const [emergencyModalOpen, setEmergencyModalOpen] = useState(false);
   const [aiAnalysisModalOpen, setAiAnalysisModalOpen] = useState(false);
-
-  useEffect(() => {
-    fetchHealthOverview();
-  }, [userRole, playerProfile]);
-
-  const fetchHealthOverview = async () => {
-    try {
-      if (userRole === 'player' && playerProfile) {
-        // Fetch player-specific health data
-        const { data: healthRecords } = await supabase
-          .from('health_wellness')
-          .select('*')
-          .eq('player_id', playerProfile.id)
-          .order('date', { ascending: false })
-          .limit(30);
-
-        // Calculate averages and stats
-        const recentRecords = healthRecords || [];
-        const avgFitness = recentRecords.length > 0 
-          ? recentRecords.reduce((sum, r) => sum + (r.fitness_score || 0), 0) / recentRecords.length 
-          : 0;
-
-        setHealthData({
-          sleepQuality: Math.floor(Math.random() * 10), // Placeholder
-          energyLevel: Math.floor(Math.random() * 10), // Placeholder
-          totalInjuries: recentRecords.filter(r => r.injury_status === 'injured').length,
-          checkinStreak: Math.floor(Math.random() * 15), // Placeholder
-          avgFitness: Math.round(avgFitness)
-        });
-      } else if (['coach', 'staff', 'medical'].includes(userRole) || isSuperAdmin) {
-        // Fetch team/organization overview
-        const { data: allRecords } = await supabase
-          .from('health_wellness')
-          .select('*')
-          .order('date', { ascending: false });
-
-        const records = allRecords || [];
-        setHealthData({
-          totalPlayers: new Set(records.map(r => r.player_id)).size,
-          activeInjuries: records.filter(r => r.injury_status === 'injured').length,
-          avgFitness: records.length > 0 
-            ? Math.round(records.reduce((sum, r) => sum + (r.fitness_score || 0), 0) / records.length)
-            : 0,
-          recentCheckIns: records.filter(r => {
-            const recordDate = new Date(r.date);
-            const today = new Date();
-            return recordDate.toDateString() === today.toDateString();
-          }).length
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching health overview:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -148,7 +90,7 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
               <Moon className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{healthData.sleepQuality}/10</div>
+              <div className="text-2xl font-bold">{metrics.avgSleepQuality}/10</div>
               <p className="text-xs text-muted-foreground">Last 30 days</p>
             </CardContent>
           </Card>
@@ -159,7 +101,7 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
               <Zap className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{healthData.energyLevel}/10</div>
+              <div className="text-2xl font-bold">{metrics.avgEnergyLevel}/10</div>
               <p className="text-xs text-muted-foreground">Last 30 days</p>
             </CardContent>
           </Card>
@@ -170,8 +112,8 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
               <AlertTriangle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{healthData.totalInjuries}</div>
-              <p className="text-xs text-muted-foreground">All time</p>
+              <div className="text-2xl font-bold">{metrics.totalInjuries}</div>
+              <p className="text-xs text-muted-foreground">Last 30 days</p>
             </CardContent>
           </Card>
 
@@ -181,7 +123,7 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
               <Calendar className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{healthData.checkinStreak}</div>
+              <div className="text-2xl font-bold">{metrics.checkinStreak}</div>
               <p className="text-xs text-muted-foreground">Days</p>
             </CardContent>
           </Card>
@@ -242,7 +184,7 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
             <Shield className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{healthData.totalPlayers || 0}</div>
+            <div className="text-2xl font-bold">{metrics.totalPlayers || 0}</div>
             <p className="text-xs text-muted-foreground">Active in system</p>
           </CardContent>
         </Card>
@@ -253,7 +195,7 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
             <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{healthData.activeInjuries || 0}</div>
+            <div className="text-2xl font-bold">{metrics.activeInjuries || 0}</div>
             <p className="text-xs text-muted-foreground">Requiring attention</p>
           </CardContent>
         </Card>
@@ -264,7 +206,7 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{healthData.avgFitness || 0}</div>
+            <div className="text-2xl font-bold">{metrics.avgFitnessScore || 0}</div>
             <p className="text-xs text-muted-foreground">Team average</p>
           </CardContent>
         </Card>
@@ -275,7 +217,7 @@ const HealthDashboard: React.FC<HealthDashboardProps> = ({
             <Activity className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{healthData.recentCheckIns || 0}</div>
+            <div className="text-2xl font-bold">{metrics.dailyCheckInsToday || 0}</div>
             <p className="text-xs text-muted-foreground">Today</p>
           </CardContent>
         </Card>

@@ -15,7 +15,7 @@ import {
   Calendar,
   Download
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useHealthMetrics } from '@/hooks/useHealthMetrics';
 import PlayerDetailsModal from './PlayerDetailsModal';
 import InjuryDetailsModal from './InjuryDetailsModal';
 import FitnessDetailsModal from './FitnessDetailsModal';
@@ -30,9 +30,15 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
   userRole, 
   isSuperAdmin 
 }) => {
-  const [analyticsData, setAnalyticsData] = useState<any>({});
-  const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('30d');
+  
+  // Get timeframe in days
+  const timeframeDays = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : timeframe === '90d' ? 90 : 365;
+  
+  const { metrics, loading, refreshMetrics } = useHealthMetrics({
+    userRole,
+    timeframeDays
+  });
   
   // Modal states
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
@@ -41,81 +47,9 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchAnalyticsData();
+    refreshMetrics();
   }, [timeframe]);
 
-  const fetchAnalyticsData = async () => {
-    try {
-      // Fetch comprehensive health analytics
-      const { data: healthRecords } = await supabase
-        .from('health_wellness')
-        .select('*')
-        .order('date', { ascending: false });
-
-      const records = healthRecords || [];
-      
-      // Calculate analytics
-      const totalPlayers = new Set(records.map(r => r.player_id)).size;
-      const activeInjuries = records.filter(r => r.injury_status === 'injured').length;
-      const avgFitness = records.length > 0 
-        ? Math.round(records.reduce((sum, r) => sum + (r.fitness_score || 0), 0) / records.length)
-        : 0;
-      
-      // Injury trends
-      const injuryTrends = calculateInjuryTrends(records);
-      const fitnesstrends = calculateFitnessTrends(records);
-      
-      setAnalyticsData({
-        totalPlayers,
-        activeInjuries,
-        avgFitness,
-        injuryTrends,
-        fitnesstrends,
-        records
-      });
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateInjuryTrends = (records: any[]) => {
-    // Group by month and count injuries
-    const monthlyInjuries: { [key: string]: number } = {};
-    
-    records.forEach(record => {
-      if (record.injury_status === 'injured') {
-        const month = new Date(record.date).toISOString().slice(0, 7);
-        monthlyInjuries[month] = (monthlyInjuries[month] || 0) + 1;
-      }
-    });
-    
-    return Object.entries(monthlyInjuries)
-      .sort(([a], [b]) => String(a).localeCompare(String(b)))
-      .slice(-6); // Last 6 months
-  };
-
-  const calculateFitnessTrends = (records: any[]) => {
-    // Calculate average fitness by month
-    const monthlyFitness: { [key: string]: { total: number; count: number } } = {};
-    
-    records.forEach(record => {
-      if (record.fitness_score) {
-        const month = new Date(record.date).toISOString().slice(0, 7);
-        if (!monthlyFitness[month]) {
-          monthlyFitness[month] = { total: 0, count: 0 };
-        }
-        monthlyFitness[month].total += record.fitness_score;
-        monthlyFitness[month].count += 1;
-      }
-    });
-    
-    return Object.entries(monthlyFitness)
-      .map(([month, data]) => [month, Math.round(data.total / data.count)])
-      .sort(([a], [b]) => String(a).localeCompare(String(b)))
-      .slice(-6); // Last 6 months
-  };
 
   if (loading) {
     return (
@@ -171,7 +105,7 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.totalPlayers || 0}</div>
+            <div className="text-2xl font-bold">{metrics.totalPlayers || 0}</div>
             <p className="text-xs text-muted-foreground">
               Active in health system
             </p>
@@ -187,10 +121,19 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
             <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.activeInjuries || 0}</div>
+            <div className="text-2xl font-bold">{metrics.activeInjuries || 0}</div>
             <p className="text-xs text-muted-foreground">
-              <TrendingDown className="h-3 w-3 inline mr-1 text-green-500" />
-              12% decrease from last month
+              {metrics.injuryTrendPercent !== 0 && (
+                <>
+                  {metrics.injuryTrendPercent < 0 ? (
+                    <TrendingDown className="h-3 w-3 inline mr-1 text-green-500" />
+                  ) : (
+                    <TrendingUp className="h-3 w-3 inline mr-1 text-red-500" />
+                  )}
+                  {Math.abs(metrics.injuryTrendPercent)}% {metrics.injuryTrendPercent < 0 ? 'decrease' : 'increase'} from last period
+                </>
+              )}
+              {metrics.injuryTrendPercent === 0 && 'No change from last period'}
             </p>
           </CardContent>
         </Card>
@@ -204,10 +147,19 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
             <Activity className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.avgFitness || 0}</div>
+            <div className="text-2xl font-bold">{metrics.avgFitnessScore || 0}</div>
             <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1 text-green-500" />
-              5% improvement this month
+              {metrics.fitnessTrendPercent !== 0 && (
+                <>
+                  {metrics.fitnessTrendPercent > 0 ? (
+                    <TrendingUp className="h-3 w-3 inline mr-1 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 inline mr-1 text-red-500" />
+                  )}
+                  {Math.abs(metrics.fitnessTrendPercent)}% {metrics.fitnessTrendPercent > 0 ? 'improvement' : 'decrease'} from last period
+                </>
+              )}
+              {metrics.fitnessTrendPercent === 0 && 'No change from last period'}
             </p>
           </CardContent>
         </Card>
@@ -221,7 +173,7 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
             <Heart className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">92%</div>
+            <div className="text-2xl font-bold">{metrics.checkInCompletionRate}%</div>
             <p className="text-xs text-muted-foreground">
               Daily completion rate
             </p>
@@ -270,7 +222,7 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
                     <p className="text-sm text-gray-600">Team average</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-green-600">85</div>
+                    <div className="text-2xl font-bold text-green-600">{metrics.avgFitnessScore || 0}</div>
                     <Badge variant="default" className="bg-green-100 text-green-800">
                       Excellent
                     </Badge>
