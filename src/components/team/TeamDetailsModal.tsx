@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import EnhancedTeamForm from '@/components/forms/EnhancedTeamForm';
 import PlayerSelectionForm from '@/components/forms/PlayerSelectionForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import TeamScheduleTab from '@/components/team/TeamScheduleTab';
+import TeamStatisticsTab from '@/components/team/TeamStatisticsTab';
 
 interface Player {
   id: string;
@@ -571,17 +573,11 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
             </TabsContent>
 
             <TabsContent value="schedule" className="space-y-4">
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">Schedule management coming soon...</p>
-              </div>
+              <TeamScheduleTab teamId={team.id} canManage={isSuperAdmin()} />
             </TabsContent>
 
             <TabsContent value="stats" className="space-y-4">
-              <div className="text-center py-8">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">Team statistics coming soon...</p>
-              </div>
+              <TeamStatisticsTab teamId={team.id} />
             </TabsContent>
           </Tabs>
         )}
