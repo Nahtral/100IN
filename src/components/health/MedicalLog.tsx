@@ -24,6 +24,8 @@ import RehabilitationManager from './RehabilitationManager';
 import AppointmentsList from './AppointmentsList';
 import ReturnToPlayStatus from './ReturnToPlayStatus';
 import { useMedicalData } from '@/hooks/useMedicalData';
+import { ErrorFallback, NotFoundErrorFallback } from '@/components/ui/ErrorFallback';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 interface MedicalLogProps {
   userRole: string;
@@ -145,16 +147,16 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">Loading medical records...</p>
-                </div>
+                <LoadingState
+                  variant="spinner"
+                  title="Loading Medical Records"
+                  description="Fetching medical history and assessments..."
+                />
               ) : medicalHistory.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No medical records found.</h3>
-                  <p className="text-gray-600">Medical history will appear here once records are added.</p>
-                </div>
+                <NotFoundErrorFallback
+                  resourceName="medical records"
+                  onRetry={() => fetchMedicalHistory()}
+                />
               ) : (
                 <div className="space-y-4">
                   {medicalHistory.map((record) => (
@@ -235,10 +237,11 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
             </CardHeader>
             <CardContent>
               {medicalDataLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">Loading rehabilitation plans...</p>
-                </div>
+                <LoadingState
+                  variant="spinner"
+                  title="Loading Rehabilitation Plans"
+                  description="Fetching active treatment programs..."
+                />
               ) : (
                 <RehabilitationManager
                   plans={medicalData.rehabilitationPlans}
@@ -265,10 +268,11 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
             </CardHeader>
             <CardContent>
               {medicalDataLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">Loading appointments...</p>
-                </div>
+                <LoadingState
+                  variant="spinner"
+                  title="Loading Appointments"
+                  description="Fetching scheduled medical appointments..."
+                />
               ) : (
                 <AppointmentsList
                   appointments={medicalData.appointments}
@@ -296,10 +300,11 @@ const MedicalLog: React.FC<MedicalLogProps> = ({
             </CardHeader>
             <CardContent>
               {medicalDataLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">Loading return-to-play status...</p>
-                </div>
+                <LoadingState
+                  variant="spinner"
+                  title="Loading Return-to-Play Status"
+                  description="Calculating medical clearance status..."
+                />
               ) : (
                 <ReturnToPlayStatus
                   status={medicalData.returnToPlayStatus}

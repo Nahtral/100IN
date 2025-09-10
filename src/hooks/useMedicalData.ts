@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useSupabaseQuery } from '@/hooks/useRetryableQuery';
 
 interface MedicalData {
   appointments: any[];
@@ -24,7 +25,7 @@ interface UseMedicalDataProps {
 export const useMedicalData = ({ userRole, playerProfile }: UseMedicalDataProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [data, setData] = useState<MedicalData>({
+  const [internalData, setData] = useState<MedicalData>({
     appointments: [],
     rehabilitationPlans: [],
     returnToPlayStatus: {
@@ -36,8 +37,7 @@ export const useMedicalData = ({ userRole, playerProfile }: UseMedicalDataProps)
       notes: ''
     }
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [internalError, setError] = useState<string | null>(null);
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -185,37 +185,43 @@ export const useMedicalData = ({ userRole, playerProfile }: UseMedicalDataProps)
   }, [playerProfile]);
 
   const fetchAllData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    const [appointments, rehabilitationPlans, returnToPlayStatus] = await Promise.all([
+      fetchAppointments(),
+      fetchRehabilitationPlans(),
+      fetchReturnToPlayStatus()
+    ]);
 
-    try {
-      const [appointments, rehabilitationPlans, returnToPlayStatus] = await Promise.all([
-        fetchAppointments(),
-        fetchRehabilitationPlans(),
-        fetchReturnToPlayStatus()
-      ]);
+    return {
+      appointments,
+      rehabilitationPlans,
+      returnToPlayStatus
+    };
+  }, [fetchAppointments, fetchRehabilitationPlans, fetchReturnToPlayStatus]);
 
-      setData({
-        appointments,
-        rehabilitationPlans,
-        returnToPlayStatus
-      });
-    } catch (error) {
-      console.error('Error fetching medical data:', error);
+  // Use retryable query for better error handling
+  const {
+    data,
+    loading,
+    error,
+    retry,
+    retryCount
+  } = useSupabaseQuery({
+    queryFn: fetchAllData,
+    enabled: true,
+    staleTime: 60000, // 1 minute
+    onSuccess: (newData) => {
+      setData(newData);
+      setError(null);
+    },
+    onError: (err) => {
       setError('Failed to load medical data');
-      toast({
-        title: "Error",
-        description: "Failed to load medical data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      console.error('Medical data fetch error:', err);
     }
-  }, [fetchAppointments, fetchRehabilitationPlans, fetchReturnToPlayStatus, toast]);
+  });
 
   const refreshData = useCallback(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    retry();
+  }, [retry]);
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -278,15 +284,11 @@ export const useMedicalData = ({ userRole, playerProfile }: UseMedicalDataProps)
     };
   }, [playerProfile?.id, refreshData]);
 
-  // Initial data fetch
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
-
   return {
-    data,
+    data: data || internalData,
     loading,
-    error,
-    refreshData
+    error: error || internalError,
+    refreshData,
+    retryCount
   };
 };

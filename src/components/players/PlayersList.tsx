@@ -3,6 +3,8 @@ import { PlayerCard } from './PlayerCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { ErrorFallback, NotFoundErrorFallback } from '@/components/ui/ErrorFallback';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 interface Player {
   id: string;
@@ -48,11 +50,14 @@ interface PlayersListProps {
 export const PlayersList: React.FC<PlayersListProps> = ({ refreshTrigger, userId }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
   const { toast } = useToast();
   const { currentUser } = useCurrentUser();
 
   const fetchPlayers = async () => {
     try {
+      setLoading(true);
+      setError(null);
       console.log('Fetching players...');
       
       const { data: playersData, error } = await supabase
@@ -78,11 +83,17 @@ export const PlayersList: React.FC<PlayersListProps> = ({ refreshTrigger, userId
       }
     } catch (error: any) {
       console.error('Error fetching players:', error);
-      toast({
-        title: "Error",
-        description: `Failed to load players: ${error.message}`,
-        variant: "destructive",
-      });
+      setError(error);
+      
+      // Only show toast for non-permission errors to avoid spam
+      if (!error?.message?.includes('permission denied') && 
+          !error?.message?.includes('row-level security')) {
+        toast({
+          title: "Error",
+          description: `Failed to load players: ${error.message}`,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -125,17 +136,38 @@ export const PlayersList: React.FC<PlayersListProps> = ({ refreshTrigger, userId
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Loading players...</p>
-      </div>
+      <LoadingState
+        variant="skeleton" 
+        title="Loading Players"
+        description="Fetching player information..."
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorFallback
+        error={error}
+        title="Failed to Load Players"
+        onRetry={() => fetchPlayers()}
+        showDetails={process.env.NODE_ENV === 'development'}
+        actions={[
+          { 
+            label: 'Refresh Page', 
+            onClick: () => window.location.reload(), 
+            variant: 'outline' 
+          }
+        ]}
+      />
     );
   }
 
   if (players.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">No players found. Add your first player to get started.</p>
-      </div>
+      <NotFoundErrorFallback
+        resourceName="players"
+        onRetry={() => fetchPlayers()}
+      />
     );
   }
 
