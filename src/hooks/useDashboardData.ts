@@ -121,7 +121,7 @@ export const useDashboardData = () => {
           // Regular users only see data for their teams
           if (userTeamIds.length > 0) {
             const promises = [
-              supabase.from('players').select('*', { count: 'exact', head: true }).in('team_id', userTeamIds).abortSignal(abortController.signal),
+              supabase.from('player_teams').select('player_id', { count: 'exact', head: true }).in('team_id', userTeamIds).eq('is_active', true).abortSignal(abortController.signal),
               supabase.from('teams').select('*', { count: 'exact', head: true }).in('id', userTeamIds).abortSignal(abortController.signal),
               supabase.from('schedules').select('*').gte('start_time', new Date().toISOString()).overlaps('team_ids', userTeamIds).abortSignal(abortController.signal)
             ];
@@ -273,12 +273,13 @@ export const useTeamData = (coachId?: string) => {
         if (teamsData && teamsData.length > 0) {
           const teamIds = teamsData.map(team => team.id);
           const { data: playersData, error: playersError } = await supabase
-            .from('players')
-            .select('*, profiles(full_name)')  // Only fetch non-sensitive profile data
-            .in('team_id', teamIds);
+            .from('player_teams')
+            .select('players(*, profiles(full_name))')
+            .in('team_id', teamIds)
+            .eq('is_active', true);
 
           if (playersError) throw playersError;
-          setPlayers(playersData || []);
+          setPlayers(playersData?.map(pt => pt.players).filter(Boolean) || []);
         }
 
         setTeams(teamsData || []);
