@@ -33,7 +33,8 @@ const TeamGrid = () => {
   } = useAuth();
   const {
     isSuperAdmin,
-    hasRole
+    hasRole,
+    loading: authLoading
   } = useOptimizedAuth();
   const {
     currentUser
@@ -46,14 +47,17 @@ const TeamGrid = () => {
     todaysHours: 0
   });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(isSuperAdmin ? 'dashboard' : 'timetracking');
+  const [activeTab, setActiveTab] = useState('timetracking'); // Default to timetracking to avoid auth dependency
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showAddEmployeeForm, setShowAddEmployeeForm] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
   const [isEmployee, setIsEmployee] = useState(false);
   
   const checkEmployeeStatus = useCallback(async () => {
-    if (!isSuperAdmin() && !hasRole('staff') && !hasRole('coach') && user) {
+    // Don't run if auth is still loading
+    if (authLoading || !user) return;
+    
+    if (!isSuperAdmin() && !hasRole('staff') && !hasRole('coach')) {
       try {
         const {
           data
@@ -63,7 +67,7 @@ const TeamGrid = () => {
         setIsEmployee(false);
       }
     }
-  }, [isSuperAdmin, hasRole, user]);
+  }, [authLoading, isSuperAdmin, hasRole, user]);
   
   const fetchStats = useCallback(async () => {
     try {
@@ -124,17 +128,21 @@ const TeamGrid = () => {
   }, [batchFetch, toast]);
   
   useEffect(() => {
+    // Don't run effects if auth is still loading
+    if (authLoading) return;
+    
     if (user) {
       fetchStats();
       checkEmployeeStatus();
-      // Set appropriate default tab for non-super admins
-      if (!isSuperAdmin() && activeTab === 'dashboard') {
-        setActiveTab('timetracking');
+      
+      // Set appropriate default tab for super admins after auth is loaded
+      if (!authLoading && isSuperAdmin() && activeTab === 'timetracking') {
+        setActiveTab('dashboard');
       }
     } else {
       setLoading(false);
     }
-  }, [user, isSuperAdmin, hasRole, fetchStats, checkEmployeeStatus]);
+  }, [user, authLoading, fetchStats, checkEmployeeStatus]);
   const StatCard = useMemo(() => React.memo(({
     title,
     value,
@@ -153,8 +161,11 @@ const TeamGrid = () => {
       </CardContent>
     </Card>), []);
   const handleCardClick = (section: string) => {
+    // Don't handle clicks if auth is still loading
+    if (authLoading) return;
+    
     // Only super admins can navigate to different sections
-    if (isSuperAdmin) {
+    if (isSuperAdmin()) {
       if (section === 'employees-detail') {
         setShowEmployeeModal(true);
       } else {
@@ -180,6 +191,15 @@ const TeamGrid = () => {
     });
   }, [employees, toast]);
   const renderHRView = () => {
+    // Show loading while auth is loading
+    if (authLoading || loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+    
     // Only super admins have access to full TeamGrid dashboard
     if (isSuperAdmin()) {
       return renderFullHRManagement();
