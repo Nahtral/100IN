@@ -161,11 +161,12 @@ const Teams = () => {
     }
 
     try {
-      // Check if team has players
+      // Check if team has players using the player_teams junction table
       const { data: players, error: playersError } = await supabase
-        .from('players')
+        .from('player_teams')
         .select('id')
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .eq('is_active', true);
 
       if (playersError) throw playersError;
 

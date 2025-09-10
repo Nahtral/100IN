@@ -70,16 +70,16 @@ export const TeamsManagement = () => {
         coachData = coaches || [];
       }
 
-      // Get player counts for each team
+      // Get player counts for each team using the player_teams junction table
       const { data: playerCounts, error: playerError } = await supabase
-        .from('players')
+        .from('player_teams')
         .select('team_id')
         .eq('is_active', true);
 
       if (playerError) throw playerError;
 
-      const playerCountMap = playerCounts?.reduce((acc, player) => {
-        acc[player.team_id] = (acc[player.team_id] || 0) + 1;
+      const playerCountMap = playerCounts?.reduce((acc, assignment) => {
+        acc[assignment.team_id] = (acc[assignment.team_id] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {};
 

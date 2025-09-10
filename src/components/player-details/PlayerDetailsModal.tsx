@@ -111,15 +111,25 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
       }
       
       try {
-        const { data } = await supabase
-          .from('players')
+        // Check if users share any teams using the player_teams junction table
+        const { data: userTeams } = await supabase
+          .from('player_teams')
+          .select('team_id, players!inner(user_id)')
+          .eq('players.user_id', user.id)
+          .eq('is_active', true);
+
+        const { data: playerTeams } = await supabase
+          .from('player_teams')
           .select('team_id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .single();
+          .eq('player_id', player.id)
+          .eq('is_active', true);
+
+        const userTeamIds = userTeams?.map(ut => ut.team_id) || [];
+        const playerTeamIds = playerTeams?.map(pt => pt.team_id) || [];
+        const hasSharedTeam = userTeamIds.some(teamId => playerTeamIds.includes(teamId));
         
-        setIsTeammate(data?.team_id === player.team_id);
-        console.log('Teammate check result:', { isTeammate: data?.team_id === player.team_id });
+        setIsTeammate(hasSharedTeam);
+        console.log('Teammate check result:', { isTeammate: hasSharedTeam });
       } catch (error) {
         console.error('Error checking teammate status:', error);
       }

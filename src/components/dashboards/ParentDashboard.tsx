@@ -81,11 +81,19 @@ const ParentDashboard = () => {
           .order('check_in_date', { ascending: false })
           .limit(1);
 
-        // Get upcoming schedule
+        // Get player's team assignments and then schedule
+        const { data: playerTeams } = await supabase
+          .from('player_teams')
+          .select('team_id')
+          .eq('player_id', player.id)
+          .eq('is_active', true);
+
+        const teamIds = playerTeams?.map(pt => pt.team_id) || [];
+        
         const { data: scheduleData } = await supabase
           .from('schedules')
           .select('*')
-          .contains('team_ids', [player.team_id])
+          .overlaps('team_ids', teamIds)
           .gte('start_time', new Date().toISOString())
           .order('start_time', { ascending: true })
           .limit(5);

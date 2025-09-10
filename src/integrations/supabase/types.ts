@@ -3107,7 +3107,6 @@ export type Database = {
           notes: string | null
           position: string | null
           shooting_percentage: number | null
-          team_id: string | null
           total_makes: number | null
           total_sessions: number | null
           total_shots: number | null
@@ -3136,7 +3135,6 @@ export type Database = {
           notes?: string | null
           position?: string | null
           shooting_percentage?: number | null
-          team_id?: string | null
           total_makes?: number | null
           total_sessions?: number | null
           total_shots?: number | null
@@ -3165,7 +3163,6 @@ export type Database = {
           notes?: string | null
           position?: string | null
           shooting_percentage?: number | null
-          team_id?: string | null
           total_makes?: number | null
           total_sessions?: number | null
           total_shots?: number | null
@@ -3179,13 +3176,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "players_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]

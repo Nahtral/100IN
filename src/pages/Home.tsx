@@ -80,9 +80,9 @@ const Home = () => {
         const userTeamId = userPlayer?.team_id;
 
         if (userTeamId) {
-          // User is a player, show their team's data
+          // User is a player, show their team's data using the player_teams junction table
           const [playersResult, upcomingResult] = await Promise.all([
-            supabase.from('players').select('*', { count: 'exact', head: true }).eq('team_id', userTeamId).eq('is_active', true),
+            supabase.from('player_teams').select('*', { count: 'exact', head: true }).eq('team_id', userTeamId).eq('is_active', true),
             supabase.from('schedules').select('*', { count: 'exact', head: true }).contains('team_ids', [userTeamId]).gte('start_time', new Date().toISOString())
           ]);
 

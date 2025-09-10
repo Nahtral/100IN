@@ -56,11 +56,16 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     try {
       setIsLoading(true);
       
-      // Get players for this team including manual entry fields
+      // Get players for this team using the player_teams junction table
       const { data: playersData, error: playersError } = await supabase
         .from('players')
-        .select('id, jersey_number, position, is_active, user_id, manual_entry_name, manual_entry_email, manual_entry_phone')
-        .eq('team_id', team.id)
+        .select(`
+          id, jersey_number, position, is_active, user_id, 
+          manual_entry_name, manual_entry_email, manual_entry_phone,
+          player_teams!inner(assigned_at, is_active)
+        `)
+        .eq('player_teams.team_id', team.id)
+        .eq('player_teams.is_active', true)
         .order('jersey_number', { ascending: true });
 
       if (playersError) throw playersError;
@@ -109,10 +114,9 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      // Check if this is a registered user or manual entry
+      // Create player record first
       const playerData = {
         user_id: data.selected_user_id || null,
-        team_id: team.id,
         jersey_number: data.jersey_number ? parseInt(data.jersey_number.toString()) : null,
         position: data.position || null,
         height: data.height || null,
@@ -128,12 +132,26 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
         manual_entry_phone: !data.selected_user_id ? data.phone : null,
       };
 
-      const { error: playerError } = await supabase
+      const { data: newPlayer, error: playerError } = await supabase
         .from('players')
-        .insert(playerData);
+        .insert(playerData)
+        .select('id')
+        .single();
 
-      if (playerError) {
-        console.error('Error creating player:', playerError);
+      if (playerError) throw playerError;
+
+      // Create team assignment in player_teams junction table
+      const { error: assignmentError } = await supabase
+        .from('player_teams')
+        .insert({
+          player_id: newPlayer.id,
+          team_id: team.id,
+          is_active: true,
+          assigned_at: new Date().toISOString()
+        });
+
+      if (assignmentError) {
+        console.error('Error creating team assignment:', assignmentError);
         toast({
           title: "Error",
           description: "Failed to add player to team",
@@ -272,11 +290,12 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     if (!isSuperAdmin) return;
 
     try {
-      // Check if team has players
+      // Check if team has players using the player_teams junction table
       const { data: teamPlayers, error: playersError } = await supabase
-        .from('players')
+        .from('player_teams')
         .select('id')
-        .eq('team_id', team.id);
+        .eq('team_id', team.id)
+        .eq('is_active', true);
 
       if (playersError) throw playersError;
 

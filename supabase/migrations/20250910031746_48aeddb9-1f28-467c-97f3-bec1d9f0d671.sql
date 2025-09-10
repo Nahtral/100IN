@@ -1,0 +1,24 @@
+-- Phase 2: Complete schema cleanup - Now that all RLS policies are updated, remove the legacy column
+
+-- Step 1: Remove the legacy team_id column from players table entirely
+ALTER TABLE public.players DROP COLUMN IF EXISTS team_id CASCADE;
+
+-- Step 2: Add constraint to ensure data integrity for active player-team assignments
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'unique_active_player_team'
+    ) THEN
+        ALTER TABLE public.player_teams 
+        ADD CONSTRAINT unique_active_player_team 
+        EXCLUDE (player_id WITH =, team_id WITH =) 
+        WHERE (is_active = true);
+    END IF;
+END $$;
+
+-- Step 3: Add index for better performance on player-team queries
+CREATE INDEX IF NOT EXISTS idx_player_teams_active ON public.player_teams (player_id, team_id) WHERE is_active = true;
+
+-- Step 4: Add missing columns to teams table for better functionality
+ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;

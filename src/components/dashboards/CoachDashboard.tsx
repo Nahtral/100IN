@@ -45,12 +45,17 @@ const CoachDashboard = () => {
 
         const teamIds = teams.map(t => t.id);
 
-        // Get active players for coach's teams
-        const { data: players } = await supabase
-          .from('players')
-          .select('id, team_id')
+        // Get active players for coach's teams using the player_teams junction table
+        const { data: playerAssignments } = await supabase
+          .from('player_teams')
+          .select('player_id, team_id, players!inner(id)')
           .in('team_id', teamIds)
           .eq('is_active', true);
+
+        const players = playerAssignments?.map(pa => ({
+          id: pa.player_id,
+          team_id: pa.team_id
+        })) || [];
 
         // Get team performance data
         const { data: gameData } = await supabase

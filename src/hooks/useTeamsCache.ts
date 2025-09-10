@@ -86,11 +86,12 @@ export const useTeamsCache = () => {
         }
       }
 
-      // Get player counts for each team
+      // Get player counts for each team using the player_teams junction table
       const { data: playerCounts, error: countError } = await supabase
-        .from('players')
+        .from('player_teams')
         .select('team_id')
-        .in('team_id', teamsData.map(t => t.id));
+        .in('team_id', teamsData.map(t => t.id))
+        .eq('is_active', true);
 
       if (countError) {
         console.warn('Could not fetch player counts:', countError);
@@ -99,9 +100,9 @@ export const useTeamsCache = () => {
       // Create counts map
       const countsMap = new Map<string, number>();
       if (playerCounts) {
-        playerCounts.forEach(p => {
-          if (p.team_id) {
-            countsMap.set(p.team_id, (countsMap.get(p.team_id) || 0) + 1);
+        playerCounts.forEach(assignment => {
+          if (assignment.team_id) {
+            countsMap.set(assignment.team_id, (countsMap.get(assignment.team_id) || 0) + 1);
           }
         });
       }
