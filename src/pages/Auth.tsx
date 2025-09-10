@@ -82,6 +82,24 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // First check if email is already registered
+      const { data: emailCheck, error: emailCheckError } = await supabase
+        .rpc('is_email_available', { check_email: email });
+
+      if (emailCheckError) {
+        throw new Error('Unable to verify email availability. Please try again.');
+      }
+
+      if (!emailCheck) {
+        toast({
+          title: "Email Already Registered",
+          description: "An account with this email already exists. Please try signing in or use a different email.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const redirectUrl = `${window.location.origin}/`;
       
       const { error } = await supabase.auth.signUp({
@@ -98,21 +116,50 @@ const Auth = () => {
       });
 
       if (error) {
-        toast({
-          title: "Sign Up Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        // Handle specific Supabase auth errors
+        if (error.message.includes('User already registered')) {
+          toast({
+            title: "Account Already Exists",
+            description: "An account with this email already exists. Please try signing in instead.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes('Invalid email')) {
+          toast({
+            title: "Invalid Email",
+            description: "Please enter a valid email address.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes('Password should be at least')) {
+          toast({
+            title: "Weak Password",
+            description: "Password must be at least 6 characters long.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Sign Up Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Registration Successful!",
-          description: "Please check your email to confirm your account.",
+          description: "Please check your email to confirm your account. Your registration will be reviewed by an administrator.",
         });
+        
+        // Clear form data on successful registration
+        setEmail('');
+        setPassword('');
+        setFullName('');
+        setPhone('');
+        setSelectedRole('');
       }
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
+        title: "Registration Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred during registration.",
         variant: "destructive",
       });
     } finally {

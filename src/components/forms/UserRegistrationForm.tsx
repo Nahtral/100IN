@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Save } from 'lucide-react';
+import { UserPlus, Save, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const userRegistrationSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -31,6 +33,10 @@ interface UserRegistrationFormProps {
 }
 
 const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onSubmit, initialData, isLoading = false }) => {
+  const [emailChecking, setEmailChecking] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const { toast } = useToast();
+  
   const form = useForm<UserRegistrationData>({
     resolver: zodResolver(userRegistrationSchema),
     defaultValues: {
@@ -42,6 +48,51 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onSubmit, i
       confirmPassword: '',
     },
   });
+
+  const checkEmailAvailability = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    setEmailChecking(true);
+    setEmailError(null);
+    
+    try {
+      const { data: emailAvailable, error } = await supabase
+        .rpc('is_email_available', { check_email: email });
+
+      if (error) {
+        console.error('Email check error:', error);
+        return;
+      }
+
+      if (!emailAvailable) {
+        setEmailError('An account with this email already exists');
+        form.setError('email', { 
+          type: 'manual', 
+          message: 'An account with this email already exists' 
+        });
+      } else {
+        form.clearErrors('email');
+      }
+    } catch (error) {
+      console.error('Email availability check failed:', error);
+    } finally {
+      setEmailChecking(false);
+    }
+  };
+
+  const handleFormSubmit = async (data: UserRegistrationData) => {
+    // Final email check before submission
+    if (emailError) {
+      toast({
+        title: "Email Error",
+        description: "Please use a different email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    onSubmit(data);
+  };
 
   const roles = [
     { value: 'player', label: 'Player' },
@@ -62,7 +113,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onSubmit, i
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -85,9 +136,32 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onSubmit, i
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email" {...field} />
+                      <div className="relative">
+                        <Input 
+                          type="email" 
+                          placeholder="Enter email" 
+                          {...field} 
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Debounce email check
+                            setTimeout(() => checkEmailAvailability(e.target.value), 500);
+                          }}
+                          className={emailError ? 'border-red-500' : ''}
+                        />
+                        {emailChecking && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
+                          </div>
+                        )}
+                        {emailError && !emailChecking && (
+                          <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-red-500" />
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
+                    {emailError && (
+                      <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                    )}
                   </FormItem>
                 )}
               />
@@ -161,9 +235,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onSubmit, i
             </div>
             
             <div className="flex justify-end">
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || emailChecking || !!emailError}>
                 <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Registering...' : 'Register User'}
+                {isLoading ? 'Registering...' : emailChecking ? 'Checking email...' : 'Register User'}
               </Button>
             </div>
           </form>

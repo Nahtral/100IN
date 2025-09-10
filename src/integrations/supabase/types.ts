@@ -4756,6 +4756,10 @@ export type Database = {
           | { user_ids: string[] }
         Returns: Json
       }
+      can_create_player_record: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       check_api_rate_limit: {
         Args: {
           endpoint_name: string
@@ -5003,6 +5007,10 @@ export type Database = {
       }
       is_current_user_super_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_email_available: {
+        Args: { check_email: string }
         Returns: boolean
       }
       is_same_team_member: {
