@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { ProductionChatSidebar } from './ProductionChatSidebar';
 import { EnhancedProductionChatWindow } from './EnhancedProductionChatWindow';
 import { CreateChatModal } from './CreateChatModal';
-import { useProductionChat } from '@/hooks/useProductionChat';
+import { useProductionChatEdge } from '@/hooks/useProductionChatEdge';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatLayoutProps {
@@ -19,7 +19,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     selectedChat,
     messages,
     messagesLoading,
-    hasMore,
+    hasMoreMessages,
+    hasMoreChats,
     error,
     selectChat,
     createChat,
@@ -33,7 +34,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     renameChat,
     archiveChat,
     deleteChat
-  } = useProductionChat();
+  } = useProductionChatEdge();
 
   const [showCreateModal, setShowCreateModal] = React.useState(false);
 
@@ -76,7 +77,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
             chat={selectedChat}
             messages={messages}
             loading={messagesLoading}
-            hasMore={hasMore}
+            hasMore={hasMoreMessages}
             error={error}
             onSendMessage={sendMessage}
             onLoadMore={loadMoreMessages}
