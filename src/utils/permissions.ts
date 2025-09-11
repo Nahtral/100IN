@@ -182,7 +182,9 @@ export const PERMISSIONS = {
   MANAGE_PLAYERS: 'manage_players',
   MANAGE_SCHEDULES: 'manage_schedules',
   MANAGE_MEDICAL: 'manage_medical',
-  MANAGE_PARTNERSHIPS: 'manage_partnerships'
+  MANAGE_PARTNERSHIPS: 'manage_partnerships',
+  MANAGE_REGISTRATIONS: 'manage_registrations',
+  VIEW_COMMUNICATIONS: 'view_communications'
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];

@@ -16,9 +16,10 @@ import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { Link } from "react-router-dom";
 import React from "react";
+import { hasPermission } from "@/utils/permissions";
 
 const StaffDashboard = () => {
-  const { isSuperAdmin, hasRole, refetch, userData } = useOptimizedAuth();
+  const { isSuperAdmin, hasRole, refetch, userData, user } = useOptimizedAuth();
   const { 
     stats, 
     pendingRegistrations, 
@@ -27,6 +28,11 @@ const StaffDashboard = () => {
     loading, 
     error 
   } = useStaffDashboardData();
+
+  // Permission states for dashboard sections
+  const [canManageRegistrations, setCanManageRegistrations] = React.useState(false);
+  const [canViewCommunications, setCanViewCommunications] = React.useState(false);
+  const [permissionsLoading, setPermissionsLoading] = React.useState(true);
 
   // Enhanced role checking with debug logging
   const isReallySuper = isSuperAdmin() && hasRole('super_admin');
@@ -45,6 +51,43 @@ const StaffDashboard = () => {
   React.useEffect(() => {
     refetch();
   }, [refetch]);
+
+  // Check permissions for dashboard sections
+  React.useEffect(() => {
+    const checkPermissions = async () => {
+      if (!user?.id) {
+        setPermissionsLoading(false);
+        return;
+      }
+
+      try {
+        // Super admins have all permissions
+        if (isReallySuper) {
+          setCanManageRegistrations(true);
+          setCanViewCommunications(true);
+          setPermissionsLoading(false);
+          return;
+        }
+
+        // Check specific permissions for staff users
+        const [registrationsPermission, communicationsPermission] = await Promise.all([
+          hasPermission(user.id, 'manage_registrations'),
+          hasPermission(user.id, 'view_communications')
+        ]);
+
+        setCanManageRegistrations(registrationsPermission);
+        setCanViewCommunications(communicationsPermission);
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        setCanManageRegistrations(false);
+        setCanViewCommunications(false);
+      } finally {
+        setPermissionsLoading(false);
+      }
+    };
+
+    checkPermissions();
+  }, [user?.id, isReallySuper]);
 
   if (loading) {
     return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
@@ -124,85 +167,105 @@ const StaffDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Registration Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              Registration Management
-            </CardTitle>
-            <CardDescription>
-              Handle new registrations and renewals
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              {pendingRegistrations.length > 0 ? (
-                pendingRegistrations.slice(0, 3).map((registration, index) => (
-                  <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="font-medium">{registration.full_name}</p>
-                      <p className="text-sm text-gray-600">{registration.email}</p>
+        {/* Registration Management - Only show if user has permission */}
+        {canManageRegistrations && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Registration Management
+              </CardTitle>
+              <CardDescription>
+                Handle new registrations and renewals
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                {pendingRegistrations.length > 0 ? (
+                  pendingRegistrations.slice(0, 3).map((registration, index) => (
+                    <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div>
+                        <p className="font-medium">{registration.full_name}</p>
+                        <p className="text-sm text-gray-600">{registration.email}</p>
+                      </div>
+                      <Badge variant="secondary">
+                        {registration.approval_status}
+                      </Badge>
                     </div>
-                    <Badge variant="secondary">
-                      {registration.approval_status}
-                    </Badge>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No pending registrations
-                </p>
-              )}
-            </div>
-            <Button asChild className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
-              <Link to="/user-management">
-                View All Registrations
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No pending registrations
+                  </p>
+                )}
+              </div>
+              <Button asChild className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
+                <Link to="/user-management">
+                  View All Registrations
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Communication Center */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-green-600" />
-              Communication Center
-            </CardTitle>
-            <CardDescription>
-              Messages and notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-blue-500" />
-                <span>Unread Messages</span>
+        {/* Communication Center - Only show if user has permission */}
+        {canViewCommunications && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-green-600" />
+                Communication Center
+              </CardTitle>
+              <CardDescription>
+                Messages and notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-blue-500" />
+                  <span>Unread Messages</span>
+                </div>
+                <Badge variant="outline">{stats?.unreadMessages || 0} New</Badge>
               </div>
-              <Badge variant="outline">{stats?.unreadMessages || 0} New</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-green-500" />
-                <span>Callback Requests</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-green-500" />
+                  <span>Callback Requests</span>
+                </div>
+                <Badge variant="outline">{stats?.callbackRequests || 0} Pending</Badge>
               </div>
-              <Badge variant="outline">{stats?.callbackRequests || 0} Pending</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-purple-500" />
-                <span>Forms to Review</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-purple-500" />
+                  <span>Forms to Review</span>
+                </div>
+                <Badge variant="outline">{stats?.formsToReview || 0} New</Badge>
               </div>
-              <Badge variant="outline">{stats?.formsToReview || 0} New</Badge>
-            </div>
-            <Button asChild className="w-full bg-gradient-to-r from-green-500 to-green-600">
-              <Link to="/chat">
-                Open Messages
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+              <Button asChild className="w-full bg-gradient-to-r from-green-500 to-green-600">
+                <Link to="/chat">
+                  Open Messages
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Show message when user has no access to either section */}
+        {!canManageRegistrations && !canViewCommunications && (
+          <Card className="col-span-1 lg:col-span-2">
+            <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+              <div className="text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Additional Features Available</h3>
+                <p className="text-sm">
+                  Contact your administrator to request access to Registration Management 
+                  and Communication Center features.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Today's Schedule */}
