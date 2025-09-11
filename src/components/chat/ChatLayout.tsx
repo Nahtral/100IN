@@ -38,6 +38,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
 
   const [showCreateModal, setShowCreateModal] = React.useState(false);
 
+  // Handler for mobile back navigation
+  const handleBack = React.useCallback(() => {
+    selectChat(null);
+  }, [selectChat]);
+
   // Mobile: show chat window when chat is selected
   const showChatWindow = selectedChat && (isMobile ? true : true);
   const showSidebar = !isMobile || !selectedChat;
@@ -58,11 +63,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
         loading={loading}
         error={error}
         selectedChatId={selectedChat?.id || null}
-        onSelectChat={selectChat}
+        onSelectChat={(chatId) => {
+          const chat = chats.find(c => c.id === chatId);
+          if (chat) selectChat(chat);
+        }}
         onCreateChat={() => setShowCreateModal(true)}
         onRefresh={refreshChats}
         onLoadMore={loadMoreChats}
-        onRetry={retry}
+        onRetry={(operation) => retry()}
         onRenameChat={renameChat}
         onArchiveChat={archiveChat}
         onDeleteChat={deleteChat}
@@ -82,9 +90,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
             onSendMessage={sendMessage}
             onLoadMore={loadMoreMessages}
             onRefresh={refreshMessages}
-            onBack={isMobile ? () => selectChat('') : undefined}
+            onBack={isMobile ? handleBack : undefined}
             onMarkAsRead={() => selectedChat && markAsRead(selectedChat.id)}
-            onRetry={retry}
+            onRetry={(operation) => retry()}
           />
         </div>
       )}
@@ -117,7 +125,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
           setShowCreateModal(false);
           if (chatId) {
             await refreshChats();
-            selectChat(chatId);
+            const updatedChats = chats.find(c => c.id === chatId);
+            if (updatedChats) selectChat(updatedChats);
           }
         }}
       />

@@ -10,12 +10,12 @@ export interface UseProductionChatReturn {
   selectedChat: Chat | null;
   messages: ChatMessage[];
   messagesLoading: boolean;
-  error: string | null;
+  error: { code: string; message: string } | null;
   hasMoreChats: boolean;
   hasMoreMessages: boolean;
   
   // Actions
-  selectChat: (chat: Chat) => void;
+  selectChat: (chat: Chat | null) => void;
   createChat: (data: CreateChatData) => Promise<void>;
   sendMessage: (content: string, attachmentUrl?: string, attachmentName?: string, attachmentSize?: number, replyToId?: string) => Promise<void>;
   markAsRead: (chatId: string) => Promise<void>;
@@ -40,7 +40,7 @@ export function useProductionChatEdge(): UseProductionChatReturn {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [hasMoreChats, setHasMoreChats] = useState(true);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   
@@ -101,7 +101,7 @@ export function useProductionChatEdge(): UseProductionChatReturn {
 
     } catch (error) {
       console.error('Error loading chats:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load chats');
+      setError({ code: 'LOAD_CHATS_FAILED', message: error instanceof Error ? error.message : 'Failed to load chats' });
     } finally {
       setLoading(false);
     }
@@ -133,14 +133,20 @@ export function useProductionChatEdge(): UseProductionChatReturn {
 
     } catch (error) {
       console.error('Error loading messages:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load messages');
+      setError({ code: 'LOAD_MESSAGES_FAILED', message: error instanceof Error ? error.message : 'Failed to load messages' });
     } finally {
       setMessagesLoading(false);
     }
   }, [callChatRelay]);
 
   // Select chat and load its messages
-  const selectChat = useCallback((chat: Chat) => {
+  const selectChat = useCallback((chat: Chat | null) => {
+    if (!chat || !chat.id) {
+      setSelectedChat(null);
+      setMessages([]);
+      return;
+    }
+    
     setSelectedChat(chat);
     setMessages([]);
     loadMessages(chat.id, true);
@@ -168,7 +174,7 @@ export function useProductionChatEdge(): UseProductionChatReturn {
     } catch (error) {
       console.error('Error creating chat:', error);
       const message = error instanceof Error ? error.message : 'Failed to create chat';
-      setError(message);
+      setError({ code: 'CREATE_CHAT_FAILED', message });
       toast.error(message);
     }
   }, [callChatRelay, selectChat]);
@@ -243,7 +249,7 @@ export function useProductionChatEdge(): UseProductionChatReturn {
       );
       
       const message = error instanceof Error ? error.message : 'Failed to send message';
-      setError(message);
+      setError({ code: 'SEND_MESSAGE_FAILED', message });
       toast.error(message);
     }
   }, [selectedChat, callChatRelay]);
@@ -454,20 +460,20 @@ export function useProductionChatEdge(): UseProductionChatReturn {
     hasMoreChats,
     hasMoreMessages,
     
-    // Actions
-    selectChat,
-    createChat,
-    sendMessage,
-    markAsRead,
-    loadMoreMessages,
-    loadMoreChats,
-    refreshChats,
-    refreshMessages,
-    retry,
-    
-    // Chat management
-    renameChat,
-    archiveChat,
-    deleteChat,
+  // Actions
+  selectChat,
+  createChat,
+  sendMessage,
+  markAsRead,
+  loadMoreMessages,
+  loadMoreChats,
+  refreshChats,
+  refreshMessages,
+  retry,
+  
+  // Chat management
+  renameChat,
+  archiveChat,
+  deleteChat,
   };
 }
