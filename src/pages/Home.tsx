@@ -17,7 +17,7 @@ import { NewsModal } from '@/components/news/NewsModal';
 const Home = () => {
   const { user } = useAuth();
   const { currentUser } = useCurrentUser();
-  const { isSuperAdmin } = useOptimizedAuth();
+  const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const [selectedNews, setSelectedNews] = useState<any>(null);
   
   // Fetch recent news (limited for home page)
@@ -269,7 +269,7 @@ const Home = () => {
           </CardHeader>
           <CardContent>
             <div className="mobile-card-grid">
-              {isSuperAdmin && (
+              {(isSuperAdmin || hasRole('staff') || hasRole('coach')) && (
                 <Button asChild variant="outline" className="mobile-btn h-auto flex-col space-y-2">
                   <Link to="/players">
                     <Users className="h-6 w-6" />
@@ -285,7 +285,7 @@ const Home = () => {
                 </Link>
               </Button>
               
-              {isSuperAdmin && (
+              {(isSuperAdmin || hasRole('staff') || hasRole('coach')) && (
                 <Button asChild variant="outline" className="mobile-btn h-auto flex-col space-y-2">
                   <Link to="/analytics">
                     <Target className="h-6 w-6" />
