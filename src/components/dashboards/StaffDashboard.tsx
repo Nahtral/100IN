@@ -12,11 +12,20 @@ import {
   Clock,
   CheckCircle
 } from "lucide-react";
-import { useDashboardData, useUpcomingSchedule } from "@/hooks/useDashboardData";
+import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
+import { Link } from "react-router-dom";
 
 const StaffDashboard = () => {
-  const { stats, loading, error } = useDashboardData();
-  const { schedule } = useUpcomingSchedule();
+  const { isSuperAdmin } = useOptimizedAuth();
+  const { 
+    stats, 
+    pendingRegistrations, 
+    todaySchedule, 
+    pendingTasks, 
+    loading, 
+    error 
+  } = useStaffDashboardData();
 
   if (loading) {
     return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
@@ -59,25 +68,27 @@ const StaffDashboard = () => {
             <Users className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.floor((stats?.totalPlayers || 0) * 0.1)}</div>
+            <div className="text-2xl font-bold">{stats?.pendingRegistrations || 0}</div>
             <p className="text-xs text-muted-foreground">
               This week
             </p>
           </CardContent>
         </Card>
         
-        <Card className="border-orange-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">¥{Math.floor((stats?.revenue || 0) * 0.15).toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              This month
-            </p>
-          </CardContent>
-        </Card>
+        {isSuperAdmin && (
+          <Card className="border-orange-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">¥{(stats?.revenue || 0).toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                This month
+              </p>
+            </CardContent>
+          </Card>
+        )}
         
         <Card className="border-purple-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -85,7 +96,7 @@ const StaffDashboard = () => {
             <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{schedule?.length || 0}</div>
+            <div className="text-2xl font-bold">{stats?.upcomingEvents || 0}</div>
             <p className="text-xs text-muted-foreground">
               Next 7 days
             </p>
@@ -107,24 +118,28 @@ const StaffDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              {[
-                { name: "Emma Wilson", type: "New Player", status: "pending", age: "U16" },
-                { name: "Jake Thompson", type: "Renewal", status: "approved", age: "U14" },
-                { name: "Sofia Garcia", type: "New Player", status: "pending", age: "U18" }
-              ].map((registration, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{registration.name}</p>
-                    <p className="text-sm text-gray-600">{registration.type} - {registration.age}</p>
+              {pendingRegistrations.length > 0 ? (
+                pendingRegistrations.slice(0, 3).map((registration, index) => (
+                  <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <p className="font-medium">{registration.full_name}</p>
+                      <p className="text-sm text-gray-600">{registration.email}</p>
+                    </div>
+                    <Badge variant="secondary">
+                      {registration.approval_status}
+                    </Badge>
                   </div>
-                  <Badge variant={registration.status === 'approved' ? 'default' : 'secondary'}>
-                    {registration.status}
-                  </Badge>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No pending registrations
+                </p>
+              )}
             </div>
-            <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
-              View All Registrations
+            <Button asChild className="w-full bg-gradient-to-r from-blue-500 to-blue-600">
+              <Link to="/user-management">
+                View All Registrations
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -146,24 +161,26 @@ const StaffDashboard = () => {
                 <Mail className="h-4 w-4 text-blue-500" />
                 <span>Unread Messages</span>
               </div>
-              <Badge variant="outline">7 New</Badge>
+              <Badge variant="outline">{stats?.unreadMessages || 0} New</Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-green-500" />
                 <span>Callback Requests</span>
               </div>
-              <Badge variant="outline">3 Pending</Badge>
+              <Badge variant="outline">{stats?.callbackRequests || 0} Pending</Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-purple-500" />
                 <span>Forms to Review</span>
               </div>
-              <Badge variant="outline">5 New</Badge>
+              <Badge variant="outline">{stats?.formsToReview || 0} New</Badge>
             </div>
-            <Button className="w-full bg-gradient-to-r from-green-500 to-green-600">
-              Open Messages
+            <Button asChild className="w-full bg-gradient-to-r from-green-500 to-green-600">
+              <Link to="/chat">
+                Open Messages
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -182,28 +199,36 @@ const StaffDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { time: "9:00 AM", title: "Staff Meeting", type: "meeting", status: "upcoming" },
-              { time: "11:30 AM", title: "Parent Consultation - Johnson Family", type: "appointment", status: "upcoming" },
-              { time: "2:00 PM", title: "Team Registration Deadline", type: "deadline", status: "today" },
-              { time: "4:00 PM", title: "Facility Inspection", type: "task", status: "completed" },
-              { time: "6:00 PM", title: "Coach Training Session", type: "training", status: "upcoming" }
-            ].map((item, index) => (
-              <div key={index} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
-                <div className="text-center">
-                  <p className="font-medium text-sm">{item.time}</p>
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{item.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-xs">
-                      {item.type}
-                    </Badge>
-                    {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
+            {todaySchedule.length > 0 ? (
+              todaySchedule.map((item, index) => (
+                <div key={item.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+                  <div className="text-center">
+                    <p className="font-medium text-sm">
+                      {new Date(item.start_time).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{item.title}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {item.event_type}
+                      </Badge>
+                      {item.location && (
+                        <span className="text-xs text-muted-foreground">at {item.location}</span>
+                      )}
+                      {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No events scheduled for today
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
