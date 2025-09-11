@@ -150,24 +150,28 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
 
     setLoading(true);
     try {
-      console.log('Creating chat with atomic RPC:', {
+      console.log('Creating chat via Edge Function:', {
         chatType,
         chatName,
         selectedUsers,
         user: user?.id
       });
       
-      // Use atomic RPC function for reliable chat creation
-      const { data: chatId, error } = await supabase.rpc('rpc_create_chat', {
-        p_title: chatType === 'group' ? chatName.trim() : null,
-        p_is_group: chatType === 'group',
-        p_participants: selectedUsers
+      // Use Edge Function instead of RPC
+      const { data, error } = await supabase.functions.invoke('chat-relay', {
+        body: {
+          action: 'create_chat',
+          name: chatType === 'group' ? chatName.trim() : 'Direct Chat',
+          type: chatType,
+          participants: selectedUsers,
+          teamId: chatType === 'team' ? selectedTeam : null
+        }
       });
 
-      console.log('Chat creation result:', { chatId, error });
+      console.log('Chat creation result:', { data, error });
 
       if (error) {
-        console.error('RPC error:', error);
+        console.error('Edge Function error:', error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -177,11 +181,11 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
         return;
       }
 
-      if (!chatId) {
+      if (!data?.success) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to create chat: No chat ID returned"
+          description: `Failed to create chat: ${data?.error || 'Unknown error'}`
         });
         onChatCreated(null);
         return;
@@ -192,7 +196,7 @@ export const CreateChatModal: React.FC<CreateChatModalProps> = ({
         description: "Chat created successfully"
       });
 
-      onChatCreated(chatId);
+      onChatCreated(data.data.id);
       resetForm();
     } catch (error) {
       console.error('Error creating chat:', error);

@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { ProductionChatSidebar } from './ProductionChatSidebar';
 import { EnhancedProductionChatWindow } from './EnhancedProductionChatWindow';
 import { CreateChatModal } from './CreateChatModal';
+import { OfflineBanner } from './OfflineBanner';
 import { useProductionChatEdge } from '@/hooks/useProductionChatEdge';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -22,6 +23,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     hasMoreMessages,
     hasMoreChats,
     error,
+    isOnline,
     selectChat,
     createChat,
     sendMessage,
@@ -33,8 +35,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
     retry,
     renameChat,
     archiveChat,
-    deleteChat
+    deleteChat,
+    editMessage,
+    recallMessage
   } = useProductionChatEdge();
+
+  // Get online status from the hook
 
   const [showCreateModal, setShowCreateModal] = React.useState(false);
 
@@ -49,10 +55,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
 
   return (
     <div className={cn(
-      "flex h-full bg-background",
+      "flex h-full bg-background flex-col",
       className
     )}>
-      {/* Chat Sidebar */}
+      {/* Offline Banner */}
+      <OfflineBanner isOnline={isOnline} />
+      
+      <div className="flex flex-1">
+        {/* Chat Sidebar */}
       {showSidebar && (
         <div className={cn(
           "border-r border-border bg-card",
@@ -93,11 +103,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
             onBack={isMobile ? handleBack : undefined}
             onMarkAsRead={() => selectedChat && markAsRead(selectedChat.id)}
             onRetry={(operation) => retry()}
+            onEditMessage={editMessage}
+            onRecallMessage={recallMessage}
           />
         </div>
       )}
 
-      {/* Empty State */}
+        {/* Empty State */}
       {!selectedChat && !isMobile && (
         <div className="flex-1 flex items-center justify-center text-center p-8">
           <div className="max-w-md">
@@ -121,15 +133,21 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
       <CreateChatModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onChatCreated={async (chatId) => {
+      onChatCreated={async (chatId) => {
+        try {
           setShowCreateModal(false);
           if (chatId) {
             await refreshChats();
-            const updatedChats = chats.find(c => c.id === chatId);
-            if (updatedChats) selectChat(updatedChats);
+            // Find and select the new chat
+            const chat = chats.find(c => c.id === chatId);
+            if (chat) selectChat(chat);
           }
-        }}
+        } catch (error) {
+          console.error('Error after chat creation:', error);
+        }
+      }}
       />
+      </div>
     </div>
   );
 };

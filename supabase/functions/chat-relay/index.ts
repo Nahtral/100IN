@@ -58,6 +58,12 @@ serve(async (req) => {
       case 'get_participants':
         result = await getParticipants(user.id, params);
         break;
+      case 'edit_message':
+        result = await editMessage(user.id, params);
+        break;
+      case 'recall_message':
+        result = await recallMessage(user.id, params);
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -145,6 +151,23 @@ async function listChats(userId: string, { limit = 30, offset = 0 }) {
     chat.unread_count = unreadCount;
     chat.last_message_content = lastMessage?.content;
     chat.last_message_sender = lastMessage?.sender_id;
+    
+    // Add computed fields
+    chat.member_count = participantCount || 0;
+    chat.last_activity_at = chat.last_message_at;
+    
+    // Generate display_title using auto-naming logic
+    chat.display_title = await generateChatDisplayTitle(chat, userId);
+    
+    // Determine if current user is admin
+    const { data: userRole } = await supabaseAdmin
+      .from('chat_participants')
+      .select('role')
+      .eq('chat_id', chat.id)
+      .eq('user_id', userId)
+      .single();
+    
+    chat.is_admin = userRole?.role === 'admin';
   }
 
   return chats;
@@ -163,14 +186,13 @@ async function getMessages(userId: string, { chatId, limit = 50, offset = 0 }) {
     throw new Error('Access denied: not a participant in this chat');
   }
 
-  // Get messages with sender info
+  // Get messages first
   const { data: messages, error } = await supabaseAdmin
     .from('chat_messages')
     .select(`
       id, chat_id, sender_id, content, message_type, attachment_url,
       attachment_name, attachment_size, reply_to_id, edited_at,
-      created_at, status, language_code,
-      profiles:sender_id (full_name, email)
+      created_at, status, language_code
     `)
     .eq('chat_id', chatId)
     .neq('status', 'deleted')
@@ -179,15 +201,31 @@ async function getMessages(userId: string, { chatId, limit = 50, offset = 0 }) {
 
   if (error) throw error;
 
+  // Get unique sender IDs and fetch their profiles
+  const senderIds = [...new Set(messages.map(msg => msg.sender_id))];
+  const { data: profiles } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', senderIds);
+
+  // Create a map of sender ID to profile info
+  const profileMap = new Map();
+  (profiles || []).forEach(profile => {
+    profileMap.set(profile.id, profile);
+  });
+
   // Format messages for frontend
-  return messages.map(msg => ({
-    ...msg,
-    sender_name: msg.profiles?.full_name || msg.profiles?.email || 'Unknown',
-    sender_email: msg.profiles?.email || '',
-    is_edited: !!msg.edited_at,
-    is_deleted: msg.status === 'recalled',
-    reactions: [] // TODO: Implement reactions if needed
-  })).reverse(); // Return in chronological order
+  return messages.map(msg => {
+    const profile = profileMap.get(msg.sender_id);
+    return {
+      ...msg,
+      sender_name: profile?.full_name || profile?.email || 'Unknown',
+      sender_email: profile?.email || '',
+      is_edited: !!msg.edited_at,
+      is_deleted: msg.status === 'recalled',
+      reactions: [] // TODO: Implement reactions if needed
+    };
+  }).reverse(); // Return in chronological order
 }
 
 async function createChat(userId: string, { name, type, participants = [], teamId = null }) {
@@ -272,8 +310,7 @@ async function sendMessage(userId: string, { chatId, content, messageType = 'tex
     })
     .select(`
       id, chat_id, sender_id, content, message_type, attachment_url,
-      attachment_name, attachment_size, reply_to_id, created_at, status,
-      profiles:sender_id (full_name, email)
+      attachment_name, attachment_size, reply_to_id, created_at, status
     `)
     .single();
 
@@ -288,11 +325,18 @@ async function sendMessage(userId: string, { chatId, content, messageType = 'tex
     })
     .eq('id', chatId);
 
+  // Get sender profile info
+  const { data: senderProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', userId)
+    .single();
+
   // Format message for frontend
   return {
     ...message,
-    sender_name: message.profiles?.full_name || message.profiles?.email || 'Unknown',
-    sender_email: message.profiles?.email || '',
+    sender_name: senderProfile?.full_name || senderProfile?.email || 'Unknown',
+    sender_email: senderProfile?.email || '',
     is_edited: false,
     is_deleted: false,
     reactions: []
@@ -356,20 +400,112 @@ async function getParticipants(userId: string, { chatId }) {
     throw new Error('Access denied: not a participant in this chat');
   }
 
-  // Get all participants with profile info
+  // Get participants first
   const { data: participants, error } = await supabaseAdmin
     .from('chat_participants')
-    .select(`
-      id, user_id, role, joined_at,
-      profiles:user_id (full_name, email)
-    `)
+    .select('id, user_id, role, joined_at')
     .eq('chat_id', chatId);
 
   if (error) throw error;
 
-  return participants.map(p => ({
-    ...p,
-    user_name: p.profiles?.full_name || p.profiles?.email || 'Unknown',
-    user_email: p.profiles?.email || ''
-  }));
+  // Get profiles for all participants
+  const userIds = participants.map(p => p.user_id);
+  const { data: profiles } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', userIds);
+
+  // Create profile map
+  const profileMap = new Map();
+  (profiles || []).forEach(profile => {
+    profileMap.set(profile.id, profile);
+  });
+
+  return participants.map(p => {
+    const profile = profileMap.get(p.user_id);
+    return {
+      ...p,
+      user_name: profile?.full_name || profile?.email || 'Unknown',
+      user_email: profile?.email || ''
+    };
+  });
+}
+
+// Helper function to generate display titles for chats
+async function generateChatDisplayTitle(chat: any, currentUserId: string): Promise<string> {
+  // If it's a team chat, get team name
+  if (chat.chat_type === 'team' && chat.team_id) {
+    const { data: team } = await supabaseAdmin
+      .from('teams')
+      .select('name')
+      .eq('id', chat.team_id)
+      .single();
+    
+    if (team?.name) {
+      return `Team • ${team.name}`;
+    }
+  }
+
+  // If it's a group chat with a custom name, use it
+  if (chat.chat_type === 'group' && chat.name && chat.name !== 'Chat' && chat.name !== 'Group Chat') {
+    return chat.name;
+  }
+
+  // For private/direct chats or unnamed groups, auto-generate name based on participants
+  const { data: participants } = await supabaseAdmin
+    .from('chat_participants')
+    .select('user_id')
+    .eq('chat_id', chat.id)
+    .neq('user_id', currentUserId);
+
+  if (!participants || participants.length === 0) {
+    return chat.chat_type === 'group' ? 'Group Chat' : 'Direct Message';
+  }
+
+  // Get participant names
+  const participantIds = participants.map(p => p.user_id);
+  const { data: profiles } = await supabaseAdmin
+    .from('profiles')
+    .select('full_name, email')
+    .in('id', participantIds);
+
+  const names = (profiles || []).map(p => p.full_name || p.email.split('@')[0]).filter(Boolean);
+
+  if (names.length === 0) {
+    return chat.chat_type === 'group' ? 'Group Chat' : 'Direct Message';
+  }
+
+  if (chat.chat_type === 'private' && names.length === 1) {
+    return names[0]; // Direct message with one other person
+  }
+
+  // For groups or multiple participants
+  if (names.length <= 3) {
+    return names.join(', ');
+  } else {
+    return `${names.slice(0, 3).join(', ')} +${names.length - 3}`;
+  }
+}
+
+async function editMessage(userId: string, { messageId, content }) {
+  // Use existing RPC function
+  const { error } = await supabaseAdmin.rpc('rpc_edit_or_recall_message', {
+    p_message_id: messageId,
+    p_new_content: content,
+    p_recall: false
+  });
+
+  if (error) throw error;
+  return { success: true };
+}
+
+async function recallMessage(userId: string, { messageId }) {
+  // Use existing RPC function  
+  const { error } = await supabaseAdmin.rpc('rpc_edit_or_recall_message', {
+    p_message_id: messageId,
+    p_recall: true
+  });
+
+  if (error) throw error;
+  return { success: true };
 }

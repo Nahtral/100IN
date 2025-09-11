@@ -13,6 +13,7 @@ export interface UseProductionChatReturn {
   error: { code: string; message: string } | null;
   hasMoreChats: boolean;
   hasMoreMessages: boolean;
+  isOnline: boolean;
   
   // Actions
   selectChat: (chat: Chat | null) => void;
@@ -29,6 +30,10 @@ export interface UseProductionChatReturn {
   renameChat: (chatId: string, newName: string) => Promise<void>;
   archiveChat: (chatId: string) => Promise<void>;
   deleteChat: (chatId: string) => Promise<void>;
+  
+  // Message management
+  editMessage: (messageId: string, newContent: string) => Promise<void>;
+  recallMessage: (messageId: string) => Promise<void>;
 }
 
 const CHATS_PER_PAGE = 20;
@@ -43,37 +48,60 @@ export function useProductionChatEdge(): UseProductionChatReturn {
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [hasMoreChats, setHasMoreChats] = useState(true);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const chatsOffsetRef = useRef(0);
   const messagesOffsetRef = useRef(0);
   const retryTimeoutRef = useRef<number>();
   const subscriptionsRef = useRef<any[]>([]);
+  const retryCountRef = useRef(0);
 
-  // Call Edge Function helper
-  const callChatRelay = useCallback(async (action: string, params: any = {}) => {
+  // Call Edge Function helper with retry logic
+  const callChatRelay = useCallback(async (action: string, params: any = {}, retryCount = 0) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
       throw new Error('No authentication token');
     }
 
-    const response = await fetch(
-      `https://oxwbeahwldxtwfezubdm.functions.supabase.co/chat-relay`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ action, ...params })
+    try {
+      // Use Supabase client invoke
+      const result = await supabase.functions.invoke('chat-relay', {
+        body: { action, ...params }
+      });
+
+      if (result.error) {
+        console.error('Edge Function error:', result.error);
+        
+        // Retry on 503 or network errors
+        if ((result.error.message?.includes('503') || result.error.message?.includes('network')) && retryCount < 3) {
+          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return callChatRelay(action, params, retryCount + 1);
+        }
+        
+        throw new Error(result.error.message || 'Edge function failed');
       }
-    );
 
-    const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.error || 'Unknown error');
+      if (!result.data?.success) {
+        throw new Error(result.data?.error || 'Unknown error from chat relay');
+      }
+
+      // Reset retry count on success
+      retryCountRef.current = 0;
+      return result.data.data;
+      
+    } catch (error: any) {
+      console.error(`Chat relay error (attempt ${retryCount + 1}):`, error);
+      
+      // Retry on network errors or 503s
+      if ((error.message?.includes('503') || error.message?.includes('network') || error.message?.includes('fetch')) && retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return callChatRelay(action, params, retryCount + 1);
+      }
+      
+      throw error;
     }
-
-    return result.data;
   }, []);
 
   // Load chats
@@ -101,7 +129,11 @@ export function useProductionChatEdge(): UseProductionChatReturn {
 
     } catch (error) {
       console.error('Error loading chats:', error);
-      setError({ code: 'LOAD_CHATS_FAILED', message: error instanceof Error ? error.message : 'Failed to load chats' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load chats';
+      setError({ 
+        code: 'LOAD_CHATS_FAILED', 
+        message: isOnline ? errorMessage : 'You appear to be offline. Please check your connection.' 
+      });
     } finally {
       setLoading(false);
     }
@@ -133,7 +165,11 @@ export function useProductionChatEdge(): UseProductionChatReturn {
 
     } catch (error) {
       console.error('Error loading messages:', error);
-      setError({ code: 'LOAD_MESSAGES_FAILED', message: error instanceof Error ? error.message : 'Failed to load messages' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load messages';
+      setError({ 
+        code: 'LOAD_MESSAGES_FAILED', 
+        message: isOnline ? errorMessage : 'You appear to be offline. Please check your connection.' 
+      });
     } finally {
       setMessagesLoading(false);
     }
@@ -340,6 +376,53 @@ export function useProductionChatEdge(): UseProductionChatReturn {
     }
   }, [callChatRelay, selectedChat]);
 
+  // Message management functions
+  const editMessage = useCallback(async (messageId: string, newContent: string) => {
+    try {
+      setError(null);
+      await callChatRelay('edit_message', { messageId, content: newContent });
+      
+      // Update local message
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, content: newContent, edited_at: new Date().toISOString(), is_edited: true }
+            : msg
+        )
+      );
+      
+      toast.success('Message edited successfully');
+    } catch (error) {
+      console.error('Error editing message:', error);
+      const message = error instanceof Error ? error.message : 'Failed to edit message';
+      setError({ code: 'EDIT_MESSAGE_FAILED', message });
+      toast.error(message);
+    }
+  }, [callChatRelay]);
+
+  const recallMessage = useCallback(async (messageId: string) => {
+    try {
+      setError(null);
+      await callChatRelay('recall_message', { messageId });
+      
+      // Update local message
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, status: 'recalled' as const, content: '[Message recalled]', is_deleted: true }
+            : msg
+        )
+      );
+      
+      toast.success('Message recalled successfully');
+    } catch (error) {
+      console.error('Error recalling message:', error);
+      const message = error instanceof Error ? error.message : 'Failed to recall message';
+      setError({ code: 'RECALL_MESSAGE_FAILED', message });
+      toast.error(message);
+    }
+  }, [callChatRelay]);
+
   // Load more functions
   const loadMoreMessages = useCallback(async () => {
     if (!selectedChat || messagesLoading || !hasMoreMessages) return;
@@ -435,6 +518,35 @@ export function useProductionChatEdge(): UseProductionChatReturn {
     };
   }, [selectedChat, refreshChats]);
 
+  // Online/offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Warm-up ping on app start to reduce 503s
+  useEffect(() => {
+    const warmUpEdgeFunction = async () => {
+      try {
+        await callChatRelay('list_chats', { limit: 1, offset: 0 });
+      } catch (error) {
+        console.log('Warm-up ping failed (expected):', error);
+      }
+    };
+    
+    // Ping after a short delay to let auth settle
+    const timer = setTimeout(warmUpEdgeFunction, 1000);
+    return () => clearTimeout(timer);
+  }, [callChatRelay]);
+
   // Initial load
   useEffect(() => {
     loadChats(true);
@@ -459,21 +571,26 @@ export function useProductionChatEdge(): UseProductionChatReturn {
     error,
     hasMoreChats,
     hasMoreMessages,
+    isOnline,
     
-  // Actions
-  selectChat,
-  createChat,
-  sendMessage,
-  markAsRead,
-  loadMoreMessages,
-  loadMoreChats,
-  refreshChats,
-  refreshMessages,
-  retry,
-  
-  // Chat management
-  renameChat,
-  archiveChat,
-  deleteChat,
+    // Actions
+    selectChat,
+    createChat,
+    sendMessage,
+    markAsRead,
+    loadMoreMessages,
+    loadMoreChats,
+    refreshChats,
+    refreshMessages,
+    retry,
+    
+    // Chat management
+    renameChat,
+    archiveChat,
+    deleteChat,
+    
+    // Message management
+    editMessage,
+    recallMessage,
   };
 }

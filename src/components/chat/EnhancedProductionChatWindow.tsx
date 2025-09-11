@@ -15,7 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { ChatHeaderMenu } from './ChatHeaderMenu';
-import { MessageBubbleMenu } from './MessageBubbleMenu';
+import { MessageActions } from './MessageActions';
 import { Chat, ChatMessage, ChatError } from '@/types/chat';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,8 @@ interface EnhancedProductionChatWindowProps {
   onBack?: () => void;
   onMarkAsRead: () => void;
   onRetry: (operation: string) => Promise<void>;
+  onEditMessage: (messageId: string, content: string) => Promise<void>;
+  onRecallMessage: (messageId: string) => Promise<void>;
 }
 
 export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindowProps> = ({
@@ -45,7 +47,9 @@ export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindow
   onRefresh,
   onBack,
   onMarkAsRead,
-  onRetry
+  onRetry,
+  onEditMessage,
+  onRecallMessage
 }) => {
   const { user } = useAuth();
   const [messageText, setMessageText] = useState('');
@@ -187,11 +191,12 @@ export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindow
               <AlertCircle className="h-3 w-3 text-destructive" />
             )}
             <div className="ml-auto">
-              <MessageBubbleMenu
+              <MessageActions
                 message={message}
                 isOwner={isOwnMessage}
                 onReply={handleReply}
-                onMessageUpdated={onRefresh}
+                onEdit={onEditMessage}
+                onRecall={onRecallMessage}
                 onDeleteForMe={handleDeleteForMe}
               />
             </div>
