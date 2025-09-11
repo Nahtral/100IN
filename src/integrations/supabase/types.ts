@@ -149,6 +149,7 @@ export type Database = {
           attachment_size: number | null
           attachment_url: string | null
           chat_id: string
+          client_msg_id: string | null
           content: string
           created_at: string | null
           edited_at: string | null
@@ -160,12 +161,14 @@ export type Database = {
           reply_to_id: string | null
           sender_id: string
           status: string
+          version: number | null
         }
         Insert: {
           attachment_name?: string | null
           attachment_size?: number | null
           attachment_url?: string | null
           chat_id: string
+          client_msg_id?: string | null
           content: string
           created_at?: string | null
           edited_at?: string | null
@@ -177,12 +180,14 @@ export type Database = {
           reply_to_id?: string | null
           sender_id: string
           status?: string
+          version?: number | null
         }
         Update: {
           attachment_name?: string | null
           attachment_size?: number | null
           attachment_url?: string | null
           chat_id?: string
+          client_msg_id?: string | null
           content?: string
           created_at?: string | null
           edited_at?: string | null
@@ -194,6 +199,7 @@ export type Database = {
           reply_to_id?: string | null
           sender_id?: string
           status?: string
+          version?: number | null
         }
         Relationships: [
           {
@@ -222,6 +228,7 @@ export type Database = {
       chat_participants: {
         Row: {
           chat_id: string
+          display_alias: string | null
           id: string
           joined_at: string | null
           last_read_at: string | null
@@ -230,6 +237,7 @@ export type Database = {
         }
         Insert: {
           chat_id: string
+          display_alias?: string | null
           id?: string
           joined_at?: string | null
           last_read_at?: string | null
@@ -238,6 +246,7 @@ export type Database = {
         }
         Update: {
           chat_id?: string
+          display_alias?: string | null
           id?: string
           joined_at?: string | null
           last_read_at?: string | null
@@ -4804,6 +4813,10 @@ export type Database = {
         Args: { _x: number; _y: number }
         Returns: string
       }
+      edit_message_versioned: {
+        Args: { p_message_id: string; p_new_content: string; p_user_id: string }
+        Returns: undefined
+      }
       export_tryout_evaluations: {
         Args: {
           end_date?: string
@@ -5061,6 +5074,10 @@ export type Database = {
         Args: { email_input: string }
         Returns: string
       }
+      recall_message_versioned: {
+        Args: { p_message_id: string; p_user_id: string }
+        Returns: undefined
+      }
       remove_user_permission: {
         Args: {
           permission_name: string
@@ -5279,6 +5296,20 @@ export type Database = {
           team_id?: string
         }
         Returns: string
+      }
+      send_message_idempotent: {
+        Args: {
+          p_attachment_name?: string
+          p_attachment_size?: number
+          p_attachment_url?: string
+          p_chat_id: string
+          p_client_msg_id: string
+          p_content: string
+          p_message_type?: string
+          p_reply_to_id?: string
+          p_sender_id: string
+        }
+        Returns: Json
       }
       shares_team_with: {
         Args: { team_uuid: string; uid: string }

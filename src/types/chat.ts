@@ -7,6 +7,8 @@ export interface ChatParticipant {
   last_read_at: string;
   user_name?: string;
   user_email?: string;
+  // New field for per-user chat renaming
+  display_alias?: string;
 }
 
 export interface Chat {
@@ -52,6 +54,9 @@ export interface ChatMessage {
   reactions: MessageReaction[];
   status: 'visible' | 'recalled' | 'deleted_sender';
   language_code?: string;
+  // New database fields for reliability
+  client_msg_id?: string;
+  version?: number;
   // UI states for optimistic updates
   _optimistic?: boolean;
   _pending?: boolean;

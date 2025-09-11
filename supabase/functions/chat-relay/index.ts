@@ -281,66 +281,38 @@ async function createChat(userId: string, { name, type, participants = [], teamI
   return chat;
 }
 
-async function sendMessage(userId: string, { chatId, content, messageType = 'text', attachmentUrl = null, attachmentName = null, attachmentSize = null, replyToId = null }) {
-  // Verify user is participant
-  const { data: participant } = await supabaseAdmin
-    .from('chat_participants')
-    .select('id')
-    .eq('chat_id', chatId)
-    .eq('user_id', userId)
-    .single();
+async function sendMessage(userId: string, { chatId, content, messageType = 'text', attachmentUrl = null, attachmentName = null, attachmentSize = null, replyToId = null, clientMsgId = null }) {
+  // Generate client message ID if not provided for idempotency
+  const clientMessageId = clientMsgId || `${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  if (!participant) {
-    throw new Error('Access denied: not a participant in this chat');
+  try {
+    // Use new idempotent send function
+    const { data: result, error } = await supabaseAdmin.rpc('send_message_idempotent', {
+      p_chat_id: chatId,
+      p_sender_id: userId,
+      p_content: content,
+      p_client_msg_id: clientMessageId,
+      p_message_type: messageType,
+      p_attachment_url: attachmentUrl,
+      p_attachment_name: attachmentName,
+      p_attachment_size: attachmentSize,
+      p_reply_to_id: replyToId
+    });
+
+    if (error) throw error;
+    
+    return result;
+
+  } catch (error: any) {
+    console.error('Error sending message:', error);
+    
+    // Handle specific error cases
+    if (error.message?.includes('Access denied')) {
+      throw new Error('Access denied: not a participant in this chat');
+    }
+    
+    throw error;
   }
-
-  // Insert message
-  const { data: message, error } = await supabaseAdmin
-    .from('chat_messages')
-    .insert({
-      chat_id: chatId,
-      sender_id: userId,
-      content,
-      message_type: messageType,
-      attachment_url: attachmentUrl,
-      attachment_name: attachmentName,
-      attachment_size: attachmentSize,
-      reply_to_id: replyToId,
-      status: 'visible'
-    })
-    .select(`
-      id, chat_id, sender_id, content, message_type, attachment_url,
-      attachment_name, attachment_size, reply_to_id, created_at, status
-    `)
-    .single();
-
-  if (error) throw error;
-
-  // Update chat last_message_at
-  await supabaseAdmin
-    .from('chats')
-    .update({ 
-      last_message_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', chatId);
-
-  // Get sender profile info
-  const { data: senderProfile } = await supabaseAdmin
-    .from('profiles')
-    .select('full_name, email')
-    .eq('id', userId)
-    .single();
-
-  // Format message for frontend
-  return {
-    ...message,
-    sender_name: senderProfile?.full_name || senderProfile?.email || 'Unknown',
-    sender_email: senderProfile?.email || '',
-    is_edited: false,
-    is_deleted: false,
-    reactions: []
-  };
 }
 
 async function updateChat(userId: string, { chatId, name = null, status = null }) {
@@ -488,24 +460,34 @@ async function generateChatDisplayTitle(chat: any, currentUserId: string): Promi
 }
 
 async function editMessage(userId: string, { messageId, content }) {
-  // Use existing RPC function
-  const { error } = await supabaseAdmin.rpc('rpc_edit_or_recall_message', {
-    p_message_id: messageId,
-    p_new_content: content,
-    p_recall: false
-  });
+  try {
+    // Use new versioned edit function
+    const { error } = await supabaseAdmin.rpc('edit_message_versioned', {
+      p_message_id: messageId,
+      p_user_id: userId,
+      p_new_content: content
+    });
 
-  if (error) throw error;
-  return { success: true };
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error editing message:', error);
+    throw error;
+  }
 }
 
 async function recallMessage(userId: string, { messageId }) {
-  // Use existing RPC function  
-  const { error } = await supabaseAdmin.rpc('rpc_edit_or_recall_message', {
-    p_message_id: messageId,
-    p_recall: true
-  });
+  try {
+    // Use new versioned recall function
+    const { error } = await supabaseAdmin.rpc('recall_message_versioned', {
+      p_message_id: messageId,
+      p_user_id: userId
+    });
 
-  if (error) throw error;
-  return { success: true };
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error recalling message:', error);
+    throw error;
+  }
 }

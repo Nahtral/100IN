@@ -161,14 +161,30 @@ export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindow
     const isOwnMessage = message.sender_id === user?.id;
     const isHidden = hiddenMessages.has(message.id);
     const isRecalled = message.status === 'recalled';
+    const isOptimistic = message.id.startsWith('temp-');
     
     if (isHidden) return null;
+
+    // Get delivery status styling
+    const getDeliveryStatusIcon = () => {
+      if (message._failed) {
+        return <AlertCircle className="h-3 w-3 text-destructive" />;
+      }
+      if (message._pending || isOptimistic) {
+        return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
+      }
+      if (message.delivery_status === 'sent') {
+        return <span className="text-xs text-primary">✓</span>;
+      }
+      return null;
+    };
 
     return (
       <div className={cn(
         "group flex gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50",
-        message._failed && "bg-destructive/10",
-        message._pending && "opacity-70"
+        message._failed && "bg-destructive/10 border-l-2 border-destructive",
+        (message._pending || isOptimistic) && "opacity-70",
+        isRecalled && "opacity-60"
       )}>
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
           {message.sender_name.charAt(0).toUpperCase()}
@@ -181,15 +197,10 @@ export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindow
             <span className="text-xs text-muted-foreground">
               {formatMessageTime(message.created_at)}
             </span>
-            {message.edited_at && (
+            {message.edited_at && !isOptimistic && (
               <span className="text-xs text-muted-foreground">(edited)</span>
             )}
-            {message._pending && (
-              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-            )}
-            {message._failed && (
-              <AlertCircle className="h-3 w-3 text-destructive" />
-            )}
+            {isOwnMessage && getDeliveryStatusIcon()}
             <div className="ml-auto">
               <MessageActions
                 message={message}
@@ -204,6 +215,19 @@ export const EnhancedProductionChatWindow: React.FC<EnhancedProductionChatWindow
           <div className="text-sm text-foreground whitespace-pre-wrap break-words">
             {isRecalled ? (
               <span className="italic opacity-60">🚫 This message was recalled</span>
+            ) : message._failed ? (
+              <div className="flex items-center gap-2">
+                <span>{message.content}</span>
+                <button
+                  onClick={() => {
+                    // Retry sending the message
+                    onSendMessage(message.content).catch(console.error);
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Retry
+                </button>
+              </div>
             ) : (
               message.content
             )}

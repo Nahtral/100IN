@@ -225,14 +225,20 @@ export function useProductionChatEdge(): UseProductionChatReturn {
   ) => {
     if (!selectedChat) return;
 
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return;
+
+    // Generate unique client message ID for idempotency
+    const clientMsgId = `${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     try {
       setError(null);
       
       // Optimistic UI update
       const optimisticMessage: ChatMessage = {
-        id: `temp-${Date.now()}`,
+        id: `temp-${clientMsgId}`,
         chat_id: selectedChat.id,
-        sender_id: (await supabase.auth.getUser()).data.user?.id || '',
+        sender_id: user.id,
         content,
         message_type: 'text',
         attachment_url: attachmentUrl,
@@ -260,8 +266,19 @@ export function useProductionChatEdge(): UseProductionChatReturn {
         attachmentUrl,
         attachmentName,
         attachmentSize,
-        replyToId
+        replyToId,
+        clientMsgId
       });
+
+      // Check if message was duplicate (already sent)
+      if (newMessage.duplicate) {
+        // Remove optimistic message and use existing one
+        setMessages(prev => 
+          prev.filter(msg => msg.id !== optimisticMessage.id)
+        );
+        toast.info('Message already sent');
+        return;
+      }
 
       // Replace optimistic message with real one
       setMessages(prev => 
@@ -275,10 +292,11 @@ export function useProductionChatEdge(): UseProductionChatReturn {
     } catch (error) {
       console.error('Error sending message:', error);
       
-      // Mark optimistic message as failed
+      // Mark optimistic message as failed with temp ID
+      const tempId = `temp-${clientMsgId}`;
       setMessages(prev => 
         prev.map(msg => 
-          msg._optimistic && msg._pending
+          msg.id === tempId
             ? { ...msg, _failed: true, delivery_status: 'failed' as const }
             : msg
         )
@@ -485,18 +503,61 @@ export function useProductionChatEdge(): UseProductionChatReturn {
               // If it's for the current chat, add it to messages
               if (selectedChat && payload.new.chat_id === selectedChat.id) {
                 const newMessage = payload.new as any;
-                setMessages(prev => [...prev, {
-                  ...newMessage,
-                  sender_name: 'Unknown', // Will be updated by refresh
-                  sender_email: '',
-                  is_edited: false,
-                  is_deleted: false,
-                  reactions: []
-                }]);
+                setMessages(prev => {
+                  // Check if message already exists (avoid duplicates)
+                  const exists = prev.some(msg => msg.id === newMessage.id);
+                  if (exists) return prev;
+                  
+                  return [...prev, {
+                    ...newMessage,
+                    sender_name: 'Unknown', // Will be updated by refresh
+                    sender_email: '',
+                    is_edited: !!newMessage.edited_at,
+                    is_deleted: newMessage.status === 'recalled',
+                    reactions: []
+                  }];
+                });
               }
               
               // Refresh chats to update last message
               refreshChats();
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'chat_messages' },
+            (payload) => {
+              console.log('Message updated:', payload);
+              
+              // Update message in current chat
+              if (selectedChat && payload.new.chat_id === selectedChat.id) {
+                const updatedMessage = payload.new as any;
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === updatedMessage.id 
+                      ? {
+                          ...msg,
+                          ...updatedMessage,
+                          is_edited: !!updatedMessage.edited_at,
+                          is_deleted: updatedMessage.status === 'recalled',
+                          version: updatedMessage.version
+                        }
+                      : msg
+                  )
+                );
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'chat_messages' },
+            (payload) => {
+              console.log('Message deleted:', payload);
+              
+              // Remove message from current chat
+              if (selectedChat && payload.old.chat_id === selectedChat.id) {
+                setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
+              }
             }
           )
           .subscribe();
