@@ -24,7 +24,7 @@ import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Link } from 'react-router-dom';
 import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
-import PlayerDashboard from '@/components/dashboards/PlayerDashboard';
+import { EnhancedPlayerDashboard } from '@/components/dashboards/EnhancedPlayerDashboard';
 import CoachDashboard from '@/components/dashboards/CoachDashboard';
 import ParentDashboard from '@/components/dashboards/ParentDashboard';
 import StaffDashboard from '@/components/dashboards/StaffDashboard';
@@ -127,7 +127,7 @@ const Dashboard = () => {
   // Render specific dashboard based on user role (or test role)
   switch (actualUserRole) {
     case 'player':
-      return <PlayerDashboard />;
+      return <EnhancedPlayerDashboard />;
     case 'coach':
       return <CoachDashboard />;
     case 'parent':
