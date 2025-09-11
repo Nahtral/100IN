@@ -15,9 +15,10 @@ import {
 import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
 import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 import { Link } from "react-router-dom";
+import React from "react";
 
 const StaffDashboard = () => {
-  const { isSuperAdmin } = useOptimizedAuth();
+  const { isSuperAdmin, hasRole, refetch, userData } = useOptimizedAuth();
   const { 
     stats, 
     pendingRegistrations, 
@@ -26,6 +27,24 @@ const StaffDashboard = () => {
     loading, 
     error 
   } = useStaffDashboardData();
+
+  // Enhanced role checking with debug logging
+  const isReallySuper = isSuperAdmin() && hasRole('super_admin');
+  
+  // Debug logging for troubleshooting
+  console.log('🔍 Staff Dashboard Role Debug:', {
+    isSuperAdmin: isSuperAdmin(),
+    hasRole_super_admin: hasRole('super_admin'),
+    isReallySuper,
+    userData: userData,
+    primaryRole: userData?.primaryRole,
+    roles: userData?.roles
+  });
+
+  // Force auth refresh on mount to ensure current data
+  React.useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   if (loading) {
     return <div className="flex items-center justify-center p-8">Loading dashboard data...</div>;
@@ -75,7 +94,7 @@ const StaffDashboard = () => {
           </CardContent>
         </Card>
         
-        {isSuperAdmin && (
+        {isReallySuper && (
           <Card className="border-orange-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Revenue</CardTitle>
