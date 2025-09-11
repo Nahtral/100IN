@@ -1,0 +1,47 @@
+{
+  "name": "Panthers Basketball Management",
+  "short_name": "Panthers",
+  "description": "Enterprise basketball team management system",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#FF2A2A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48 64x64",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "productivity", "business"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to main dashboard",
+      "url": "/dashboard",
+      "icons": [{"src": "/favicon.ico", "sizes": "192x192"}]
+    },
+    {
+      "name": "Players",
+      "short_name": "Players",
+      "description": "Manage players",
+      "url": "/players",
+      "icons": [{"src": "/favicon.ico", "sizes": "192x192"}]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}

@@ -15,7 +15,8 @@ import {
   Newspaper,
   MessageCircle,
   Target,
-  CreditCard
+  CreditCard,
+  Zap
 } from 'lucide-react';
 import {
   Sidebar,
@@ -81,6 +82,12 @@ export function AppSidebar() {
       title: 'Analytics',
       href: '/analytics',
       icon: BarChart3,
+      showCondition: () => isSuperAdmin(),
+    },
+    {
+      title: 'Performance Monitor',
+      href: '/admin/performance',
+      icon: Zap,
       showCondition: () => isSuperAdmin(),
     },
     {
