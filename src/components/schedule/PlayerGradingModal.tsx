@@ -101,10 +101,12 @@ const PlayerGradingModal: React.FC<PlayerGradingModalProps> = ({
 
   // Load existing grade when player is selected
   useEffect(() => {
+    console.log('Player selection changed:', selectedPlayer);
     if (selectedPlayer) {
       const existingGrade = getPlayerGrade(selectedPlayer);
+      console.log('Existing grade for player:', existingGrade);
       if (existingGrade) {
-        setGradeData({
+        const newGradeData = {
           shooting: existingGrade.shooting || 5,
           ball_handling: existingGrade.ball_handling || 5,
           passing: existingGrade.passing || 5,
@@ -123,10 +125,12 @@ const PlayerGradingModal: React.FC<PlayerGradingModalProps> = ({
           boxout_frequency: existingGrade.boxout_frequency || 5,
           court_vision: existingGrade.court_vision || 5,
           notes: existingGrade.notes || ''
-        });
+        };
+        console.log('Setting existing grade data:', newGradeData);
+        setGradeData(newGradeData);
       } else {
         // Reset to default values for new grade
-        setGradeData({
+        const defaultGradeData = {
           shooting: 5,
           ball_handling: 5,
           passing: 5,
@@ -145,13 +149,20 @@ const PlayerGradingModal: React.FC<PlayerGradingModalProps> = ({
           boxout_frequency: 5,
           court_vision: 5,
           notes: ''
-        });
+        };
+        console.log('Setting default grade data:', defaultGradeData);
+        setGradeData(defaultGradeData);
       }
     }
   }, [selectedPlayer, getPlayerGrade]);
 
   const handleSliderChange = (key: keyof GradeFormData, value: number[]) => {
-    setGradeData(prev => ({ ...prev, [key]: value[0] }));
+    console.log('Slider change:', key, value, value[0]);
+    setGradeData(prev => {
+      const newData = { ...prev, [key]: value[0] };
+      console.log('New grade data:', newData);
+      return newData;
+    });
   };
 
   const handleSaveGrade = async () => {
@@ -307,7 +318,10 @@ const PlayerGradingModal: React.FC<PlayerGradingModalProps> = ({
                             </div>
                             <Slider
                               value={[value]}
-                              onValueChange={(newValue) => handleSliderChange(skill.key as keyof GradeFormData, newValue)}
+                              onValueChange={(newValue) => {
+                                console.log(`Slider ${skill.key} value change:`, newValue);
+                                handleSliderChange(skill.key as keyof GradeFormData, newValue);
+                              }}
                               max={10}
                               min={1}
                               step={1}
