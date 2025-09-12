@@ -1,3 +1,4 @@
+import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import App from './App.tsx'
