@@ -1133,6 +1133,118 @@ export type Database = {
         }
         Relationships: []
       }
+      event_player_grades: {
+        Row: {
+          ball_handling: number | null
+          boxout_frequency: number | null
+          coachable: number | null
+          communication: number | null
+          competitiveness: number | null
+          consistency: number | null
+          court_vision: number | null
+          created_at: string | null
+          cutting: number | null
+          decision_making: number | null
+          event_type: string
+          footwork: number | null
+          game_iq: number | null
+          graded_by: string
+          grading_session_id: string | null
+          id: string
+          leadership: number | null
+          notes: string | null
+          overall_grade: number | null
+          passing: number | null
+          player_id: string
+          reaction_time: number | null
+          rebounding: number | null
+          schedule_id: string
+          shooting: number | null
+          teammate_support: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ball_handling?: number | null
+          boxout_frequency?: number | null
+          coachable?: number | null
+          communication?: number | null
+          competitiveness?: number | null
+          consistency?: number | null
+          court_vision?: number | null
+          created_at?: string | null
+          cutting?: number | null
+          decision_making?: number | null
+          event_type: string
+          footwork?: number | null
+          game_iq?: number | null
+          graded_by: string
+          grading_session_id?: string | null
+          id?: string
+          leadership?: number | null
+          notes?: string | null
+          overall_grade?: number | null
+          passing?: number | null
+          player_id: string
+          reaction_time?: number | null
+          rebounding?: number | null
+          schedule_id: string
+          shooting?: number | null
+          teammate_support?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ball_handling?: number | null
+          boxout_frequency?: number | null
+          coachable?: number | null
+          communication?: number | null
+          competitiveness?: number | null
+          consistency?: number | null
+          court_vision?: number | null
+          created_at?: string | null
+          cutting?: number | null
+          decision_making?: number | null
+          event_type?: string
+          footwork?: number | null
+          game_iq?: number | null
+          graded_by?: string
+          grading_session_id?: string | null
+          id?: string
+          leadership?: number | null
+          notes?: string | null
+          overall_grade?: number | null
+          passing?: number | null
+          player_id?: string
+          reaction_time?: number | null
+          rebounding?: number | null
+          schedule_id?: string
+          shooting?: number | null
+          teammate_support?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_player_grades_graded_by_fkey"
+            columns: ["graded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_player_grades_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_player_grades_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_log_ai_jobs: {
         Row: {
           ai_response: Json | null
