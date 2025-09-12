@@ -6,6 +6,7 @@ import { usePlayerSchedule } from '@/hooks/usePlayerSchedule';
 import { usePlayerGoals } from '@/hooks/usePlayerGoals';
 import { usePlayerAttendance } from '@/hooks/usePlayerAttendance';
 import { usePlayerMembership } from '@/hooks/usePlayerMembership';
+import { usePlayerGrades } from '@/hooks/usePlayerGrades';
 import { PlayerStatsCards } from '@/components/dashboard/PlayerStatsCards';
 import { PlayerPerformanceChart } from '@/components/dashboard/PlayerPerformanceChart';
 import { PlayerGoalsSection } from '@/components/dashboard/PlayerGoalsSection';
@@ -49,9 +50,7 @@ export const EnhancedPlayerDashboard: React.FC = () => {
   const { goals, loading: goalsLoading, error: goalsError, refetch: refetchGoals } = usePlayerGoals(profile?.id);
   const { attendance, loading: attendanceLoading, error: attendanceError, refetch: refetchAttendance } = usePlayerAttendance(profile?.id);
   const { membership, loading: membershipLoading, error: membershipError, refetch: refetchMembership } = usePlayerMembership(profile?.id);
-  
-  // Mock player grades data - in real implementation, this would come from a hook
-  const playerGrades: any[] = []; // This will be populated once the user starts getting graded
+  const { grades: playerGrades, loading: gradesLoading, error: gradesError, refetch: refetchGrades } = usePlayerGrades(profile?.id);
 
   // Show loading skeleton while profile is loading
   if (profileLoading) {
@@ -233,11 +232,11 @@ export const EnhancedPlayerDashboard: React.FC = () => {
               <PlayerDashboardError
                 title="Grades unavailable"
                 message="Unable to load your performance grades"
-                onRetry={() => {}}
+                onRetry={refetchGrades}
               />
             }
           >
-            <PlayerGradesCard grades={playerGrades} loading={false} />
+            <PlayerGradesCard grades={playerGrades} loading={gradesLoading} />
           </SimpleErrorBoundary>
 
           <div className="lg:col-span-2">
