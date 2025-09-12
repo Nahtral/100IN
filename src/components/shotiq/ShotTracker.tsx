@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Video, Play, Square, RotateCcw, Target } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useShotSessions, Shot } from '@/hooks/useShotSessions';
 
 interface ShotData {
   arc: number;
@@ -23,9 +24,11 @@ interface ShotTrackerProps {
 
 const ShotTracker: React.FC<ShotTrackerProps> = ({ playerId, onShotTracked }) => {
   const { toast } = useToast();
+  const { currentSession, createSession, endSession, addShot } = useShotSessions(playerId);
   const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentShot, setCurrentShot] = useState<ShotData | null>(null);
+  const [shotCount, setShotCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -151,8 +154,36 @@ const ShotTracker: React.FC<ShotTrackerProps> = ({ playerId, onShotTracked }) =>
           videoUrl
         };
 
-        // Save to database
-        await saveShotData(shotData);
+        // If we have an active session, add shot to it
+        let sessionId = currentSession?.id;
+        if (!sessionId) {
+          sessionId = await createSession();
+        }
+
+        if (sessionId) {
+          const success = await addShot(sessionId, {
+            shot_number: shotCount + 1,
+            arc_degrees: shotData.arc,
+            depth_inches: shotData.depth,
+            lr_deviation_inches: shotData.deviation,
+            shot_type: 'practice',
+            court_x_position: null,
+            court_y_position: null,
+            made: shotData.made,
+            video_url: shotData.videoUrl,
+            audio_feedback: null,
+            ai_analysis_data: { 
+              confidence: 0.85, 
+              analysis_version: '1.0',
+              timestamp: Date.now()
+            },
+            timestamp_in_session: shotCount + 1
+          });
+
+          if (success) {
+            setShotCount(prev => prev + 1);
+          }
+        }
         
         setCurrentShot(shotData);
         onShotTracked(shotData);
@@ -221,39 +252,44 @@ const ShotTracker: React.FC<ShotTrackerProps> = ({ playerId, onShotTracked }) =>
     }
   };
 
-  const saveShotData = async (shotData: ShotData) => {
-    try {
-      const { error } = await supabase
-        .from('shots')
-        .insert({
-          player_id: playerId,
-          arc_degrees: shotData.arc,
-          depth_inches: shotData.depth,
-          lr_deviation_inches: shotData.deviation,
-          made: shotData.made,
-          video_url: shotData.videoUrl,
-          shot_type: 'practice',
-          shot_number: 1,
-          session_id: null
-        });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error saving shot data:', error);
-    }
-  };
-
   const resetShot = () => {
     setCurrentShot(null);
     recordedChunks.current = [];
   };
 
+  const handleEndSession = async () => {
+    if (currentSession) {
+      await endSession(currentSession.id);
+      setShotCount(0);
+      toast({
+        title: "Session Ended",
+        description: "Shooting session completed successfully",
+      });
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          Shot Tracker
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Shot Tracker
+            {currentSession && (
+              <Badge variant="default" className="bg-primary">
+                Session Active
+              </Badge>
+            )}
+          </div>
+          {currentSession && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={handleEndSession}
+            >
+              End Session
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -357,6 +393,16 @@ const ShotTracker: React.FC<ShotTrackerProps> = ({ playerId, onShotTracked }) =>
                 {currentShot.made ? "MADE" : "MISS"}
               </Badge>
             </div>
+          </div>
+        )}
+
+        {/* Session Info */}
+        {currentSession && (
+          <div className="text-center p-3 bg-primary/10 rounded-lg">
+            <p className="text-sm font-medium">
+              Session Progress: {currentSession.made_shots}/{currentSession.total_shots}
+              {currentSession.total_shots > 0 && ` (${currentSession.shooting_percentage.toFixed(1)}%)`}
+            </p>
           </div>
         )}
 

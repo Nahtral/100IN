@@ -6,6 +6,9 @@ import TrainingHistory from '@/components/shotiq/history/TrainingHistory';
 import InteractiveCourtHeatmap from '@/components/shotiq/analytics/InteractiveCourtHeatmap';
 import AdvancedCharts from '@/components/shotiq/analytics/AdvancedCharts';
 import EnhancedShotTracker from '@/components/shotiq/EnhancedShotTracker';
+import ShotTracker from '@/components/shotiq/ShotTracker';
+import { ShotAnalyticsCard } from '@/components/shotiq/ShotAnalyticsCard';
+import { ShotSessionsList } from '@/components/shotiq/ShotSessionsList';
 import VideoLogger from '@/components/shotiq/VideoLogger';
 import { VideoUploader } from '@/components/shotiq/VideoUploader';
 import ShotSessionModal from '@/components/shotiq/ShotSessionModal';
@@ -37,6 +40,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useShotSessions } from '@/hooks/useShotSessions';
+import { useShotAnalytics } from '@/hooks/useShotAnalytics';
+import { usePlayerProfile } from '@/hooks/usePlayerProfile';
 
 interface Player {
   id: string;
@@ -59,21 +65,25 @@ interface ShotAnalysis {
 const ShotIQ = () => {
   const { toast } = useToast();
   const { isSuperAdmin } = useOptimizedAuth();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
+  const { profile } = usePlayerProfile();
+  
+  // Use real shot data hooks
+  const { 
+    sessions, 
+    currentSession, 
+    loading: sessionsLoading,
+    createSession, 
+    endSession 
+  } = useShotSessions(profile?.id);
+  
+  const { 
+    analytics, 
+    loading: analyticsLoading 
+  } = useShotAnalytics(profile?.id);
 
   const [activeTab, setActiveTab] = useState('live-tracking');
-  const [isRecording, setIsRecording] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<string>('');
+  const [selectedPlayer, setSelectedPlayer] = useState<string>(profile?.id || '');
   const [sessionName, setSessionName] = useState('Training Session');
-  const [currentSession, setCurrentSession] = useState<string | null>(null);
-  const [shotCount, setShotCount] = useState(0);
-  const [makes, setMakes] = useState(0);
-  const [realtimeAnalysis, setRealtimeAnalysis] = useState<ShotAnalysis | null>(null);
-  const [rimHeight, setRimHeight] = useState(120); // 10 feet in inches
-  const [audioEnabled, setAudioEnabled] = useState(true);
   
   // Modal states
   const [sessionModal, setSessionModal] = useState<{
@@ -85,6 +95,13 @@ const ShotIQ = () => {
     mode: 'view',
     session: null
   });
+
+  // Update selected player when profile loads
+  useEffect(() => {
+    if (profile?.id && !selectedPlayer) {
+      setSelectedPlayer(profile.id);
+    }
+  }, [profile?.id, selectedPlayer]);
 
   // Fetch player analytics data
   const { data: playerAnalytics } = useQuery({
