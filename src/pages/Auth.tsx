@@ -82,15 +82,19 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      console.log('🔄 Starting registration process for:', email);
+      
       // First check if email is already registered
       const { data: emailCheck, error: emailCheckError } = await supabase
         .rpc('is_email_available', { check_email: email });
 
       if (emailCheckError) {
+        console.error('❌ Email availability check failed:', emailCheckError);
         throw new Error('Unable to verify email availability. Please try again.');
       }
 
       if (!emailCheck) {
+        console.log('⚠️ Email already registered:', email);
         toast({
           title: "Email Already Registered",
           description: "An account with this email already exists. Please try signing in or use a different email.",
@@ -100,9 +104,24 @@ const Auth = () => {
         return;
       }
 
-      const redirectUrl = `${window.location.origin}/`;
+      // Use a safer redirect URL that works in all environments
+      const currentOrigin = window.location.origin;
+      const isProduction = currentOrigin.includes('100in.app');
+      const isSandbox = currentOrigin.includes('sandbox.lovable.dev') || currentOrigin.includes('lovableproject.com');
       
-      const { error } = await supabase.auth.signUp({
+      let redirectUrl;
+      if (isProduction) {
+        redirectUrl = 'https://100in.app/';
+      } else if (isSandbox) {
+        redirectUrl = 'https://100in.app/'; // Use production URL for sandbox
+      } else {
+        redirectUrl = `${currentOrigin}/`; // Fallback for local dev
+      }
+      
+      console.log('🔗 Using redirect URL:', redirectUrl);
+      console.log('🌍 Current origin:', currentOrigin, { isProduction, isSandbox });
+      
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -115,37 +134,53 @@ const Auth = () => {
         }
       });
 
+      console.log('📧 Supabase signUp response:', { error, data });
+
       if (error) {
-        // Handle specific Supabase auth errors
+        console.error('❌ Registration failed:', error);
+        
+        // Handle specific Supabase auth errors with detailed logging
         if (error.message.includes('User already registered')) {
+          console.log('⚠️ Duplicate user registration attempt');
           toast({
             title: "Account Already Exists",
             description: "An account with this email already exists. Please try signing in instead.",
             variant: "destructive",
           });
         } else if (error.message.includes('Invalid email')) {
+          console.log('⚠️ Invalid email format provided');
           toast({
             title: "Invalid Email",
             description: "Please enter a valid email address.",
             variant: "destructive",
           });
         } else if (error.message.includes('Password should be at least')) {
+          console.log('⚠️ Password too weak');
           toast({
             title: "Weak Password",
             description: "Password must be at least 6 characters long.",
             variant: "destructive",
           });
-        } else {
+        } else if (error.message.includes('redirect') || error.message.includes('URL')) {
+          console.error('🔗 Redirect URL issue:', error.message);
           toast({
-            title: "Sign Up Failed",
-            description: error.message,
+            title: "Configuration Error",
+            description: "There's a configuration issue with the authentication system. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          console.error('🚨 Unexpected registration error:', error.message);
+          toast({
+            title: "Registration Failed",
+            description: `Registration error: ${error.message}. Please try again or contact support.`,
             variant: "destructive",
           });
         }
       } else {
+        console.log('✅ Registration successful for:', email);
         toast({
-          title: "Registration Successful!",
-          description: "Please check your email to confirm your account. Your registration will be reviewed by an administrator.",
+          title: "Account Created Successfully!",
+          description: "Your account has been created and is pending approval. You'll receive an email once an administrator reviews your registration.",
         });
         
         // Clear form data on successful registration
@@ -156,14 +191,18 @@ const Auth = () => {
         setSelectedRole('');
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('🚨 Critical registration error:', error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred during registration.";
+      console.error('🚨 Error details:', { errorMessage, email, selectedRole });
+      
       toast({
-        title: "Registration Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred during registration.",
+        title: "Registration System Error",
+        description: `Critical error: ${errorMessage}. Please try again or contact support if the issue persists.`,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+      console.log('🏁 Registration process completed');
     }
   };
 
@@ -172,7 +211,21 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/auth`;
+      // Use the same safer redirect URL approach
+      const currentOrigin = window.location.origin;
+      const isProduction = currentOrigin.includes('100in.app');
+      const isSandbox = currentOrigin.includes('sandbox.lovable.dev') || currentOrigin.includes('lovableproject.com');
+      
+      let redirectUrl;
+      if (isProduction) {
+        redirectUrl = 'https://100in.app/auth';
+      } else if (isSandbox) {
+        redirectUrl = 'https://100in.app/auth'; // Use production URL for sandbox
+      } else {
+        redirectUrl = `${currentOrigin}/auth`; // Fallback for local dev
+      }
+      
+      console.log('🔐 Password reset redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: redirectUrl,
