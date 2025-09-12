@@ -20,7 +20,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Camera, 
   Video, 
@@ -71,15 +71,24 @@ const ShotIQ = () => {
   const { 
     sessions, 
     currentSession, 
-    loading: sessionsLoading,
+    loading: sessionsHookLoading,
     createSession, 
-    endSession 
+    endSession: endSessionHook 
   } = useShotSessions(profile?.id);
   
   const { 
     analytics, 
     loading: analyticsLoading 
   } = useShotAnalytics(profile?.id);
+
+  // Additional state variables for camera and shot tracking
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [rimHeight, setRimHeight] = useState(120); // 10 feet in inches
+  const [shotCount, setShotCount] = useState(0);
+  const [makes, setMakes] = useState(0);
+  const [realtimeAnalysis, setRealtimeAnalysis] = useState<ShotAnalysis | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(true);
 
   const [activeTab, setActiveTab] = useState('live-tracking');
   const [selectedPlayer, setSelectedPlayer] = useState<string>(profile?.id || '');
@@ -208,7 +217,7 @@ const ShotIQ = () => {
   });
 
   // Fetch shot sessions with enhanced data
-  const { data: shotSessions, isLoading: sessionsLoading, refetch: refetchSessions } = useQuery({
+  const { data: shotSessions, isLoading: sessionsLoadingQuery, refetch: refetchSessions } = useQuery({
     queryKey: ['shot-sessions'],
     queryFn: async () => {
       const { data: sessionsData, error: sessionsError } = await supabase
@@ -316,7 +325,8 @@ const ShotIQ = () => {
 
       if (error) throw error;
 
-      setCurrentSession(session.id);
+      // Use the hook's createSession method instead
+      await createSession();
       setShotCount(0);
       setMakes(0);
       
@@ -392,11 +402,12 @@ const ShotIQ = () => {
           setMakes(makes + 1);
         }
 
-        // Store shot in database
+        // Store shot in database - use current session ID string
+        const sessionId = typeof currentSession === 'string' ? currentSession : currentSession?.id;
         const { error } = await supabase
           .from('shots')
           .insert({
-            session_id: currentSession,
+            session_id: sessionId,
             player_id: selectedPlayer,
             shot_number: newShotCount,
             arc_degrees: analysis.arc_degrees,
@@ -446,20 +457,24 @@ const ShotIQ = () => {
   };
 
   // End current session
-  const endSession = async () => {
+  const endCurrentSession = async () => {
     if (!currentSession) return;
 
     try {
-      await supabase
-        .from('shot_sessions')
-        .update({
-          total_shots: shotCount,
-          makes: makes,
-          session_duration_minutes: 30, // Mock duration
-        })
-        .eq('id', currentSession);
+      const sessionId = typeof currentSession === 'string' ? currentSession : currentSession?.id;
+      if (sessionId) {
+        await supabase
+          .from('shot_sessions')
+          .update({
+            total_shots: shotCount,
+            makes: makes,
+            session_duration_minutes: 30, // Mock duration
+          })
+          .eq('id', sessionId);
+      }
 
-      setCurrentSession(null);
+      // Use the hook's end session method
+      await endSessionHook(sessionId || '');
       setShotCount(0);
       setMakes(0);
       setRealtimeAnalysis(null);
@@ -661,7 +676,7 @@ const ShotIQ = () => {
                         <Target className="h-4 w-4 mr-2" />
                         Capture Shot
                       </Button>
-                      <Button onClick={endSession} variant="outline" className="w-full">
+                      <Button onClick={endCurrentSession} variant="outline" className="w-full">
                         <Square className="h-4 w-4 mr-2" />
                         End Session
                       </Button>
@@ -759,7 +774,7 @@ const ShotIQ = () => {
           )}
 
           {/* Sessions Grid */}
-          {sessionsLoading ? (
+          {sessionsHookLoading ? (
             <Card>
               <CardContent className="p-6 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
