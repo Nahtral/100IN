@@ -5636,6 +5636,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      user_is_chat_admin: {
+        Args: { chat_uuid: string; user_uuid?: string }
+        Returns: boolean
+      }
+      user_is_chat_participant: {
+        Args: { chat_uuid: string; user_uuid?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       tryout_team: "Gold" | "Black" | "White"
