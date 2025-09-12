@@ -120,7 +120,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
         {/* Empty State */}
       {!selectedChat && !isMobile && (
         <div className="flex-1 flex items-center justify-center text-center p-8">
-          <div className="max-w-md">
+          <div className="max-w-md space-y-6">
             {error ? (
               <>
                 <h3 className="text-xl font-semibold text-destructive mb-2">
@@ -129,18 +129,20 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
                 <p className="text-muted-foreground mb-4">
                   {error.message || 'Failed to load chats'}
                 </p>
-                <button
-                  onClick={retry}
-                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors mr-2"
-                >
-                  Retry Connection
-                </button>
-                <button
-                  onClick={refreshChats}
-                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
-                >
-                  Refresh Chats
-                </button>
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={retry}
+                    className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+                  >
+                    Retry Connection
+                  </button>
+                  <button
+                    onClick={refreshChats}
+                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+                  >
+                    Refresh Chats
+                  </button>
+                </div>
               </>
             ) : loading ? (
               <>
@@ -153,20 +155,28 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ className }) => {
                 <div className="animate-pulse w-8 h-8 bg-primary/20 rounded-full mx-auto"></div>
               </>
             ) : chats.length === 0 ? (
-              <>
+              <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-foreground mb-2">
                   No Chats Yet
                 </h3>
                 <p className="text-muted-foreground mb-6">
                   You haven't joined any conversations yet. Create your first chat to get started.
                 </p>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Create New Chat
-                </button>
-              </>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Create New Chat
+                  </button>
+                  <button
+                    onClick={refreshChats}
+                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors text-sm"
+                  >
+                    Refresh to Check for Chats
+                  </button>
+                </div>
+              </div>
             ) : (
               <>
                 <h3 className="text-xl font-semibold text-foreground mb-2">

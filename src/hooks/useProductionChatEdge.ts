@@ -64,10 +64,14 @@ export function useProductionChatEdge(): UseProductionChatReturn {
     }
 
     try {
+      console.log(`Calling chat relay: ${action}`, params);
+      
       // Use Supabase client invoke
       const result = await supabase.functions.invoke('chat-relay', {
         body: { action, ...params }
       });
+
+      console.log(`Chat relay ${action} response:`, { data: result.data, error: result.error });
 
       if (result.error) {
         console.error('Edge Function error:', result.error);
@@ -82,8 +86,14 @@ export function useProductionChatEdge(): UseProductionChatReturn {
         throw new Error(result.error.message || 'Edge function failed');
       }
 
-      if (!result.data?.success) {
-        throw new Error(result.data?.error || 'Unknown error from chat relay');
+      if (!result.data) {
+        throw new Error('No response data from chat service');
+      }
+
+      if (!result.data.success) {
+        const errorMsg = result.data.error || 'Chat service request failed';
+        console.error(`Chat relay ${action} failed:`, errorMsg);
+        throw new Error(errorMsg);
       }
 
       // Reset retry count on success
