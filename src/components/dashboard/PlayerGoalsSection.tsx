@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Target, Calendar, TrendingUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DataQualityIndicator } from '@/components/ui/data-quality-indicator';
+import { DataInputPrompt } from '@/components/ui/data-input-prompt';
 
 interface PlayerGoal {
   id: string;
@@ -72,25 +74,14 @@ export const PlayerGoalsSection: React.FC<PlayerGoalsSectionProps> = ({
 
   if (!goals || goals.length === 0) {
     return (
-      <Card className="card-enhanced">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-panther-gold" />
-            Development Goals
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              No active goals set
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Work with your coach to set development goals
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <DataInputPrompt
+        dataType="Development Goals"
+        message="Set specific, measurable goals to track your basketball development and improvement."
+        actionLabel="Set Goals with Coach"
+        onAction={() => console.log('Navigate to goal setting')}
+        priority="medium"
+        suggestions={['Shooting accuracy', 'Fitness targets', 'Skill milestones']}
+      />
     );
   }
 
@@ -135,10 +126,17 @@ export const PlayerGoalsSection: React.FC<PlayerGoalsSectionProps> = ({
   return (
     <Card className="card-enhanced">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-panther-gold" />
-          Development Goals
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-panther-gold" />
+            Development Goals
+          </CardTitle>
+          <DataQualityIndicator
+            totalRecords={goals.length}
+            sourceType="goal"
+            confidence={goals.length >= 3 ? 'high' : goals.length >= 1 ? 'medium' : 'low'}
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">

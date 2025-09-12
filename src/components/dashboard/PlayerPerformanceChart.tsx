@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DataQualityIndicator } from '@/components/ui/data-quality-indicator';
+import { DataInputPrompt } from '@/components/ui/data-input-prompt';
 
 interface PerformanceData {
   id: string;
@@ -72,25 +74,15 @@ export const PlayerPerformanceChart: React.FC<PlayerPerformanceChartProps> = ({
 
   if (!performance || performance.length === 0) {
     return (
-      <Card className="card-enhanced">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-panther-blue" />
-            Recent Performance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              No performance data available yet
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Start training to see your progress here
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <DataInputPrompt
+        dataType="Performance Data"
+        message="Track your training sessions and games to see detailed performance trends and analytics."
+        actionLabel="Start Training Session"
+        onAction={() => window.location.href = '/shotiq'}
+        priority="medium"
+        suggestions={['Record shots', 'Log game stats', 'Track improvement']}
+        className="col-span-full"
+      />
     );
   }
 
@@ -112,10 +104,18 @@ export const PlayerPerformanceChart: React.FC<PlayerPerformanceChartProps> = ({
   return (
     <Card className="card-enhanced">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-panther-blue" />
-          Recent Performance
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-panther-blue" />
+            Recent Performance
+          </CardTitle>
+          <DataQualityIndicator
+            totalRecords={performance.length}
+            sourceType="performance record"
+            confidence={performance.length >= 10 ? 'high' : performance.length >= 5 ? 'medium' : 'low'}
+            lastUpdated={performance[0]?.date}
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
