@@ -7,6 +7,11 @@ import { Bell, TrendingUp, TrendingDown, AlertTriangle, Target, Activity, Users,
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useRealTimeAdminData } from '@/hooks/useRealTimeAdminData';
+import { ClickableDashboardCard } from '@/components/dashboard/ClickableDashboardCard';
+import { ActivePlayersModal } from '@/components/dashboard/modals/ActivePlayersModal';
+import { ActiveGoalsModal } from '@/components/dashboard/modals/ActiveGoalsModal';
+import { GoalsAchievedModal } from '@/components/dashboard/modals/GoalsAchievedModal';
+import { NeedAttentionModal } from '@/components/dashboard/modals/NeedAttentionModal';
 
 interface PlayerGoalData {
   player_id: string;
@@ -35,6 +40,12 @@ export const PlayerMonitoringDashboard: React.FC = () => {
   const [playersPerformance, setPlayersPerformance] = useState<PlayerPerformanceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<string[]>([]);
+  
+  // Modal states
+  const [activePlayersModalOpen, setActivePlayersModalOpen] = useState(false);
+  const [activeGoalsModalOpen, setActiveGoalsModalOpen] = useState(false);
+  const [goalsAchievedModalOpen, setGoalsAchievedModalOpen] = useState(false);
+  const [needAttentionModalOpen, setNeedAttentionModalOpen] = useState(false);
   
   // Use real-time admin data for accurate player counts and system stats
   const adminData = useRealTimeAdminData();
@@ -305,51 +316,43 @@ export const PlayerMonitoringDashboard: React.FC = () => {
         </Card>
       )}
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Active Players</span>
-            </div>
-            <div className="text-2xl font-bold">{adminData.totalPlayers}</div>
-          </CardContent>
-        </Card>
+      {/* Enhanced Responsive Overview Stats */}
+      <div className="metrics-grid">
+        <ClickableDashboardCard
+          icon={Users}
+          title="Active Players"
+          value={adminData.totalPlayers}
+          description="Total registered players"
+          onClick={() => setActivePlayersModalOpen(true)}
+          variant="primary"
+        />
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Active Goals</span>
-            </div>
-            <div className="text-2xl font-bold">{playersGoals.length}</div>
-          </CardContent>
-        </Card>
+        <ClickableDashboardCard
+          icon={Target}
+          title="Active Goals"
+          value={playersGoals.length}
+          description="Development goals in progress"
+          onClick={() => setActiveGoalsModalOpen(true)}
+          variant="default"
+        />
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Goals Achieved</span>
-            </div>
-            <div className="text-2xl font-bold">
-              {playersGoals.filter(g => g.progress_percentage >= 100).length}
-            </div>
-          </CardContent>
-        </Card>
+        <ClickableDashboardCard
+          icon={Trophy}
+          title="Goals Achieved"
+          value={playersGoals.filter(g => g.progress_percentage >= 100).length}
+          description="Recently completed goals"
+          onClick={() => setGoalsAchievedModalOpen(true)}
+          variant="success"
+        />
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Need Attention</span>
-            </div>
-            <div className="text-2xl font-bold">
-              {playersGoals.filter(g => g.progress_percentage < 50).length}
-            </div>
-          </CardContent>
-        </Card>
+        <ClickableDashboardCard
+          icon={AlertTriangle}
+          title="Need Attention"
+          value={playersGoals.filter(g => g.progress_percentage < 50).length}
+          description="Players requiring intervention"
+          onClick={() => setNeedAttentionModalOpen(true)}
+          variant="danger"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -434,6 +437,31 @@ export const PlayerMonitoringDashboard: React.FC = () => {
           Send Alerts
         </Button>
       </div>
+
+      {/* Modals */}
+      <ActivePlayersModal
+        isOpen={activePlayersModalOpen}
+        onClose={() => setActivePlayersModalOpen(false)}
+        totalPlayers={adminData.totalPlayers}
+      />
+      
+      <ActiveGoalsModal
+        isOpen={activeGoalsModalOpen}
+        onClose={() => setActiveGoalsModalOpen(false)}
+        totalGoals={playersGoals.length}
+      />
+      
+      <GoalsAchievedModal
+        isOpen={goalsAchievedModalOpen}
+        onClose={() => setGoalsAchievedModalOpen(false)}
+        achievedCount={playersGoals.filter(g => g.progress_percentage >= 100).length}
+      />
+      
+      <NeedAttentionModal
+        isOpen={needAttentionModalOpen}
+        onClose={() => setNeedAttentionModalOpen(false)}
+        attentionCount={playersGoals.filter(g => g.progress_percentage < 50).length}
+      />
     </div>
   );
 };
