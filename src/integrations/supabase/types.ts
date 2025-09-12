@@ -2022,6 +2022,53 @@ export type Database = {
           },
         ]
       }
+      message_translations: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          id: string
+          message_id: string
+          original_content: string
+          source_language: string
+          target_language: string
+          translated_content: string
+          translation_quality: string | null
+          translation_service: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          message_id: string
+          original_content: string
+          source_language?: string
+          target_language: string
+          translated_content: string
+          translation_quality?: string | null
+          translation_service?: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          message_id?: string
+          original_content?: string
+          source_language?: string
+          target_language?: string
+          translated_content?: string
+          translation_quality?: string | null
+          translation_service?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_message_translations_message_id"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_updates: {
         Row: {
           author_id: string
@@ -2309,6 +2356,63 @@ export type Database = {
           id?: string
           parent_id?: string
           relationship_type?: string
+        }
+        Relationships: []
+      }
+      partner_communications: {
+        Row: {
+          attachments: Json | null
+          communication_type: string
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          partner_organization_id: string | null
+          priority: string
+          recipient_type: string
+          response_deadline: string | null
+          response_required: boolean | null
+          scheduled_for: string | null
+          sender_id: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          communication_type: string
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          partner_organization_id?: string | null
+          priority?: string
+          recipient_type: string
+          response_deadline?: string | null
+          response_required?: boolean | null
+          scheduled_for?: string | null
+          sender_id: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          communication_type?: string
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          partner_organization_id?: string | null
+          priority?: string
+          recipient_type?: string
+          response_deadline?: string | null
+          response_required?: boolean | null
+          scheduled_for?: string | null
+          sender_id?: string
+          status?: string
+          subject?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3727,6 +3831,77 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      shot_analysis: {
+        Row: {
+          analysis_confidence: number | null
+          arc_degrees: number | null
+          audio_feedback: string | null
+          ball_rotation_rpm: number | null
+          computer_vision_data: Json | null
+          consistency_score: number | null
+          created_at: string
+          depth_inches: number | null
+          entry_angle: number | null
+          id: string
+          lr_deviation_inches: number | null
+          peak_height_inches: number | null
+          processed_by: string | null
+          processing_time_ms: number | null
+          recommendations: Json | null
+          release_time_ms: number | null
+          shot_id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_confidence?: number | null
+          arc_degrees?: number | null
+          audio_feedback?: string | null
+          ball_rotation_rpm?: number | null
+          computer_vision_data?: Json | null
+          consistency_score?: number | null
+          created_at?: string
+          depth_inches?: number | null
+          entry_angle?: number | null
+          id?: string
+          lr_deviation_inches?: number | null
+          peak_height_inches?: number | null
+          processed_by?: string | null
+          processing_time_ms?: number | null
+          recommendations?: Json | null
+          release_time_ms?: number | null
+          shot_id: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_confidence?: number | null
+          arc_degrees?: number | null
+          audio_feedback?: string | null
+          ball_rotation_rpm?: number | null
+          computer_vision_data?: Json | null
+          consistency_score?: number | null
+          created_at?: string
+          depth_inches?: number | null
+          entry_angle?: number | null
+          id?: string
+          lr_deviation_inches?: number | null
+          peak_height_inches?: number | null
+          processed_by?: string | null
+          processing_time_ms?: number | null
+          recommendations?: Json | null
+          release_time_ms?: number | null
+          shot_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_shot_analysis_shot_id"
+            columns: ["shot_id"]
+            isOneToOne: false
+            referencedRelation: "shots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shot_analytics: {
         Row: {

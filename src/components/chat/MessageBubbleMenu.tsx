@@ -135,14 +135,44 @@ export const MessageBubbleMenu: React.FC<MessageBubbleMenuProps> = ({
   };
 
   const handleTranslate = async () => {
-    // Mock translation for now - in production would call translation service
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock translation
-      setTranslation(`[Translated] ${message.content}`);
+      // Check if translation already exists
+      const { data: existingTranslation } = await supabase
+        .from('message_translations')
+        .select('translated_content')
+        .eq('message_id', message.id)
+        .eq('target_language', 'en')
+        .single();
+
+      if (existingTranslation) {
+        setTranslation(existingTranslation.translated_content);
+      } else {
+        // Call translation service
+        const { data, error } = await supabase.functions.invoke('translate-message', {
+          body: {
+            messageId: message.id,
+            content: message.content,
+            targetLanguage: 'en'
+          }
+        });
+
+        if (error) throw error;
+
+        // Store translation in database
+        await supabase
+          .from('message_translations')
+          .insert({
+            message_id: message.id,
+            original_content: message.content,
+            translated_content: data.translatedText,
+            target_language: 'en',
+            confidence_score: data.confidence
+          });
+
+        setTranslation(data.translatedText);
+      }
       
       toast({
         title: "Success",

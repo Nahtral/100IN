@@ -101,40 +101,35 @@ const CommunicationCenter = ({ partnerId, teamId }: CommunicationCenterProps) =>
     try {
       setLoading(true);
       
-      // Fetch communication records (simulated for now)
-      // In a real implementation, this would fetch from a communications table
-      const mockCommunications: CommunicationRecord[] = [
-        {
-          id: '1',
-          type: 'message',
-          subject: 'Q1 Performance Review',
-          content: 'Quarterly performance discussion',
-          recipient: 'Team Manager',
-          status: 'sent',
-          created_at: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-          id: '2',
-          type: 'meeting',
-          subject: 'Partnership Renewal Discussion',
-          content: 'Discuss renewal terms for next season',
-          recipient: 'Executive Team',
-          status: 'scheduled',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          scheduled_for: new Date(Date.now() + 86400000).toISOString()
-        },
-        {
-          id: '3',
-          type: 'report',
-          subject: 'Monthly Analytics Report',
-          content: 'Comprehensive performance analytics',
-          recipient: 'Analytics Team',
-          status: 'completed',
-          created_at: new Date(Date.now() - 259200000).toISOString()
-        }
-      ];
+      const { data, error } = await supabase
+        .from('partner_communications')
+        .select(`
+          id,
+          communication_type,
+          subject,
+          content,
+          recipient_type,
+          status,
+          scheduled_for,
+          created_at,
+          profiles!sender_id(full_name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedCommunications: CommunicationRecord[] = data?.map(comm => ({
+        id: comm.id,
+        type: comm.communication_type as 'message' | 'meeting' | 'report' | 'call',
+        subject: comm.subject,
+        content: comm.content,
+        recipient: comm.recipient_type,
+        status: comm.status as 'sent' | 'pending' | 'scheduled' | 'completed',
+        created_at: comm.created_at,
+        scheduled_for: comm.scheduled_for || undefined
+      })) || [];
       
-      setCommunications(mockCommunications);
+      setCommunications(formattedCommunications);
     } catch (error) {
       console.error('Error fetching communications:', error);
       toast({

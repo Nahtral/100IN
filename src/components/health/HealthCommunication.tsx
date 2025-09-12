@@ -57,39 +57,7 @@ const HealthCommunication: React.FC<HealthCommunicationProps> = ({
   // Check if user can compose messages (super admin or staff with manage_medical permission)
   const canComposeMessages = isSuperAdmin || hasRole('staff');
 
-  // Mock data for demonstration
-  const mockMessages = [
-    {
-      id: 1,
-      from: "Dr. Sarah Mitchell",
-      to: "Basketball Team",
-      subject: "Weekly Health Update",
-      message: "All players are cleared for this week's training. Please ensure proper hydration during practice.",
-      type: "announcement",
-      timestamp: "2024-01-15T10:00:00Z",
-      priority: "normal"
-    },
-    {
-      id: 2,
-      from: "Coach Rodriguez",
-      to: "Medical Team",
-      subject: "Player Injury Concern",
-      message: "Marcus Johnson mentioned some knee discomfort during today's practice. Please assess when possible.",
-      type: "injury-report",
-      timestamp: "2024-01-15T14:30:00Z",
-      priority: "high"
-    },
-    {
-      id: 3,
-      from: "Dr. Sarah Mitchell",
-      to: "Parents",
-      subject: "Nutrition Guidelines",
-      message: "Attached are the updated nutrition guidelines for optimal performance and recovery.",
-      type: "guidance",
-      timestamp: "2024-01-14T09:15:00Z",
-      priority: "normal"
-    }
-  ];
+  // Fetch real medical communications from database
 
   useEffect(() => {
     fetchMessages();

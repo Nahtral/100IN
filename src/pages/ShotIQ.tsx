@@ -344,31 +344,45 @@ const ShotIQ = () => {
     }
   };
 
-  // Mock AI shot analysis (in production, this would use computer vision)
+  // Real AI shot analysis using computer vision API
   const analyzeShot = async (videoBlob: Blob): Promise<ShotAnalysis> => {
-    // Simulate AI processing time
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock analysis results
-    const analysis: ShotAnalysis = {
-      arc_degrees: Math.random() * 20 + 40, // 40-60 degrees
-      depth_inches: (Math.random() - 0.5) * 12, // -6 to +6 inches from rim
-      lr_deviation_inches: (Math.random() - 0.5) * 8, // -4 to +4 inches L/R
-      made: Math.random() > 0.5,
-      shot_type: 'catch-and-shoot',
-      court_x_position: Math.random() * 100,
-      court_y_position: Math.random() * 100,
-      audio_feedback: ''
-    };
+    try {
+      // Upload video for analysis
+      const formData = new FormData();
+      formData.append('video', videoBlob, 'shot.webm');
+      
+      const { data, error } = await supabase.functions.invoke('analyze-video-shot', {
+        body: formData
+      });
 
-    // Generate audio feedback
-    const arcFeedback = analysis.arc_degrees < 45 ? "Too flat" : analysis.arc_degrees > 55 ? "Too high" : "Perfect arc";
-    const depthFeedback = Math.abs(analysis.depth_inches) > 3 ? (analysis.depth_inches > 0 ? "Too long" : "Too short") : "Good depth";
-    const lrFeedback = Math.abs(analysis.lr_deviation_inches) > 2 ? (analysis.lr_deviation_inches > 0 ? "Right" : "Left") : "Centered";
-    
-    analysis.audio_feedback = `${arcFeedback}, ${depthFeedback}, ${lrFeedback}`;
+      if (error) throw error;
 
-    return analysis;
+      const analysis: ShotAnalysis = {
+        arc_degrees: data.arc_degrees || 0,
+        depth_inches: data.depth_inches || 0,
+        lr_deviation_inches: data.lr_deviation_inches || 0,
+        made: data.made || false,
+        shot_type: data.shot_type || 'catch-and-shoot',
+        court_x_position: data.court_x_position || 0,
+        court_y_position: data.court_y_position || 0,
+        audio_feedback: data.audio_feedback || 'Analysis complete'
+      };
+
+      return analysis;
+    } catch (error) {
+      console.error('Error analyzing shot:', error);
+      // Return basic analysis if AI fails
+      return {
+        arc_degrees: 0,
+        depth_inches: 0,
+        lr_deviation_inches: 0,
+        made: false,
+        shot_type: 'catch-and-shoot',
+        court_x_position: 0,
+        court_y_position: 0,
+        audio_feedback: 'Analysis failed - please try again'
+      };
+    }
   };
 
   // Capture and analyze shot

@@ -87,11 +87,11 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
               profiles: profile
             };
           }
-          // For manual entries, create a mock profile from manual entry data
+          // For manual entries, use real manual player data
           return {
             ...player,
             profiles: {
-              full_name: player.manual_entry_name,
+              full_name: player.manual_entry_name, // Use the real name from manual_players table
               avatar_url: null
             }
           };

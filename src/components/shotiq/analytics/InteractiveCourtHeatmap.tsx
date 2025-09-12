@@ -308,41 +308,24 @@ const InteractiveCourtHeatmap: React.FC<InteractiveCourtHeatmapProps> = ({
       if (shotsData.length > 0) {
         calculateRegionStats(shotsData);
       } else {
-        // If no data, create some sample stats to show the heatmap
-        console.log('No shots found, creating sample data for demonstration');
-        createSampleStats();
+        // No data available - show empty state
+        console.log('No shots found');
+        setRegionStats([]);
       }
     } catch (error) {
       console.error('Error loading shot data:', error);
-      // Create sample stats even on error
-      createSampleStats();
+      // Show error state without mock data
+      setRegionStats([]);
+      setShots([]);
       toast({
-        title: "Info",
-        description: "Using sample data for demonstration",
-        variant: "default"
+        title: "Error",
+        description: "Failed to load shot data",
+        variant: "destructive"
       });
     }
   };
 
-  const createSampleStats = () => {
-    // Create sample stats matching your reference image
-    const sampleStats: RegionStats[] = [
-      { region: 'C3L', region_name: 'Corner 3 Left', attempts: 89, makes: 39, percentage: 43.82, shot_type: '3PT' },
-      { region: 'MRL', region_name: 'Mid-Range Left', attempts: 2, makes: 0, percentage: 0.00, shot_type: '2PT' },
-      { region: 'AB3', region_name: 'Above Break 3', attempts: 33, makes: 14, percentage: 42.42, shot_type: '3PT' },
-      { region: 'W3R', region_name: 'Wing 3 Right', attempts: 5, makes: 1, percentage: 20.00, shot_type: '3PT' },
-      { region: 'C3R', region_name: 'Corner 3 Right', attempts: 102, makes: 49, percentage: 48.04, shot_type: '3PT' },
-      { region: 'MRR', region_name: 'Mid-Range Right', attempts: 2, makes: 0, percentage: 0.00, shot_type: '2PT' },
-      { region: 'PC', region_name: 'Paint Center', attempts: 3, makes: 1, percentage: 33.33, shot_type: '2PT' },
-      { region: 'W3L', region_name: 'Wing 3 Left', attempts: 41, makes: 18, percentage: 43.90, shot_type: '3PT' },
-      { region: 'MRT', region_name: 'Mid-Range Top', attempts: 11, makes: 6, percentage: 54.55, shot_type: '2PT' },
-      { region: 'D3R', region_name: 'Deep 3 Right', attempts: 72, makes: 24, percentage: 33.33, shot_type: '3PT' },
-      { region: 'RA', region_name: 'Restricted Area', attempts: 1, makes: 0, percentage: 0.00, shot_type: '2PT' },
-    ];
-    
-    console.log('Setting sample stats:', sampleStats.length);
-    setRegionStats(sampleStats);
-  };
+  // Mock data function removed - using real data only
 
 
   const determineRegion = (x: number, y: number): string => {

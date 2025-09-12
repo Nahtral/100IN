@@ -219,13 +219,8 @@ const ShotTracker: React.FC<ShotTrackerProps> = ({ playerId, onShotTracked }) =>
       return data;
     } catch (error) {
       console.error('Shot analysis error:', error);
-      // Return mock data for now
-      return {
-        arc: Math.round(35 + Math.random() * 20), // 35-55 degrees
-        depth: Math.round(8 + Math.random() * 8), // 8-16 inches
-        deviation: Math.round(-3 + Math.random() * 6), // -3 to +3 inches
-        made: Math.random() > 0.3 // 70% make rate for demo
-      };
+      // Return error state instead of mock data
+      throw new Error('Shot analysis failed - please try again');
     }
   };
 
