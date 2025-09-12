@@ -5,20 +5,18 @@ interface PlayerStats {
   totalShots: number;
   totalMakes: number;
   shootingPercentage: number;
-  averagePoints: number;
+  avgPoints: number;
   gamesPlayed: number;
   fitnessScore: number;
   checkInStreak: number;
   recentPerformance: Array<{
+    id: string;
     date: string;
     points: number;
-    shotsMade: number;
-    shotsTotal: number;
-    shootingPercentage: number;
+    made_shots: number;
+    total_shots: number;
+    percentage: number;
     opponent?: string;
-    rebounds?: number;
-    assists?: number;
-    performance_type?: string;
   }>;
 }
 
@@ -143,15 +141,26 @@ export const usePlayerStats = (playerId?: string): UsePlayerStatsReturn => {
         ? recentPerformance.reduce((sum, p) => sum + p.points, 0) / recentPerformance.length
         : 0;
 
+      // Transform performance data to match interface
+      const transformedPerformance = recentPerformance.map((session, index) => ({
+        id: `session-${session.date}-${index}`,
+        date: session.date,
+        points: session.points,
+        made_shots: session.shotsMade,
+        total_shots: session.shotsTotal,
+        percentage: session.shootingPercentage,
+        opponent: session.opponent
+      }));
+
       setStats({
         totalShots,
         totalMakes,
         shootingPercentage,
-        averagePoints: avgPoints,
+        avgPoints: avgPoints,
         gamesPlayed: recentPerformance.length,
         fitnessScore: Math.max(fitnessScore, 0), // Ensure non-negative
         checkInStreak,
-        recentPerformance
+        recentPerformance: transformedPerformance
       });
 
     } catch (err: any) {

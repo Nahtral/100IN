@@ -13,6 +13,9 @@ interface PlayerGoal {
   updated_at: string;
   notes?: string;
   is_active: boolean;
+  status: string;
+  deadline?: string;
+  description?: string;
 }
 
 interface UsePlayerGoalsReturn {
@@ -63,7 +66,10 @@ export const usePlayerGoals = (playerId?: string): UsePlayerGoalsReturn => {
         created_at: goal.created_at,
         updated_at: goal.updated_at,
         notes: goal.notes,
-        is_active: goal.is_active
+        is_active: goal.is_active,
+        status: 'active',
+        deadline: undefined,
+        description: goal.notes
       }));
 
       // If no goals exist, create some default goals for the player
@@ -74,7 +80,7 @@ export const usePlayerGoals = (playerId?: string): UsePlayerGoalsReturn => {
           .from('development_goals')
           .select('*')
           .eq('player_id', playerId)
-          .eq('status', 'active')
+          .eq('is_active', true)
           .order('created_at', { ascending: false });
 
         const newTransformedGoals = (newGoalsData || []).map(goal => ({
@@ -90,7 +96,10 @@ export const usePlayerGoals = (playerId?: string): UsePlayerGoalsReturn => {
           created_at: goal.created_at,
           updated_at: goal.updated_at,
           notes: goal.notes,
-          is_active: goal.is_active
+          is_active: goal.is_active,
+          status: 'active',
+          deadline: undefined,
+          description: goal.notes
         }));
 
         setGoals(newTransformedGoals);

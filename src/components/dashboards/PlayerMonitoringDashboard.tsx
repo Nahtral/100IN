@@ -39,35 +39,65 @@ export const PlayerMonitoringDashboard: React.FC = () => {
     try {
       setLoading(true);
 
-      // Fetch all active goals with player information
+      // Fetch all active goals
       const { data: goalsData, error: goalsError } = await supabase
         .from('development_goals')
-        .select(`
-          *,
-          players!inner(
-            user_id,
-            profiles!inner(full_name)
-          )
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('updated_at', { ascending: false });
 
       if (goalsError) throw goalsError;
 
+      // Get unique player IDs
+      const playerIds = [...new Set(goalsData?.map(goal => goal.player_id).filter(Boolean))];
+      
+      // Fetch players and their profiles
+      const { data: playersData, error: playersError } = await supabase
+        .from('players')
+        .select('id, user_id')
+        .in('id', playerIds);
+
+      if (playersError) throw playersError;
+
+      const userIds = [...new Set(playersData?.map(player => player.user_id).filter(Boolean))];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create lookup maps
+      const playersMap = (playersData || []).reduce((acc, player) => {
+        acc[player.id] = player;
+        return acc;
+      }, {} as { [key: string]: any });
+
+      const profilesMap = (profilesData || []).reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as { [key: string]: any });
+
       // Transform goals data
-      const transformedGoals: PlayerGoalData[] = (goalsData || []).map(goal => ({
-        player_id: goal.player_id,
-        player_name: goal.players?.profiles?.full_name || 'Unknown Player',
-        goal_type: goal.goal_type,
-        metric_name: goal.metric_name,
-        target_value: goal.target_value,
-        current_value: goal.current_value,
-        progress_percentage: goal.target_value > 0 
-          ? Math.min(Math.round((goal.current_value / goal.target_value) * 100), 100)
-          : 0,
-        priority: goal.priority,
-        is_active: goal.is_active
-      }));
+      const transformedGoals: PlayerGoalData[] = (goalsData || []).map(goal => {
+        const player = playersMap[goal.player_id];
+        const profile = player ? profilesMap[player.user_id] : null;
+        
+        return {
+          player_id: goal.player_id,
+          player_name: profile?.full_name || 'Unknown Player',
+          goal_type: goal.goal_type,
+          metric_name: goal.metric_name,
+          target_value: goal.target_value,
+          current_value: goal.current_value,
+          progress_percentage: goal.target_value > 0 
+            ? Math.min(Math.round((goal.current_value / goal.target_value) * 100), 100)
+            : 0,
+          priority: goal.priority,
+          is_active: goal.is_active
+        };
+      });
 
       setPlayersGoals(transformedGoals);
 

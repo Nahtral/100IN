@@ -39,6 +39,7 @@ const ParentsManagement = lazy(() => import("@/components/admin/ParentsManagemen
 const CoachesManagement = lazy(() => import("@/components/admin/CoachesManagement").then(m => ({ default: m.CoachesManagement })));
 const StaffManagement = lazy(() => import("@/components/admin/StaffManagement").then(m => ({ default: m.StaffManagement })));
 const TeamsManagement = lazy(() => import("@/components/admin/TeamsManagement").then(m => ({ default: m.TeamsManagement })));
+const PlayerMonitoringDashboard = lazy(() => import("@/components/dashboards/PlayerMonitoringDashboard").then(m => ({ default: m.PlayerMonitoringDashboard })));
 
 interface PendingRequest {
   id: string;
