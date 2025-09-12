@@ -9,7 +9,10 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { ErrorBoundaryWrapper } from "@/components/ErrorBoundaryWrapper";
+import { SystemHealthMonitor } from "@/components/SystemHealthMonitor";
 import { NotificationToastProvider } from "@/components/notifications/NotificationToast";
+import { useErrorBoundary } from "@/hooks/useErrorBoundary";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -54,171 +57,204 @@ const queryClient = new QueryClient({
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
+    mutations: {
+      retry: (failureCount, error: any) => {
+        // Don't retry mutations on client errors
+        if (error?.status >= 400 && error?.status < 500) return false;
+        return failureCount < 2;
+      },
+    },
   },
 });
 
+function AppContent() {
+  const { reportError } = useErrorBoundary('App');
+
+  // Global unhandled promise rejection handler
+  React.useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      reportError(new Error(`Unhandled promise rejection: ${event.reason}`), {
+        type: 'unhandled_rejection',
+        reason: event.reason
+      });
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [reportError]);
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <NotificationToastProvider />
+            <SystemHealthMonitor />
+            <BrowserRouter>
+              <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded w-48 mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                  </div>
+                </div>
+              }>
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <ErrorBoundaryWrapper><Home /></ErrorBoundaryWrapper>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <ErrorBoundaryWrapper><Dashboard /></ErrorBoundaryWrapper>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/players" element={
+                    <ProtectedRoute>
+                      <ErrorBoundaryWrapper><PlayersManagement /></ErrorBoundaryWrapper>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/teams" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
+                      <ErrorBoundaryWrapper><Teams /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/schedule" element={
+                    <ProtectedRoute>
+                      <ErrorBoundaryWrapper><Schedule /></ErrorBoundaryWrapper>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/analytics" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><Analytics /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/medical" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin', 'medical']}>
+                      <ErrorBoundaryWrapper><Medical /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/partners" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
+                      <ErrorBoundaryWrapper><Partners /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/settings" element={
+                    <ProtectedRoute>
+                      <ErrorBoundaryWrapper><Settings /></ErrorBoundaryWrapper>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/user-management" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><UserManagement /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/evaluations" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><Evaluations /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/health-wellness" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin', 'medical', 'staff', 'coach', 'player']}>
+                      <ErrorBoundaryWrapper><HealthWellness /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/news" element={
+                    <ProtectedRoute>
+                      <ErrorBoundaryWrapper><News /></ErrorBoundaryWrapper>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/news-manager" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><NewsManager /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/chat" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach', 'player']}>
+                      <ErrorBoundaryWrapper><Chat /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/teamgrid" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
+                      <ErrorBoundaryWrapper><TeamGrid /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/shotiq" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><ShotIQ /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/partnership-management" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><PartnershipManagement /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/medical-management" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin', 'medical']}>
+                      <ErrorBoundaryWrapper><MedicalManagement /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/security" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><Security /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/admin/teamgrid-settings" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><TeamGridSettings /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/settings/notifications" element={
+                    <ProtectedRoute>
+                      <ErrorBoundaryWrapper><NotificationSettings /></ErrorBoundaryWrapper>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/membership-types" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><MembershipTypes /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/admin/tryouts" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><TryoutRubric /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/admin/staff" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><StaffManagement /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/admin/staff/hr" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><HRSection /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/admin/staff/hr/*" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><HRSection /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
+
 const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <NotificationToastProvider />
-          <BrowserRouter>
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-200 rounded w-48 mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded w-32"></div>
-              </div>
-            </div>
-          }>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/players" element={
-                <ProtectedRoute>
-                  <PlayersManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/teams" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
-                  <Teams />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/schedule" element={
-                <ProtectedRoute>
-                  <Schedule />
-                </ProtectedRoute>
-              } />
-              <Route path="/analytics" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <Analytics />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/medical" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'medical']}>
-                  <Medical />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/partners" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'partner']}>
-                  <Partners />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } />
-              <Route path="/user-management" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <UserManagement />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/evaluations" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <Evaluations />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/health-wellness" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'medical', 'staff', 'coach', 'player']}>
-                  <HealthWellness />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/news" element={
-                <ProtectedRoute>
-                  <News />
-                </ProtectedRoute>
-              } />
-              <Route path="/news-manager" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <NewsManager />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/chat" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach', 'player']}>
-                  <Chat />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/teamgrid" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'staff', 'coach']}>
-                  <TeamGrid />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/shotiq" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <ShotIQ />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/partnership-management" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <PartnershipManagement />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/medical-management" element={
-                <RoleProtectedRoute allowedRoles={['super_admin', 'medical']}>
-                  <MedicalManagement />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/security" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <Security />
-                </RoleProtectedRoute>
-              } />
-        <Route path="/admin/teamgrid-settings" element={
-          <RoleProtectedRoute allowedRoles={['super_admin']}>
-            <TeamGridSettings />
-          </RoleProtectedRoute>
-        } />
-        <Route path="/settings/notifications" element={
-          <ProtectedRoute>
-            <NotificationSettings />
-          </ProtectedRoute>
-        } />
-        <Route path="/membership-types" element={
-          <RoleProtectedRoute allowedRoles={['super_admin']}>
-            <MembershipTypes />
-          </RoleProtectedRoute>
-        } />
-        <Route path="/admin/tryouts" element={
-          <RoleProtectedRoute allowedRoles={['super_admin']}>
-            <TryoutRubric />
-          </RoleProtectedRoute>
-        } />
-        <Route path="/admin/staff" element={
-          <RoleProtectedRoute allowedRoles={['super_admin']}>
-            <StaffManagement />
-          </RoleProtectedRoute>
-        } />
-        <Route path="/admin/staff/hr" element={
-          <RoleProtectedRoute allowedRoles={['super_admin']}>
-            <HRSection />
-          </RoleProtectedRoute>
-        } />
-        <Route path="/admin/staff/hr/*" element={
-          <RoleProtectedRoute allowedRoles={['super_admin']}>
-            <HRSection />
-          </RoleProtectedRoute>
-        } />
-        <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-  </ErrorBoundary>
+  <ErrorBoundaryWrapper>
+    <AppContent />
+  </ErrorBoundaryWrapper>
 );
 
 export default App;
