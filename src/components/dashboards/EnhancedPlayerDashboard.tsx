@@ -12,6 +12,8 @@ import { PlayerGoalsSection } from '@/components/dashboard/PlayerGoalsSection';
 import { PlayerScheduleSection } from '@/components/dashboard/PlayerScheduleSection';
 import { PlayerAttendanceCard } from '@/components/dashboard/PlayerAttendanceCard';
 import { PlayerMembershipCard } from '@/components/dashboard/PlayerMembershipCard';
+import { PlayerEvaluationCard } from '@/components/dashboard/PlayerEvaluationCard';
+import { EvaluationTrendChart } from '@/components/dashboard/EvaluationTrendChart';
 import { PlayerDashboardError } from '@/components/dashboard/PlayerDashboardError';
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
 import { User, Target, Shield } from 'lucide-react';
@@ -206,6 +208,35 @@ export const EnhancedPlayerDashboard: React.FC = () => {
               error={membershipError} 
             />
           </SimpleErrorBoundary>
+        </div>
+
+        {/* Evaluation Section */}
+        <div className="mobile-content-grid">
+          <SimpleErrorBoundary 
+            fallback={
+              <PlayerDashboardError
+                title="Evaluation data unavailable"
+                message="Unable to load your evaluation information"
+                onRetry={() => {}}
+              />
+            }
+          >
+            <PlayerEvaluationCard playerId={profile?.id} />
+          </SimpleErrorBoundary>
+
+          <div className="lg:col-span-2">
+            <SimpleErrorBoundary 
+              fallback={
+                <PlayerDashboardError
+                  title="Evaluation trends unavailable"
+                  message="Unable to load your evaluation trends"
+                  onRetry={() => {}}
+                />
+              }
+            >
+              <EvaluationTrendChart playerId={profile?.id} />
+            </SimpleErrorBoundary>
+          </div>
         </div>
 
         {/* Schedule Section */}

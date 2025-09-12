@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useEvaluations } from '@/hooks/useEvaluations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +49,7 @@ interface Evaluation {
 
 const Evaluations = () => {
   const { currentUser } = useCurrentUser();
+  const { evaluations: hookEvaluations, uploadEvaluation, loading: evaluationsLoading } = useEvaluations();
   const [players, setPlayers] = useState<Player[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
@@ -56,6 +58,9 @@ const Evaluations = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const { toast } = useToast();
+
+  // Use hook evaluations or fallback to state
+  const displayEvaluations = hookEvaluations.length > 0 ? hookEvaluations : evaluations;
 
   useEffect(() => {
     fetchPlayers();
@@ -203,38 +208,11 @@ const Evaluations = () => {
     }
 
     setIsUploading(true);
+    setIsAnalyzing(true);
+    setAnalysisProgress(0);
+
     try {
-      const fileExt = uploadedFile.name.split('.').pop();
-      const fileName = `${Date.now()}_${selectedPlayer}.${fileExt}`;
-      const filePath = `evaluations/${fileName}`;
-
-      // Upload video to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('evaluation-videos')
-        .upload(filePath, uploadedFile);
-
-      if (uploadError) throw uploadError;
-
-      // Create evaluation record
-      const { data: evaluation, error: insertError } = await supabase
-        .from('evaluations')
-        .insert({
-          player_id: selectedPlayer,
-          video_url: uploadData.path,
-          video_filename: uploadedFile.name,
-          video_size_mb: uploadedFile.size / (1024 * 1024),
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      setIsUploading(false);
-      setIsAnalyzing(true);
-      setAnalysisProgress(0);
-
-      // Start AI analysis
+      // Start progress animation
       const progressInterval = setInterval(() => {
         setAnalysisProgress(prev => {
           if (prev >= 90) {
@@ -245,24 +223,18 @@ const Evaluations = () => {
         });
       }, 1000);
 
-      // Call AI analysis edge function
-      const { data: analysisResult, error: analysisError } = await supabase.functions
-        .invoke('analyze-video-technique', {
-          body: { 
-            evaluationId: evaluation.id,
-            videoPath: uploadData.path
-          }
-        });
+      // Use the hook's upload function
+      await uploadEvaluation(uploadedFile, selectedPlayer);
 
       clearInterval(progressInterval);
       setAnalysisProgress(100);
 
       setTimeout(() => {
         setIsAnalyzing(false);
+        setIsUploading(false);
         setAnalysisProgress(0);
         setUploadedFile(null);
         setSelectedPlayer('');
-        fetchEvaluations();
         
         toast({
           title: "Analysis Complete",
@@ -274,6 +246,7 @@ const Evaluations = () => {
       console.error('Error uploading and analyzing:', error);
       setIsUploading(false);
       setIsAnalyzing(false);
+      setAnalysisProgress(0);
       toast({
         title: "Error",
         description: "Failed to upload and analyze video",
@@ -413,7 +386,7 @@ const Evaluations = () => {
           </TabsContent>
 
           <TabsContent value="results">
-            <EvaluationResults evaluations={evaluations} players={players} />
+            <EvaluationResults evaluations={displayEvaluations} players={players} />
           </TabsContent>
         </Tabs>
       </div>

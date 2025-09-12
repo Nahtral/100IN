@@ -19,10 +19,13 @@ import {
 } from 'lucide-react';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
+import { useEvaluations } from '@/hooks/useEvaluations';
 import { EvaluationDashboard } from './EvaluationDashboard';
 import { PlayerReports } from './PlayerReports';
 import { HealthLoadManagement } from './HealthLoadManagement';
 import { GameLogUpload } from './GameLogUpload';
+import { EvaluationTrendChart } from '@/components/dashboard/EvaluationTrendChart';
+import { EvaluationSummaryCard } from '@/components/dashboard/EvaluationSummaryCard';
 import { useTranslation, Language } from '@/lib/i18n';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -32,14 +35,18 @@ interface EvaluationResultsProps {
   players: any[];
 }
 
-export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluations, players }) => {
+export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluations: propsEvaluations, players }) => {
   const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const { isTestMode, effectiveIsSuperAdmin, testHasRole, testCanAccessMedical } = useRoleSwitcher();
+  const { evaluations: hookEvaluations, loading: evaluationsLoading } = useEvaluations();
   const [language, setLanguage] = useState<Language>('en');
   const { t } = useTranslation(language);
   const [gameLogData, setGameLogData] = useState<any[]>([]);
   const [drillPlanData, setDrillPlanData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Use hook data if available, fallback to props
+  const evaluations = hookEvaluations.length > 0 ? hookEvaluations : propsEvaluations;
   
   // Use effective roles when in test mode
   const currentIsSuperAdmin = isTestMode ? effectiveIsSuperAdmin : isSuperAdmin;
@@ -185,6 +192,10 @@ export const EvaluationResults: React.FC<EvaluationResultsProps> = ({ evaluation
 
         {/* Dashboard Tab */}
         <TabsContent value="dashboard" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <EvaluationSummaryCard />
+            <EvaluationTrendChart className="md:col-span-2" />
+          </div>
           <EvaluationDashboard evaluations={evaluations} language={language} />
         </TabsContent>
 
