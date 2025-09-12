@@ -124,21 +124,7 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
         .eq('id', scheduleId)
         .single();
 
-      // Calculate overall grade client-side as fallback (though trigger should handle this)
-      const calculateOverallGrade = (data: GradeFormData): number => {
-        const skills = [
-          data.shooting, data.ball_handling, data.passing, data.rebounding,
-          data.footwork, data.decision_making, data.consistency, data.communication,
-          data.cutting, data.teammate_support, data.competitiveness, data.coachable,
-          data.leadership, data.reaction_time, data.game_iq, data.boxout_frequency,
-          data.court_vision
-        ].filter(val => val !== undefined && val !== null) as number[];
-        
-        return skills.length > 0 ? Math.round((skills.reduce((a, b) => a + b, 0) / skills.length) * 100) / 100 : 0;
-      };
-
-      const overallGrade = calculateOverallGrade(gradeData);
-
+      // Note: overall_grade will be calculated automatically by the database trigger
       const { error } = await supabase
         .from('event_player_grades')
         .insert({
@@ -146,8 +132,8 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
           player_id: playerId,
           event_type: eventData?.event_type || 'training',
           graded_by: (await supabase.auth.getUser()).data.user?.id!,
-          overall_grade: overallGrade, // Include client-side calculation as fallback
           ...gradeData
+          // overall_grade is automatically calculated by database trigger
         });
 
       if (error) {
@@ -174,6 +160,7 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
 
   const updateGrade = async (gradeId: string, gradeData: Partial<GradeFormData>): Promise<boolean> => {
     try {
+      // Note: overall_grade will be recalculated automatically by the database trigger
       const { error } = await supabase
         .from('event_player_grades')
         .update(gradeData)
@@ -185,7 +172,7 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
 
       toast({
         title: "Grade Updated",
-        description: "Player grade has been updated successfully.",
+        description: "Player grade has been updated successfully with automatic overall grade recalculation.",
       });
 
       fetchGrades(); // Refresh the data
