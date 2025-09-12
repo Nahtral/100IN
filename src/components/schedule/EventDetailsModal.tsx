@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Calendar, Clock, MapPin, Users, Edit, Archive, Trash2, Copy, UserPlus, Image as ImageIcon, ArchiveRestore, Trophy } from 'lucide-react';
-import PlayerGradingModal from './PlayerGradingModal';
+import EnhancedPlayerGradingModal from './EnhancedPlayerGradingModal';
 import { format } from 'date-fns';
 
 interface ScheduleEvent {
@@ -369,8 +369,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           </Card>
         </div>
 
-        {/* Player Grading Modal */}
-        <PlayerGradingModal
+        {/* Enhanced Player Grading Modal */}
+        <EnhancedPlayerGradingModal
           isOpen={showGradingModal}
           onClose={() => setShowGradingModal(false)}
           event={event}

@@ -400,9 +400,63 @@ All colors MUST be HSL.
   .touch-target {
     @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
   }
-  
+
   .touch-target-lg {
     @apply min-h-[48px] min-w-[48px] flex items-center justify-center;
+  }
+
+  /* Enhanced slider touch support */
+  .enhanced-slider-thumb {
+    @apply relative cursor-pointer touch-none select-none;
+    /* Larger touch area for mobile */
+    position: relative;
+  }
+
+  .enhanced-slider-thumb::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    /* Invisible but touchable area */
+    background: transparent;
+    z-index: 1;
+  }
+
+  /* Smooth transitions for slider interactions */
+  .enhanced-slider-track {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .enhanced-slider-range {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Haptic feedback simulation with animations */
+  .slider-haptic {
+    animation: sliderHaptic 0.1s ease-out;
+  }
+
+  @keyframes sliderHaptic {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* Better visual feedback for slider values */
+  .slider-value-display {
+    @apply absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 text-xs font-semibold rounded bg-background border shadow-sm;
+    transition: all 0.2s ease-out;
+    z-index: 10;
+  }
+
+  /* Mobile-optimized slider spacing */
+  .mobile-slider-container {
+    @apply py-4 px-2;
+    touch-action: none;
   }
   
   /* Mobile navigation spacing */
