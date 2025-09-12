@@ -4877,6 +4877,28 @@ export type Database = {
           | { user_ids: string[] }
         Returns: Json
       }
+      calculate_overall_grade: {
+        Args: {
+          ball_handling?: number
+          boxout_frequency?: number
+          coachable?: number
+          communication?: number
+          competitiveness?: number
+          consistency?: number
+          court_vision?: number
+          cutting?: number
+          decision_making?: number
+          footwork?: number
+          game_iq?: number
+          leadership?: number
+          passing?: number
+          reaction_time?: number
+          rebounding?: number
+          shooting?: number
+          teammate_support?: number
+        }
+        Returns: number
+      }
       can_create_player_record: {
         Args: { target_user_id: string }
         Returns: boolean
