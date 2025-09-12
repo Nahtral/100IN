@@ -187,10 +187,14 @@ const SuperAdminDashboard = () => {
 
         {/* Admin Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 lg:grid-cols-9 gap-1 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 lg:grid-cols-10 gap-1 h-auto p-1">
             <TabsTrigger value="approvals" className="flex items-center gap-1 p-2 text-xs">
               <UserCheck className="h-3 w-3" />
               <span className="hidden sm:inline">Approvals</span>
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="flex items-center gap-1 p-2 text-xs">
+              <Eye className="h-3 w-3" />
+              <span className="hidden sm:inline">Monitoring</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1 p-2 text-xs">
               <Users className="h-3 w-3" />
@@ -238,6 +242,15 @@ const SuperAdminDashboard = () => {
           <TabsContent value="approvals" className="space-y-6">
             <LazyTabContent isActive={activeTab === 'approvals'}>
               <UserApprovalDashboard />
+            </LazyTabContent>
+          </TabsContent>
+
+          {/* Player Monitoring Tab */}
+          <TabsContent value="monitoring" className="space-y-6">
+            <LazyTabContent isActive={activeTab === 'monitoring'}>
+              <Suspense fallback={<DashboardSkeleton />}>
+                <PlayerMonitoringDashboard />
+              </Suspense>
             </LazyTabContent>
           </TabsContent>
 

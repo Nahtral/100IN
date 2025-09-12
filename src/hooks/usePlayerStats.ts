@@ -5,18 +5,20 @@ interface PlayerStats {
   totalShots: number;
   totalMakes: number;
   shootingPercentage: number;
-  avgPoints: number;
+  averagePoints: number;
   gamesPlayed: number;
   fitnessScore: number;
   checkInStreak: number;
   recentPerformance: Array<{
-    id: string;
     date: string;
-    opponent?: string;
     points: number;
-    made_shots: number;
-    total_shots: number;
-    percentage: number;
+    shotsMade: number;
+    shotsTotal: number;
+    shootingPercentage: number;
+    opponent?: string;
+    rebounds?: number;
+    assists?: number;
+    performance_type?: string;
   }>;
 }
 
@@ -126,14 +128,14 @@ export const usePlayerStats = (playerId?: string): UsePlayerStatsReturn => {
         .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 10)
         .map((session: any) => ({
-          id: session.date,
           date: session.date,
           points: session.points,
-          made_shots: session.shots.filter((s: any) => s.made).length,
-          total_shots: session.shots.length,
-          percentage: session.shots.length > 0 
+          shotsMade: session.shots.filter((s: any) => s.made).length,
+          shotsTotal: session.shots.length,
+          shootingPercentage: session.shots.length > 0 
             ? (session.shots.filter((s: any) => s.made).length / session.shots.length) * 100
-            : 0
+            : 0,
+          opponent: 'Training Session'
         }));
 
       // Calculate average points per session
@@ -145,7 +147,7 @@ export const usePlayerStats = (playerId?: string): UsePlayerStatsReturn => {
         totalShots,
         totalMakes,
         shootingPercentage,
-        avgPoints,
+        averagePoints: avgPoints,
         gamesPlayed: recentPerformance.length,
         fitnessScore: Math.max(fitnessScore, 0), // Ensure non-negative
         checkInStreak,
@@ -162,6 +164,46 @@ export const usePlayerStats = (playerId?: string): UsePlayerStatsReturn => {
 
   useEffect(() => {
     fetchStats();
+    
+    // Set up real-time subscriptions
+    const shotsChannel = supabase
+      .channel('player-shots-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'shots', filter: `player_id=eq.${playerId}` },
+        () => fetchStats()
+      )
+      .subscribe();
+
+    const performanceChannel = supabase
+      .channel('player-performance-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'player_performance', filter: `player_id=eq.${playerId}` },
+        () => fetchStats()
+      )
+      .subscribe();
+
+    const checkInsChannel = supabase
+      .channel('player-checkins-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'daily_health_checkins', filter: `player_id=eq.${playerId}` },
+        () => fetchStats()
+      )
+      .subscribe();
+
+    const gradesChannel = supabase
+      .channel('player-grades-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'event_player_grades', filter: `player_id=eq.${playerId}` },
+        () => fetchStats()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(shotsChannel);
+      supabase.removeChannel(performanceChannel);
+      supabase.removeChannel(checkInsChannel);
+      supabase.removeChannel(gradesChannel);
+    };
   }, [playerId]);
 
   return {
