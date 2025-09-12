@@ -43,7 +43,14 @@ export const usePlayerAttendance = (playerId?: string): UsePlayerAttendanceRetur
       const { data: attendanceRecords, error: attendanceError } = await supabase
         .from('player_attendance')
         .select(`
-          *,
+          id,
+          player_id,
+          schedule_id,
+          status,
+          notes,
+          marked_by,
+          marked_at,
+          created_at,
           schedules!inner(
             id,
             title,

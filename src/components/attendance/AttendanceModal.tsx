@@ -9,36 +9,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Users, UserCheck, UserX, Clock, FileText, CheckSquare, Square, CreditCard } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import PlayerDetailsModal from '@/components/player-details/PlayerDetailsModal';
-
-interface Player {
-  id: string;
-  user_id: string;
-  team_id?: string;
-  jersey_number?: number;
-  position?: string;
-  height?: string;
-  weight?: string;
-  date_of_birth?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  medical_notes?: string;
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
-  profiles?: {
-    full_name: string;
-    email: string;
-    phone?: string;
-  } | null;
-  teams?: {
-    name: string;
-    season?: string;
-  };
-}
+import { useAttendanceData } from '@/hooks/useAttendanceData';
+import { useAttendanceOperations } from '@/hooks/useAttendanceOperations';
+import { useToast } from '@/hooks/use-toast';
 
 interface AttendanceRecord {
   player_id: string;
@@ -61,105 +35,45 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   eventTitle,
   teamIds
 }) => {
-  const [players, setPlayers] = useState<Player[]>([]);
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [autoDeductMembership, setAutoDeductMembership] = useState(true);
   const [playerDetailsModal, setPlayerDetailsModal] = useState<{
     isOpen: boolean;
-    player: Player | null;
+    player: any | null;
   }>({
     isOpen: false,
     player: null
   });
-  const { user } = useAuth();
+
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (isOpen && teamIds.length > 0) {
-      fetchPlayersAndAttendance();
+  // Use the new centralized hooks
+  const { players, loading, error, refetch } = useAttendanceData(eventId, teamIds, isOpen);
+  const { saving, saveAttendance } = useAttendanceOperations({
+    eventId,
+    eventTitle,
+    onSuccess: () => {
+      onClose();
+      refetch();
     }
-  }, [isOpen, teamIds, eventId]);
+  });
 
-  const fetchPlayersAndAttendance = async () => {
-    setLoading(true);
-    try {
-      // Fetch players from selected teams using the player_teams junction table
-      const { data: playersData, error: playersError } = await supabase
-        .from('player_teams')
-        .select(`
-          player_id,
-          team_id,
-          players!inner(
-            id,
-            user_id,
-            jersey_number,
-            position,
-            height,
-            weight,
-            date_of_birth,
-            emergency_contact_name,
-            emergency_contact_phone,
-            medical_notes,
-            is_active,
-            created_at,
-            updated_at,
-            profiles(full_name, email, phone)
-          ),
-          teams(name, season)
-        `)
-        .in('team_id', teamIds)
-        .eq('players.is_active', true)
-        .eq('is_active', true);
-
-      if (playersError) {
-        console.error('Players query error:', playersError);
-        throw playersError;
-      }
-
-      // Fetch existing attendance records
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('player_attendance')
-        .select('*')
-        .eq('schedule_id', eventId);
-
-      if (attendanceError) throw attendanceError;
-
-      // Transform the data from junction table format to Player format
-      const transformedPlayers: Player[] = playersData?.map((item: any) => ({
-        ...item.players,
-        teams: item.teams,
-        team_id: item.team_id // Set team_id from the junction table
-      })) || [];
-
-      setPlayers(transformedPlayers);
-      
-      // Initialize attendance state
+  // Initialize attendance state when players data is loaded
+  useEffect(() => {
+    if (players.length > 0) {
       const attendanceMap: Record<string, AttendanceRecord> = {};
-      transformedPlayers?.forEach(player => {
-        const existingRecord = attendanceData?.find(a => a.player_id === player.id);
+      players.forEach(player => {
         attendanceMap[player.id] = {
           player_id: player.id,
-          status: (existingRecord?.status as 'present' | 'absent' | 'late' | 'excused') || 'present',
-          notes: existingRecord?.notes || ''
+          status: player.status,
+          notes: player.notes || ''
         };
       });
-      
       setAttendance(attendanceMap);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load players and attendance data.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [players]);
 
   const updateAttendance = (playerId: string, field: keyof AttendanceRecord, value: any) => {
     setAttendance(prev => ({
@@ -213,116 +127,16 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
     setSelectedPlayers(new Set());
   };
 
-  const saveAttendance = async () => {
-    setSaving(true);
+  const handleSaveAttendance = async () => {
     try {
-      const attendanceRecords = Object.values(attendance).map(record => ({
-        player_id: record.player_id,
-        schedule_id: eventId,
-        status: record.status,
-        notes: record.notes || null,
-        marked_by: user?.id
-      }));
-
-      // Save attendance records first
-      const { error: attendanceError } = await supabase
-        .from('player_attendance')
-        .upsert(attendanceRecords, {
-          onConflict: 'player_id,schedule_id',
-          ignoreDuplicates: false
-        });
-
-      if (attendanceError) throw attendanceError;
-
-      // Handle membership deduction if enabled
-      if (autoDeductMembership) {
-        const presentPlayers = attendanceRecords.filter(record => record.status === 'present');
-        let membershipErrors: string[] = [];
-        let successfulDeductions = 0;
-
-        for (const record of presentPlayers) {
-          try {
-            // First, get the player's active membership
-            const { data: membershipData, error: membershipError } = await supabase
-              .rpc('fn_get_membership_summary', { target_player_id: record.player_id });
-
-            if (membershipError) {
-              console.warn(`Failed to check membership for player ${record.player_id}:`, membershipError);
-              continue;
-            }
-
-            const membership = membershipData as any;
-            
-            // Only deduct for CLASS_COUNT type memberships with remaining classes
-            if (membership?.allocation_type === 'CLASS_COUNT' && 
-                membership?.remaining_classes && 
-                membership?.remaining_classes > 0 &&
-                membership?.status === 'ACTIVE') {
-              
-              // Create a membership adjustment record
-              const { error: adjustmentError } = await supabase
-                .from('membership_adjustments')
-                .insert({
-                  player_membership_id: membership.membership_id,
-                  delta: -1,
-                  reason: `Attendance deduction for event: ${eventTitle}`,
-                  created_by: user?.id
-                });
-
-              if (adjustmentError) {
-                console.warn(`Failed to deduct membership for player ${record.player_id}:`, adjustmentError);
-                membershipErrors.push(`Failed to deduct class for ${players.find(p => p.id === record.player_id)?.profiles?.full_name || 'Unknown Player'}`);
-              } else {
-                successfulDeductions++;
-              }
-            }
-          } catch (error) {
-            console.warn(`Error processing membership for player ${record.player_id}:`, error);
-          }
-        }
-
-        // Show feedback about membership deductions
-        if (successfulDeductions > 0 || membershipErrors.length > 0) {
-          let description = '';
-          if (successfulDeductions > 0) {
-            description += `Successfully deducted classes for ${successfulDeductions} player(s). `;
-          }
-          if (membershipErrors.length > 0) {
-            description += `${membershipErrors.length} membership deduction(s) failed. `;
-          }
-          
-          toast({
-            title: "Attendance & Membership Updated",
-            description: description.trim(),
-            variant: membershipErrors.length > 0 ? "destructive" : "default",
-          });
-        } else {
-          toast({
-            title: "Success",
-            description: "Attendance updated successfully.",
-          });
-        }
-      } else {
-        toast({
-          title: "Success",
-          description: "Attendance updated successfully.",
-        });
-      }
-      
-      onClose();
+      await saveAttendance(attendance, players, autoDeductMembership);
     } catch (error) {
-      console.error('Error saving attendance:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save attendance.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
+      // Error handling is done in the hook
+      console.error('Save attendance failed:', error);
     }
   };
 
-  const openPlayerDetails = (player: Player) => {
+  const openPlayerDetails = (player: any) => {
     setPlayerDetailsModal({
       isOpen: true,
       player
@@ -330,7 +144,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   };
 
   const refreshPlayerData = () => {
-    fetchPlayersAndAttendance();
+    refetch();
   };
 
   const getStatusIcon = (status: string) => {
@@ -372,6 +186,13 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         {loading ? (
           <div className="text-center py-8">
             <p className="text-gray-600">Loading players...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-600">{error}</p>
+            <Button onClick={refetch} className="mt-4">
+              Retry
+            </Button>
           </div>
         ) : (
           <div className="space-y-6">
@@ -498,13 +319,13 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                           checked={selectedPlayers.has(player.id)}
                           onCheckedChange={() => togglePlayerSelection(player.id)}
                           onClick={(e) => e.stopPropagation()}
-                          aria-label={`Select ${player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}`}
+                          aria-label={`Select ${player.full_name || `Player #${player.jersey_number || 'N/A'}`}`}
                         />
                         <div className="flex items-center gap-2">
                           {getStatusIcon(attendance[player.id]?.status || 'present')}
                            <div>
                              <p className="font-medium">
-                               {player.profiles?.full_name || `Player #${player.jersey_number || 'N/A'}`}
+                               {player.full_name || `Player #${player.jersey_number || 'N/A'}`}
                              </p>
                              <p className="text-xs sm:text-sm text-gray-600">
                                {player.jersey_number ? `#${player.jersey_number}` : 'No Jersey'} • {player.position || 'No Position'}
@@ -552,7 +373,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
               <Button variant="outline" onClick={onClose} disabled={saving} className="transition-all duration-200 hover:scale-105">
                 Cancel
               </Button>
-              <Button onClick={saveAttendance} disabled={saving} className="transition-all duration-200 hover:scale-105">
+              <Button onClick={handleSaveAttendance} disabled={saving} className="transition-all duration-200 hover:scale-105">
                 {saving ? 'Saving...' : (autoDeductMembership ? 'Save Attendance & Deduct Classes' : 'Save Attendance')}
               </Button>
             </div>
