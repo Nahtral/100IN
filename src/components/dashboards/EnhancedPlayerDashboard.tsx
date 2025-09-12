@@ -4,10 +4,14 @@ import { usePlayerProfile } from '@/hooks/usePlayerProfile';
 import { usePlayerStats } from '@/hooks/usePlayerStats';
 import { usePlayerSchedule } from '@/hooks/usePlayerSchedule';
 import { usePlayerGoals } from '@/hooks/usePlayerGoals';
+import { usePlayerAttendance } from '@/hooks/usePlayerAttendance';
+import { usePlayerMembership } from '@/hooks/usePlayerMembership';
 import { PlayerStatsCards } from '@/components/dashboard/PlayerStatsCards';
 import { PlayerPerformanceChart } from '@/components/dashboard/PlayerPerformanceChart';
 import { PlayerGoalsSection } from '@/components/dashboard/PlayerGoalsSection';
 import { PlayerScheduleSection } from '@/components/dashboard/PlayerScheduleSection';
+import { PlayerAttendanceCard } from '@/components/dashboard/PlayerAttendanceCard';
+import { PlayerMembershipCard } from '@/components/dashboard/PlayerMembershipCard';
 import { PlayerDashboardError } from '@/components/dashboard/PlayerDashboardError';
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
 import { User, Target, Shield } from 'lucide-react';
@@ -40,6 +44,8 @@ export const EnhancedPlayerDashboard: React.FC = () => {
   const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = usePlayerStats(profile?.id);
   const { events, loading: scheduleLoading, error: scheduleError, refetch: refetchSchedule } = usePlayerSchedule(profile?.team_id);
   const { goals, loading: goalsLoading, error: goalsError, refetch: refetchGoals } = usePlayerGoals(profile?.id);
+  const { attendance, loading: attendanceLoading, error: attendanceError, refetch: refetchAttendance } = usePlayerAttendance(profile?.id);
+  const { membership, loading: membershipLoading, error: membershipError, refetch: refetchMembership } = usePlayerMembership(profile?.id);
 
   // Show loading skeleton while profile is loading
   if (profileLoading) {
@@ -161,6 +167,43 @@ export const EnhancedPlayerDashboard: React.FC = () => {
               goals={goals} 
               loading={goalsLoading} 
               error={goalsError} 
+            />
+          </SimpleErrorBoundary>
+        </div>
+
+        {/* Attendance and Membership Grid */}
+        <div className="mobile-content-grid">
+          {/* Attendance Card */}
+          <SimpleErrorBoundary 
+            fallback={
+              <PlayerDashboardError
+                title="Attendance unavailable"
+                message="Unable to load your attendance data"
+                onRetry={refetchAttendance}
+              />
+            }
+          >
+            <PlayerAttendanceCard 
+              attendance={attendance} 
+              loading={attendanceLoading} 
+              error={attendanceError} 
+            />
+          </SimpleErrorBoundary>
+
+          {/* Membership Card */}
+          <SimpleErrorBoundary 
+            fallback={
+              <PlayerDashboardError
+                title="Membership unavailable"
+                message="Unable to load your membership information"
+                onRetry={refetchMembership}
+              />
+            }
+          >
+            <PlayerMembershipCard 
+              membership={membership} 
+              loading={membershipLoading} 
+              error={membershipError} 
             />
           </SimpleErrorBoundary>
         </div>
