@@ -5618,7 +5618,7 @@ export type Database = {
           p_reply_to_id?: string
           p_sender_id: string
         }
-        Returns: string
+        Returns: Json
       }
       shares_team_with: {
         Args: { team_uuid: string; uid: string }
