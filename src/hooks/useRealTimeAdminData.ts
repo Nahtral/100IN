@@ -71,10 +71,7 @@ export const useRealTimeAdminData = () => {
         // Recent activities (last 20)
         supabase
           .from('analytics_events')
-          .select(`
-            *,
-            profiles!user_id(full_name)
-          `)
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(20),
 
