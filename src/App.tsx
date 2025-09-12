@@ -68,33 +68,41 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { reportError } = useErrorBoundary('App');
-
   // Global unhandled promise rejection handler
   React.useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      reportError(new Error(`Unhandled promise rejection: ${event.reason}`), {
-        type: 'unhandled_rejection',
-        reason: event.reason
-      });
+      console.error('[App] Unhandled promise rejection:', event.reason);
+      // We can't use error reporting here since auth might not be ready
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
     return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, [reportError]);
+  }, []);
 
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <NotificationToastProvider />
-            <SystemHealthMonitor />
-            <BrowserRouter>
+          <AuthContextualContent />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
+
+// Component that uses auth-dependent hooks AFTER AuthProvider is mounted
+function AuthContextualContent() {
+  const { reportError } = useErrorBoundary('App');
+
+  return (
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <NotificationToastProvider />
+      <SystemHealthMonitor />
+      <BrowserRouter>
               <Suspense fallback={
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="animate-pulse">
@@ -245,10 +253,7 @@ function AppContent() {
               </Suspense>
             </BrowserRouter>
           </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
+    );
 }
 
 const App = () => (

@@ -1,4 +1,3 @@
-import { useAuth } from '@/contexts/AuthContext';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface AnalyticsEvent {
@@ -10,8 +9,18 @@ interface AnalyticsEvent {
 }
 
 export const useAnalytics = () => {
-  const { user } = useAuth();
-  const { primaryRole } = useOptimizedAuth();
+  // Safely try to get auth data, but don't crash if context isn't available
+  let user: any = null;
+  let primaryRole: string | null = null;
+  
+  try {
+    const authState = useOptimizedAuth();
+    user = authState.user;
+    primaryRole = authState.primaryRole;
+  } catch (error) {
+    // Auth context not available yet - this is okay for early app lifecycle
+    console.debug('Analytics: Auth context not available yet');
+  }
 
   const track = (eventName: string, properties?: Record<string, any>) => {
     const event: AnalyticsEvent = {
