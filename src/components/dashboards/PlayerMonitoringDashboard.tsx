@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Bell, TrendingUp, TrendingDown, AlertTriangle, Target, Activity, Users, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useRealTimeAdminData } from '@/hooks/useRealTimeAdminData';
 
 interface PlayerGoalData {
   player_id: string;
@@ -34,6 +35,9 @@ export const PlayerMonitoringDashboard: React.FC = () => {
   const [playersPerformance, setPlayersPerformance] = useState<PlayerPerformanceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<string[]>([]);
+  
+  // Use real-time admin data for accurate player counts and system stats
+  const adminData = useRealTimeAdminData();
 
   const fetchPlayerData = async () => {
     try {
@@ -207,6 +211,11 @@ export const PlayerMonitoringDashboard: React.FC = () => {
     }
   };
 
+  // Show error state if admin data fails to load
+  if (adminData.error) {
+    console.warn('Admin data error:', adminData.error);
+  }
+
   useEffect(() => {
     fetchPlayerData();
 
@@ -262,7 +271,7 @@ export const PlayerMonitoringDashboard: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || adminData.loading) {
     return <div className="flex items-center justify-center h-64">Loading player monitoring data...</div>;
   }
 
@@ -304,7 +313,7 @@ export const PlayerMonitoringDashboard: React.FC = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Active Players</span>
             </div>
-            <div className="text-2xl font-bold">{playersPerformance.length}</div>
+            <div className="text-2xl font-bold">{adminData.totalPlayers}</div>
           </CardContent>
         </Card>
         
