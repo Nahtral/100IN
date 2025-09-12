@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useEventTeamsAndPlayers } from '@/hooks/useEventTeamsAndPlayers';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Calendar, Clock, MapPin, Users, Edit, Archive, Trash2, Copy, UserPlus, Image as ImageIcon, ArchiveRestore } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Edit, Archive, Trash2, Copy, UserPlus, Image as ImageIcon, ArchiveRestore, Trophy } from 'lucide-react';
+import PlayerGradingModal from './PlayerGradingModal';
 import { format } from 'date-fns';
 
 interface ScheduleEvent {
@@ -74,6 +75,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 }) => {
   const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const { teams, loading } = useEventTeamsAndPlayers(event?.team_ids);
+  const [showGradingModal, setShowGradingModal] = useState(false);
 
   // Calculate total players across all teams
   const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
@@ -98,6 +100,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
   // Check if user can manage attendance (super admin, staff, or coach)
   const canManageAttendance = isSuperAdmin() || hasRole('staff') || hasRole('coach');
+  
+  // Check if user can grade players (super admin, staff, or coach)
+  const canGradePlayers = isSuperAdmin() || hasRole('staff') || hasRole('coach');
 
   if (!event) return null;
 
@@ -267,16 +272,28 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     <Users className="h-5 w-5" />
                     Teams & Players ({totalPlayers} players)
                   </CardTitle>
-                  {canManageAttendance && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onAttendance(event)}
-                    >
-                      <UserPlus className="h-4 w-4 mr-1" />
-                      Manage Attendance
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {canManageAttendance && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onAttendance(event)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Manage Attendance
+                      </Button>
+                    )}
+                    {canGradePlayers && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowGradingModal(true)}
+                      >
+                        <Trophy className="h-4 w-4 mr-1" />
+                        Grade Players
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -351,6 +368,14 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             </CardContent>
           </Card>
         </div>
+
+        {/* Player Grading Modal */}
+        <PlayerGradingModal
+          isOpen={showGradingModal}
+          onClose={() => setShowGradingModal(false)}
+          event={event}
+          teams={teams}
+        />
       </DialogContent>
     </Dialog>
   );

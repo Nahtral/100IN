@@ -14,6 +14,7 @@ import { PlayerAttendanceCard } from '@/components/dashboard/PlayerAttendanceCar
 import { PlayerMembershipCard } from '@/components/dashboard/PlayerMembershipCard';
 import { PlayerEvaluationCard } from '@/components/dashboard/PlayerEvaluationCard';
 import { EvaluationTrendChart } from '@/components/dashboard/EvaluationTrendChart';
+import PlayerGradesCard from '@/components/dashboard/PlayerGradesCard';
 import { PlayerDashboardError } from '@/components/dashboard/PlayerDashboardError';
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
 import { User, Target, Shield } from 'lucide-react';
@@ -48,6 +49,9 @@ export const EnhancedPlayerDashboard: React.FC = () => {
   const { goals, loading: goalsLoading, error: goalsError, refetch: refetchGoals } = usePlayerGoals(profile?.id);
   const { attendance, loading: attendanceLoading, error: attendanceError, refetch: refetchAttendance } = usePlayerAttendance(profile?.id);
   const { membership, loading: membershipLoading, error: membershipError, refetch: refetchMembership } = usePlayerMembership(profile?.id);
+  
+  // Mock player grades data - in real implementation, this would come from a hook
+  const playerGrades: any[] = []; // This will be populated once the user starts getting graded
 
   // Show loading skeleton while profile is loading
   if (profileLoading) {
@@ -222,6 +226,18 @@ export const EnhancedPlayerDashboard: React.FC = () => {
             }
           >
             <PlayerEvaluationCard playerId={profile?.id} />
+          </SimpleErrorBoundary>
+
+          <SimpleErrorBoundary 
+            fallback={
+              <PlayerDashboardError
+                title="Grades unavailable"
+                message="Unable to load your performance grades"
+                onRetry={() => {}}
+              />
+            }
+          >
+            <PlayerGradesCard grades={playerGrades} loading={false} />
           </SimpleErrorBoundary>
 
           <div className="lg:col-span-2">
