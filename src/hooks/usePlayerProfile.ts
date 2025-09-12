@@ -11,7 +11,7 @@ interface PlayerProfile {
   jersey_number?: number;
   position?: string;
   height?: string;
-  weight?: number;
+  weight?: string; // Changed from number to string to match database
   team?: {
     id: string;
     name: string;
@@ -45,46 +45,66 @@ export const usePlayerProfile = (): UsePlayerProfileReturn => {
       setLoading(true);
       setError(null);
 
-      // Use timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
-      );
-
-      const queryPromise = supabase
+      // First, get basic player data (use actual column names)
+      const { data: playerData, error: playerError } = await supabase
         .from('players')
         .select(`
           id,
           user_id,
-          team_id,
-          first_name,
-          last_name,
+          name,
           jersey_number,
           position,
           height,
-          weight,
-          teams:team_id (
-            id,
-            name
-          ),
-          profiles:user_id (
-            full_name,
-            email
-          )
+          weight
         `)
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
-      const { data, error: queryError } = await Promise.race([
-        queryPromise,
-        timeoutPromise
-      ]) as any;
-
-      if (queryError) {
-        throw queryError;
+      if (playerError) {
+        throw playerError;
       }
 
-      setProfile(data);
+      if (!playerData) {
+        setProfile(null);
+        return;
+      }
+
+      // Get user profile data
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single();
+
+      // Get team data through player_teams relationship
+      const { data: teamData } = await supabase
+        .from('player_teams')
+        .select(`
+          teams:team_id (
+            id,
+            name
+          )
+        `)
+        .eq('player_id', playerData.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // Parse name field into first and last name if it exists
+      const nameParts = playerData.name ? playerData.name.split(' ') : [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Combine all data
+      const combinedProfile = {
+        ...playerData,
+        first_name: firstName,
+        last_name: lastName,
+        team: teamData?.teams || null,
+        user: profileData || { full_name: user.email, email: user.email }
+      };
+
+      setProfile(combinedProfile);
     } catch (err: any) {
       console.error('Error fetching player profile:', err);
       setError(err.message || 'Failed to load profile');

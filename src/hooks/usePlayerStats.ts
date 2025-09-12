@@ -42,40 +42,25 @@ export const usePlayerStats = (playerId?: string): UsePlayerStatsReturn => {
       setLoading(true);
       setError(null);
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
-      );
-
       // Fetch shooting data from shots table
-      const shotsPromise = supabase
+      const { data: shots, error: shotsError } = await supabase
         .from('shots')
         .select('*')
         .eq('player_id', playerId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      // Fetch health data for fitness score
-      const healthPromise = supabase
+      if (shotsError) {
+        console.warn('Error fetching shots data:', shotsError);
+      }
+
+      // Fetch health data for fitness score (optional)
+      const { data: healthData } = await supabase
         .from('daily_health_checkins')
         .select('energy_level, training_readiness, check_in_date')
         .eq('player_id', playerId)
         .gte('check_in_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
         .order('check_in_date', { ascending: false });
-
-      const [shotsResult, healthResult] = await Promise.race([
-        Promise.all([shotsPromise, healthPromise]),
-        timeoutPromise
-      ]) as any;
-
-      const { data: shots, error: shotsError } = shotsResult[0];
-      const { data: healthData, error: healthError } = shotsResult[1];
-
-      if (shotsError && shotsError.code !== 'PGRST116') {
-        throw shotsError;
-      }
-
-      if (healthError && healthError.code !== 'PGRST116') {
-        throw healthError;
-      }
 
       // Calculate shooting stats
       const totalShots = shots?.length || 0;

@@ -73,22 +73,16 @@ export const usePlayerGoals = (playerId?: string): UsePlayerGoalsReturn => {
       setLoading(true);
       setError(null);
 
-      // For now, return sample goals since development_goals table doesn't exist
-      // This would be replaced with real database query when the table is created
+      // For now, just use sample goals since player_goals table doesn't exist in the database
+      // This will be replaced with real database query when the table is created
       const sampleGoals = generateSampleGoals(playerId);
       setGoals(sampleGoals);
-
-      // Future implementation would use:
-      // const { data, error: queryError } = await supabase
-      //   .from('player_goals')
-      //   .select('*')
-      //   .eq('player_id', playerId)
-      //   .eq('status', 'active')
-      //   .order('created_at', { ascending: false });
-
     } catch (err: any) {
       console.error('Error fetching goals:', err);
       setError(err.message || 'Failed to load goals');
+      // Always provide fallback data
+      const sampleGoals = generateSampleGoals(playerId);
+      setGoals(sampleGoals);
     } finally {
       setLoading(false);
     }

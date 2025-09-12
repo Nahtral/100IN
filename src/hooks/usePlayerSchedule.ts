@@ -30,10 +30,6 @@ export const usePlayerSchedule = (teamId?: string): UsePlayerScheduleReturn => {
       setLoading(true);
       setError(null);
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
-      );
-
       let query = supabase
         .from('schedules')
         .select('*')
@@ -44,22 +40,24 @@ export const usePlayerSchedule = (teamId?: string): UsePlayerScheduleReturn => {
 
       // Filter by team if teamId is provided
       if (teamId) {
+        // Use proper JSONB contains operator for team_ids array
         query = query.contains('team_ids', [teamId]);
       }
 
-      const { data, error: queryError } = await Promise.race([
-        query,
-        timeoutPromise
-      ]) as any;
+      const { data, error: queryError } = await query;
 
       if (queryError) {
-        throw queryError;
+        console.warn('Error fetching schedule:', queryError);
+        // Don't throw, just set empty array and continue
+        setEvents([]);
+        return;
       }
 
       setEvents(data || []);
     } catch (err: any) {
       console.error('Error fetching schedule:', err);
       setError(err.message || 'Failed to load schedule');
+      setEvents([]); // Fallback to empty array
     } finally {
       setLoading(false);
     }
