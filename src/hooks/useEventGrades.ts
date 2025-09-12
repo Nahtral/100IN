@@ -124,6 +124,21 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
         .eq('id', scheduleId)
         .single();
 
+      // Calculate overall grade client-side as fallback (though trigger should handle this)
+      const calculateOverallGrade = (data: GradeFormData): number => {
+        const skills = [
+          data.shooting, data.ball_handling, data.passing, data.rebounding,
+          data.footwork, data.decision_making, data.consistency, data.communication,
+          data.cutting, data.teammate_support, data.competitiveness, data.coachable,
+          data.leadership, data.reaction_time, data.game_iq, data.boxout_frequency,
+          data.court_vision
+        ].filter(val => val !== undefined && val !== null) as number[];
+        
+        return skills.length > 0 ? Math.round((skills.reduce((a, b) => a + b, 0) / skills.length) * 100) / 100 : 0;
+      };
+
+      const overallGrade = calculateOverallGrade(gradeData);
+
       const { error } = await supabase
         .from('event_player_grades')
         .insert({
@@ -131,6 +146,7 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
           player_id: playerId,
           event_type: eventData?.event_type || 'training',
           graded_by: (await supabase.auth.getUser()).data.user?.id!,
+          overall_grade: overallGrade, // Include client-side calculation as fallback
           ...gradeData
         });
 
