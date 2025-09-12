@@ -40,7 +40,7 @@ const NotificationSettings = React.lazy(() => import("./pages/NotificationSettin
 const MembershipTypes = React.lazy(() => import("./pages/MembershipTypes"));
 const StaffManagement = React.lazy(() => import("./pages/StaffManagement"));
 const HRSection = React.lazy(() => import("./pages/HRSection"));
-const EnterprisePerformanceDashboard = React.lazy(() => import("./components/admin/EnterprisePerformanceDashboard"));
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,11 +104,6 @@ const App = () => (
               <Route path="/analytics" element={
                 <RoleProtectedRoute allowedRoles={['super_admin']}>
                   <Analytics />
-                </RoleProtectedRoute>
-              } />
-              <Route path="/admin/performance" element={
-                <RoleProtectedRoute allowedRoles={['super_admin']}>
-                  <EnterprisePerformanceDashboard />
                 </RoleProtectedRoute>
               } />
               <Route path="/medical" element={

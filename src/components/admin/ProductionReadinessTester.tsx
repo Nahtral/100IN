@@ -19,7 +19,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { StorageValidator } from '@/utils/storageValidator';
-import { PerformanceOptimizer } from '@/utils/performanceOptimizer';
+
 
 interface TestResult {
   testName: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { PerformanceOptimizer } from '@/utils/performanceOptimizer';
+
 import { OptimizedCache } from '@/hooks/useOptimizedCache';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
@@ -30,40 +30,37 @@ export const useOptimizedDashboard = () => {
     const cacheKey = `${CACHE_KEYS.DASHBOARD}_${primaryRole || 'guest'}`;
     
     try {
-      const result = await PerformanceOptimizer.dedupeRequest(
-        cacheKey,
-        async () => {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('Not authenticated');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-          // Fetch minimal essential data based on role
-          if (isSuperAdmin) {
-            // Super admin gets comprehensive stats
-            const [usersCount, teamsCount, alertsCount] = await Promise.all([
-              supabase.from('profiles').select('*', { count: 'exact', head: true }),
-              supabase.from('teams').select('*', { count: 'exact', head: true }),
-              supabase.from('system_alerts').select('*', { count: 'exact', head: true }).eq('is_resolved', false)
-            ]);
+      let result;
+      
+      // Fetch minimal essential data based on role
+      if (isSuperAdmin) {
+        // Super admin gets comprehensive stats
+        const [usersCount, teamsCount, alertsCount] = await Promise.all([
+          supabase.from('profiles').select('*', { count: 'exact', head: true }),
+          supabase.from('teams').select('*', { count: 'exact', head: true }),
+          supabase.from('system_alerts').select('*', { count: 'exact', head: true }).eq('is_resolved', false)
+        ]);
 
-            return {
-              totalUsers: usersCount.count || 0,
-              totalTeams: teamsCount.count || 0,
-              pendingAlerts: alertsCount.count || 0,
-              role: 'super_admin'
-            };
-          } else {
-            // Regular users get limited stats
-            const [userTeams] = await Promise.all([
-              supabase.from('players').select('team_id').eq('user_id', user.id).eq('is_active', true)
-            ]);
+        result = {
+          totalUsers: usersCount.count || 0,
+          totalTeams: teamsCount.count || 0,
+          pendingAlerts: alertsCount.count || 0,
+          role: 'super_admin'
+        };
+      } else {
+        // Regular users get limited stats
+        const [userTeams] = await Promise.all([
+          supabase.from('players').select('team_id').eq('user_id', user.id).eq('is_active', true)
+        ]);
 
-            return {
-              userTeams: userTeams.data?.length || 0,
-              role: primaryRole || 'user'
-            };
-          }
-        }
-      );
+        result = {
+          userTeams: userTeams.data?.length || 0,
+          role: primaryRole || 'user'
+        };
+      }
 
       setData({
         stats: result,
@@ -79,10 +76,13 @@ export const useOptimizedDashboard = () => {
     }
   }, [isSuperAdmin, primaryRole, roleLoading]);
 
-  const debouncedFetch = useMemo(
-    () => PerformanceOptimizer.debounce(fetchDashboardData, 300),
-    [fetchDashboardData]
-  );
+  const debouncedFetch = useMemo(() => {
+    let timeout: NodeJS.Timeout;
+    return () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(fetchDashboardData, 300);
+    };
+  }, [fetchDashboardData]);
 
   useEffect(() => {
     if (!roleLoading) {
