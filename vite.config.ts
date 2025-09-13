@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       // Single React instance assertion
-      __REACT_DEVTOOLS_GLOBAL_HOOK__: "({ isDisabled: true })",
+      __REACT_DEVTOOLS_GLOBAL_HOOK__: JSON.stringify({ isDisabled: true }),
     },
     optimizeDeps: {
       include: [
