@@ -8,6 +8,7 @@ import { Toaster as Sonner } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
 import { StartupDiagnostics } from '@/components/diagnostics/StartupDiagnostics';
+import { NotificationToastProvider } from '@/components/notifications/NotificationToast';
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -48,6 +49,7 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
                   <Suspense fallback={<LoadingFallback />}>
                     {children}
                   </Suspense>
+                  <NotificationToastProvider />
                   <Toaster />
                   <Sonner />
                 </TooltipProvider>
