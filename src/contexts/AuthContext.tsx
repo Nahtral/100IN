@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useAuthCore } from '@/hooks/useAuthCore';
 import { ApprovalRequired } from '@/components/ApprovalRequired';
 
 interface AuthContextType {
@@ -34,21 +34,26 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const authState = useOptimizedAuth();
+  const authCore = useAuthCore();
 
   const value = {
-    user: authState.user,
-    session: authState.session,
-    loading: authState.loading,
-    isApproved: authState.isApproved(),
-    signOut: authState.signOut,
-    refetch: authState.refetch,
+    user: authCore.user,
+    session: authCore.session,
+    loading: authCore.loading,
+    isApproved: authCore.isApproved(),
+    signOut: authCore.signOut,
+    refetch: authCore.refetch,
   };
+
+  // Add null check guard
+  if (authCore.error) {
+    throw new Error(`Auth initialization failed: ${authCore.error.message}`);
+  }
 
   return (
     <AuthContext.Provider value={value}>
       {/* Show approval screen for authenticated but unapproved users */}
-      {authState.user && !authState.isApproved() ? <ApprovalRequired /> : children}
+      {authCore.user && !authCore.isApproved() ? <ApprovalRequired /> : children}
     </AuthContext.Provider>
   );
 };
