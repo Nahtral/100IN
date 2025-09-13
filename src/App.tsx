@@ -10,7 +10,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundaryWrapper";
-import { SystemHealthMonitor } from "@/components/SystemHealthMonitor";
 import { NotificationToastProvider } from "@/components/notifications/NotificationToast";
 import { useErrorBoundary } from "@/hooks/useErrorBoundary";
 import Home from "./pages/Home";
@@ -43,6 +42,7 @@ const NotificationSettings = React.lazy(() => import("./pages/NotificationSettin
 const MembershipTypes = React.lazy(() => import("./pages/MembershipTypes"));
 const StaffManagement = React.lazy(() => import("./pages/StaffManagement"));
 const HRSection = React.lazy(() => import("./pages/HRSection"));
+const DevHealth = React.lazy(() => import("./pages/DevHealth"));
 
 
 const queryClient = new QueryClient({
@@ -101,7 +101,6 @@ function AuthContextualContent() {
       <Toaster />
       <Sonner />
       <NotificationToastProvider />
-      <SystemHealthMonitor />
       <BrowserRouter>
               <Suspense fallback={
                 <div className="min-h-screen flex items-center justify-center">
@@ -246,6 +245,11 @@ function AuthContextualContent() {
                   <Route path="/admin/staff/hr/*" element={
                     <RoleProtectedRoute allowedRoles={['super_admin']}>
                       <ErrorBoundaryWrapper><HRSection /></ErrorBoundaryWrapper>
+                    </RoleProtectedRoute>
+                  } />
+                  <Route path="/dev/health" element={
+                    <RoleProtectedRoute allowedRoles={['super_admin']}>
+                      <ErrorBoundaryWrapper><DevHealth /></ErrorBoundaryWrapper>
                     </RoleProtectedRoute>
                   } />
                   <Route path="*" element={<NotFound />} />

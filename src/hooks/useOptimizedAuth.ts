@@ -169,8 +169,8 @@ export const useOptimizedAuth = () => {
 
     // Set up single auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Only synchronous state updates here to prevent deadlocks
+      (event, session) => {
+        // Non-async callback to prevent race conditions
         if (event === 'SIGNED_OUT') {
           setState({
             user: null,
@@ -183,10 +183,10 @@ export const useOptimizedAuth = () => {
           return;
         }
 
-        // Defer async auth data fetch
+        // Defer async auth data fetch to prevent blocking
         setTimeout(() => {
           updateAuthState(session);
-        }, 0);
+        }, 100);
       }
     );
 
