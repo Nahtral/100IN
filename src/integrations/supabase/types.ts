@@ -911,6 +911,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "employee_leave_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "employee_leave_requests_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
@@ -1261,6 +1268,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_player_grades_graded_by_fkey"
+            columns: ["graded_by"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "event_player_grades_player_id_fkey"
@@ -2808,6 +2822,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payments_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       payroll_deduction_types: {
@@ -3579,6 +3600,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_players_profiles"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4928,6 +4956,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tryout_evaluations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       user_approval_requests: {
@@ -5167,6 +5202,18 @@ export type Database = {
           total_sponsorship_value: number | null
           total_sponsorships: number | null
           updated_at: string | null
+        }
+        Relationships: []
+      }
+      v_pending_users: {
+        Row: {
+          approval_status: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          preferred_role: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Relationships: []
       }
@@ -5630,6 +5677,14 @@ export type Database = {
         Args: { p_chat_id: string; p_permanent?: boolean }
         Returns: undefined
       }
+      rpc_diag_orphans: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string
+          has_profile: boolean
+          user_id: string
+        }[]
+      }
       rpc_duplicate_event: {
         Args: {
           copy_teams?: boolean
@@ -5687,6 +5742,18 @@ export type Database = {
           sender_email: string
           sender_id: string
           sender_name: string
+        }[]
+      }
+      rpc_get_pending_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          approval_status: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          preferred_role: string | null
+          updated_at: string | null
+          user_id: string | null
         }[]
       }
       rpc_list_chats: {

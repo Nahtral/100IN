@@ -76,39 +76,31 @@ export const UserApprovalDashboard = () => {
 
   const fetchPendingUsers = async () => {
     try {
-      // Fetch pending users and their requested roles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
+      // Use the new RPC that fetches pending users securely
+      const { data: pendingUsersData, error } = await supabase.rpc('rpc_get_pending_users');
 
-      if (profilesError) throw profilesError;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
 
-      // Get requested roles for each user
-      const usersWithRoles = await Promise.all(
-        (profiles || []).map(async (profile: any) => {
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role, is_active')
-            .eq('user_id', profile.id)
-            .eq('is_active', false)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-          return {
-            ...profile,
-            requested_role: roles?.[0]?.role || 'player'
-          };
-        })
-      );
+      // Map the RPC result to our interface
+      const usersWithRoles = (pendingUsersData || []).map((user: any) => ({
+        id: user.user_id,
+        email: user.email,
+        full_name: user.full_name,
+        phone: '', // Phone not included in view for now
+        created_at: user.created_at,
+        approval_status: user.approval_status,
+        requested_role: user.preferred_role
+      }));
 
       setPendingUsers(usersWithRoles as PendingUser[]);
     } catch (error) {
       console.error('Error fetching pending users:', error);
       toast({
         title: "Error",
-        description: "Failed to load pending users",
+        description: "Failed to load pending users. Please try again.",
         variant: "destructive",
       });
     } finally {
