@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance: {
+        Row: {
+          event_id: string
+          id: string
+          notes: string | null
+          player_id: string
+          recorded_at: string
+          recorded_by: string
+          status: string
+          team_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          recorded_at?: string
+          recorded_by: string
+          status: string
+          team_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          recorded_at?: string
+          recorded_by?: string
+          status?: string
+          team_id?: string
+        }
+        Relationships: []
+      }
       benefit_plans: {
         Row: {
           coverage_details: Json | null
@@ -1906,6 +1939,33 @@ export type Database = {
           id?: string
           player_membership_id?: string
           sent_at?: string | null
+        }
+        Relationships: []
+      }
+      membership_ledger: {
+        Row: {
+          created_at: string
+          delta: number
+          event_id: string | null
+          id: string
+          player_id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          event_id?: string | null
+          id?: string
+          player_id: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          event_id?: string | null
+          id?: string
+          player_id?: string
+          reason?: string
         }
         Relationships: []
       }
@@ -5556,6 +5616,14 @@ export type Database = {
       rpc_partner_analytics: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      rpc_save_attendance_batch: {
+        Args: { p_entries: Json; p_event_id: string; p_team_id: string }
+        Returns: {
+          credited: boolean
+          player_id: string
+          status: string
+        }[]
       }
       rpc_send_message: {
         Args: {
