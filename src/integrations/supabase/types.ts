@@ -5450,6 +5450,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_onboarding_errors: {
+        Args: { limit_count?: number }
+        Returns: {
+          email: string
+          error_code: string
+          error_message: string
+          error_timestamp: string
+          user_id: string
+        }[]
+      }
       get_player_team_assignments: {
         Args: { player_user_id: string }
         Returns: {
