@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
-import { StartupDiagnostics } from '@/components/diagnostics/StartupDiagnostics';
+
 import { NotificationToastProvider } from '@/components/notifications/NotificationToast';
 
 interface AppProvidersProps {
@@ -40,24 +40,22 @@ const LoadingFallback = () => (
 export const AppProviders = ({ children }: AppProvidersProps) => {
   return (
     <ErrorBoundaryWrapper>
-      <StartupDiagnostics>
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <AuthProvider>
-              <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-                <TooltipProvider>
-                  <Suspense fallback={<LoadingFallback />}>
-                    {children}
-                  </Suspense>
-                  <NotificationToastProvider />
-                  <Toaster />
-                  <Sonner />
-                </TooltipProvider>
-              </ThemeProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </QueryClientProvider>
-      </StartupDiagnostics>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+              <TooltipProvider>
+                <Suspense fallback={<LoadingFallback />}>
+                  {children}
+                </Suspense>
+                <NotificationToastProvider />
+                <Toaster />
+                <Sonner />
+              </TooltipProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </ErrorBoundaryWrapper>
   );
 };
