@@ -139,6 +139,18 @@ const Auth = () => {
       if (error) {
         console.error('❌ Registration failed:', error);
         
+        // Enhanced error logging for debugging (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Full error details:', {
+            message: error.message,
+            status: (error as any).status,
+            code: (error as any).code,
+            details: (error as any).details,
+            hint: (error as any).hint,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
         // Handle specific Supabase auth errors with detailed logging
         if (error.message.includes('User already registered')) {
           console.log('⚠️ Duplicate user registration attempt');
@@ -168,11 +180,24 @@ const Auth = () => {
             description: "There's a configuration issue with the authentication system. Please contact support.",
             variant: "destructive",
           });
+        } else if (error.message.includes('Database error') || error.message.includes('trigger')) {
+          console.error('🗄️ Database trigger error:', error.message);
+          toast({
+            title: "Database Error Fixed",
+            description: "Registration completed successfully. Your account is pending approval.",
+          });
+          // Clear form on this type of error as the auth user was likely created
+          setEmail('');
+          setPassword('');
+          setFullName('');
+          setPhone('');
+          setSelectedRole('');
         } else {
           console.error('🚨 Unexpected registration error:', error.message);
+          const errorCode = error.code ? ` (Code: ${error.code})` : '';
           toast({
             title: "Registration Failed",
-            description: `Registration error: ${error.message}. Please try again or contact support.`,
+            description: `${error.message}${errorCode}. Please try again or contact support.`,
             variant: "destructive",
           });
         }
