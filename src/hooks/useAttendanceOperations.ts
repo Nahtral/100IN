@@ -2,20 +2,20 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  formatAttendanceRecords,
   saveAttendanceRecords,
-  processMembershipDeductions,
   PlayerWithAttendance
 } from '@/utils/attendanceHelpers';
 
 interface UseAttendanceOperationsProps {
   eventId: string;
+  teamId: string;
   eventTitle: string;
   onSuccess?: () => void;
 }
 
 export const useAttendanceOperations = ({ 
   eventId, 
+  teamId,
   eventTitle, 
   onSuccess 
 }: UseAttendanceOperationsProps) => {
@@ -35,54 +35,32 @@ export const useAttendanceOperations = ({
     setSaving(true);
     
     try {
-      // Format and validate attendance records
-      const attendanceRecords = formatAttendanceRecords(attendance, eventId, user.id);
+      // Use new RPC function that handles both attendance and membership automatically
+      const result = await saveAttendanceRecords(eventId, teamId, attendance);
+      const results = result.results;
       
-      // Save attendance records
-      await saveAttendanceRecords(attendanceRecords);
-
-      // Handle membership deduction if enabled
-      let membershipResults = null;
-      if (autoDeductMembership) {
-        const presentPlayerIds = attendanceRecords
-          .filter(record => record.status === 'present')
-          .map(record => record.player_id);
-
-        if (presentPlayerIds.length > 0) {
-          const playersMap = new Map(players.map(p => [p.id, p]));
-          membershipResults = await processMembershipDeductions(
-            presentPlayerIds,
-            eventTitle,
-            user.id,
-            playersMap
-          );
-        }
-      }
+      // Count successful credit deductions
+      const creditedPlayers = results?.filter(r => r.credited)?.length || 0;
+      const totalPresent = results?.filter(r => r.status === 'present')?.length || 0;
 
       // Show success feedback
-      if (membershipResults) {
-        let description = '';
-        if (membershipResults.successfulDeductions > 0) {
-          description += `Successfully deducted classes for ${membershipResults.successfulDeductions} player(s). `;
+      let description = "Attendance updated successfully.";
+      if (autoDeductMembership && totalPresent > 0) {
+        if (creditedPlayers > 0) {
+          description += ` ${creditedPlayers} player(s) had membership credits deducted.`;
         }
-        if (membershipResults.errors.length > 0) {
-          description += `${membershipResults.errors.length} membership deduction(s) failed. `;
+        if (creditedPlayers < totalPresent) {
+          description += ` ${totalPresent - creditedPlayers} player(s) had no remaining credits.`;
         }
-        
-        toast({
-          title: "Attendance & Membership Updated",
-          description: description.trim() || "Attendance updated successfully.",
-          variant: membershipResults.errors.length > 0 ? "destructive" : "default",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Attendance updated successfully.",
-        });
       }
+      
+      toast({
+        title: "Success",
+        description,
+      });
 
       onSuccess?.();
-      return { success: true, membershipResults };
+      return { success: true, results };
 
     } catch (error: any) {
       console.error('Error saving attendance:', error);

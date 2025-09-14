@@ -53,6 +53,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const { players, loading, error, refetch } = useAttendanceData(eventId, teamIds, isOpen);
   const { saving, saveAttendance } = useAttendanceOperations({
     eventId,
+    teamId: teamIds[0] || '', // Use first team ID as primary
     eventTitle,
     onSuccess: () => {
       onClose();

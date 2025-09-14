@@ -1,33 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  fetchPlayersForTeams, 
-  fetchExistingAttendance,
-  PlayerWithAttendance 
-} from '@/utils/attendanceHelpers';
+import { fetchPlayersForTeams, fetchExistingAttendance, PlayerWithAttendance } from '@/utils/attendanceHelpers';
 
-export type { PlayerWithAttendance } from '@/utils/attendanceHelpers';
+// Export type for use in other components
+export type { PlayerWithAttendance };
 
 export const useAttendanceData = (eventId: string, teamIds: string[], isOpen: boolean) => {
   const [players, setPlayers] = useState<PlayerWithAttendance[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
-    if (!teamIds?.length || !isOpen) return;
+    if (!isOpen || !teamIds?.length || !eventId) {
+      setPlayers([]);
+      return;
+    }
 
-    console.log('🔄 Starting fresh data fetch for teams:', teamIds);
     setLoading(true);
     setError(null);
 
     try {
-      // Fetch players using the centralized helper
+      // Fetch players for the given teams
       const { players: playersData } = await fetchPlayersForTeams(teamIds);
-
-      if (!playersData?.length) {
+      
+      if (playersData.length === 0) {
         setPlayers([]);
-        setError('No approved players found for the selected teams');
+        setLoading(false);
         return;
       }
 
@@ -35,48 +32,39 @@ export const useAttendanceData = (eventId: string, teamIds: string[], isOpen: bo
 
       // Fetch existing attendance
       const existingAttendance = await fetchExistingAttendance(eventId, playerIds);
-      const attendanceMap = new Map(existingAttendance.map(att => [att.player_id, att]));
+      
+      // Create attendance status map from existing records
+      const attendanceMap = new Map<string, { status: string; notes: string }>();
+      existingAttendance.forEach((record: any) => {
+        attendanceMap.set(record.player_id, {
+          status: record.status,
+          notes: record.notes || ''
+        });
+      });
 
-      // Transform data with attendance information
-      const transformedPlayers: PlayerWithAttendance[] = playersData.map(player => {
-        const existingRecord = attendanceMap.get(player.id);
-
+      // Merge players with their attendance status
+      const updatedPlayers = playersData.map(player => {
+        const attendance = attendanceMap.get(player.id);
         return {
           ...player,
-          status: (existingRecord?.status as any) || 'present',
-          notes: existingRecord?.notes || '',
-          hasExistingRecord: !!existingRecord
+          status: (attendance?.status as 'present' | 'absent' | 'late' | 'excused') || 'absent',
+          notes: attendance?.notes || '',
+          hasExistingRecord: !!attendance
         };
       });
 
-      console.log(`✅ Successfully processed ${transformedPlayers.length} players`);
-      setPlayers(transformedPlayers);
-
-      if (transformedPlayers.length === 0) {
-        setError('No approved players found for the selected teams');
-      }
-
-    } catch (error: any) {
-      console.error('💥 Error fetching attendance data:', error);
-      setError(`Failed to load data: ${error.message}`);
-      toast({
-        title: "Error Loading Data",
-        description: error.message,
-        variant: "destructive",
-      });
+      setPlayers(updatedPlayers);
+    } catch (err: any) {
+      console.error('Error fetching attendance data:', err);
+      setError(err.message || 'Failed to load attendance data');
     } finally {
       setLoading(false);
     }
-  }, [eventId, teamIds, isOpen, toast]);
+  }, [eventId, teamIds, isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchData();
-    } else {
-      setPlayers([]);
-      setError(null);
-    }
-  }, [isOpen, fetchData]);
+    fetchData();
+  }, [fetchData]);
 
   const updatePlayerStatus = useCallback((playerId: string, status: 'present' | 'absent' | 'late' | 'excused') => {
     setPlayers(prev => prev.map(player => 
@@ -103,6 +91,6 @@ export const useAttendanceData = (eventId: string, teamIds: string[], isOpen: bo
     refetch: fetchData,
     updatePlayerStatus,
     updatePlayerNotes,
-    updateBulkStatus,
+    updateBulkStatus
   };
 };
