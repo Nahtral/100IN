@@ -1418,6 +1418,30 @@ export type Database = {
         }
         Relationships: []
       }
+      grading_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       health_wellness: {
         Row: {
           body_fat_percentage: number | null
@@ -3121,6 +3145,81 @@ export type Database = {
           },
         ]
       }
+      player_grade_items: {
+        Row: {
+          created_at: string | null
+          grade_id: string
+          id: string
+          metric_id: string
+          priority: string | null
+          score: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          grade_id: string
+          id?: string
+          metric_id: string
+          priority?: string | null
+          score: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          grade_id?: string
+          id?: string
+          metric_id?: string
+          priority?: string | null
+          score?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_grade_items_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "player_grades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_grade_items_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "grading_metrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_grades: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          event_id: string
+          id: string
+          overall: number | null
+          player_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          event_id: string
+          id?: string
+          overall?: number | null
+          player_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          event_id?: string
+          id?: string
+          overall?: number | null
+          player_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       player_medical_insurance: {
         Row: {
           copay_amount: number | null
@@ -3218,6 +3317,7 @@ export type Database = {
           allocated_classes_override: number | null
           auto_deactivate_when_used_up: boolean
           created_at: string
+          credits_remaining: number
           end_date: string | null
           id: string
           manual_override_active: boolean
@@ -3232,6 +3332,7 @@ export type Database = {
           allocated_classes_override?: number | null
           auto_deactivate_when_used_up?: boolean
           created_at?: string
+          credits_remaining?: number
           end_date?: string | null
           id?: string
           manual_override_active?: boolean
@@ -3246,6 +3347,7 @@ export type Database = {
           allocated_classes_override?: number | null
           auto_deactivate_when_used_up?: boolean
           created_at?: string
+          credits_remaining?: number
           end_date?: string | null
           id?: string
           manual_override_active?: boolean
@@ -5068,6 +5170,33 @@ export type Database = {
         }
         Relationships: []
       }
+      v_player_attendance_summary: {
+        Row: {
+          absent_count: number | null
+          excused_count: number | null
+          late_count: number | null
+          player_id: string | null
+          present_count: number | null
+        }
+        Relationships: []
+      }
+      v_player_latest_grade: {
+        Row: {
+          event_id: string | null
+          overall: number | null
+          player_id: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      v_player_membership_usage: {
+        Row: {
+          credits_remaining: number | null
+          has_active_membership: boolean | null
+          player_id: string | null
+        }
+        Relationships: []
+      }
       vw_player_membership_usage_secure: {
         Row: {
           allocated_classes: number | null
@@ -5623,6 +5752,12 @@ export type Database = {
           credited: boolean
           player_id: string
           status: string
+        }[]
+      }
+      rpc_save_player_grades: {
+        Args: { p_event_id: string; p_items: Json; p_player_id: string }
+        Returns: {
+          overall: number
         }[]
       }
       rpc_send_message: {
