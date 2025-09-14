@@ -38,15 +38,22 @@ const fetchUserAuthData = async (userId: string): Promise<UserAuthData | null> =
       return null;
     }
 
-    // Type-safe data extraction
+    // Debug logging to see actual RPC response structure
+    console.log('[useAuthCore] RPC response:', data);
+
+    // Type-safe data extraction with camelCase properties
     const result = data as any;
     const authData: UserAuthData = {
       roles: Array.isArray(result?.roles) ? result.roles : [],
-      primaryRole: typeof result?.primary_role === 'string' ? result.primary_role : 'player',
-      isApproved: typeof result?.is_approved === 'boolean' ? result.is_approved : false,
-      teamIds: Array.isArray(result?.team_ids) ? result.team_ids : [],
-      profileData: result?.profile_data || {},
+      primaryRole: typeof result?.primaryRole === 'string' ? result.primaryRole : 'player',
+      isApproved: typeof result?.isApproved === 'boolean' ? result.isApproved : false,
+      teamIds: Array.isArray(result?.teamIds) ? result.teamIds : [],
+      profileData: result?.profile || {},
     };
+
+    // Debug logging for approval status
+    console.log('[useAuthCore] Processed auth data:', authData);
+    console.log('[useAuthCore] User approved status:', authData.isApproved);
 
     // Cache the result
     authCache.set(userId, { data: authData, timestamp: Date.now() });
