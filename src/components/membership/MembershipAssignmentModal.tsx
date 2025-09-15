@@ -44,6 +44,7 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
       start_date: format(startDate, 'yyyy-MM-dd'),
       end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
       allocated_classes_override: allocatedClassesOverride,
+      classes_total: allocatedClassesOverride || 10, // Required for new schema
       status: 'ACTIVE' as const,
       auto_deactivate_when_used_up: autoDeactivate,
       manual_override_active: false,

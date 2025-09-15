@@ -31,13 +31,13 @@ export const usePlayerMembershipUpdated = (playerId?: string) => {
 
     try {
       const { data, error } = await supabase
-        .from('v_player_membership_usage')
+        .from('vw_player_membership_usage_secure')
         .select('*')
         .eq('player_id', playerId)
         .maybeSingle();
 
       if (error) throw error;
-      setMembershipUsage(data);
+      setMembershipUsage(data as any);
     } catch (error: any) {
       console.error('Error fetching membership usage:', error);
       // Don't show toast for missing data - it's optional
