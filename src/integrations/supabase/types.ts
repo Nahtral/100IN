@@ -1986,6 +1986,7 @@ export type Database = {
           delta: number
           event_id: string | null
           id: string
+          membership_id: string | null
           player_id: string
           reason: string
         }
@@ -1994,6 +1995,7 @@ export type Database = {
           delta: number
           event_id?: string | null
           id?: string
+          membership_id?: string | null
           player_id: string
           reason: string
         }
@@ -2002,10 +2004,33 @@ export type Database = {
           delta?: number
           event_id?: string | null
           id?: string
+          membership_id?: string | null
           player_id?: string
           reason?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "membership_ledger_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "player_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_ledger_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_membership_usage_secure"
+            referencedColumns: ["membership_id"]
+          },
+          {
+            foreignKeyName: "membership_ledger_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_membership_usage_secure"
+            referencedColumns: ["membership_id"]
+          },
+        ]
       }
       membership_types: {
         Row: {
@@ -2078,6 +2103,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "player_memberships"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_usage_player_membership_id_fkey"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_membership_usage_secure"
+            referencedColumns: ["membership_id"]
           },
           {
             foreignKeyName: "membership_usage_player_membership_id_fkey"
@@ -3337,8 +3369,10 @@ export type Database = {
         Row: {
           allocated_classes_override: number | null
           auto_deactivate_when_used_up: boolean
+          classes_remaining: number | null
+          classes_total: number
+          classes_used: number
           created_at: string
-          credits_remaining: number
           end_date: string | null
           id: string
           manual_override_active: boolean
@@ -3352,8 +3386,10 @@ export type Database = {
         Insert: {
           allocated_classes_override?: number | null
           auto_deactivate_when_used_up?: boolean
+          classes_remaining?: number | null
+          classes_total: number
+          classes_used?: number
           created_at?: string
-          credits_remaining?: number
           end_date?: string | null
           id?: string
           manual_override_active?: boolean
@@ -3367,8 +3403,10 @@ export type Database = {
         Update: {
           allocated_classes_override?: number | null
           auto_deactivate_when_used_up?: boolean
+          classes_remaining?: number | null
+          classes_total?: number
+          classes_used?: number
           created_at?: string
-          credits_remaining?: number
           end_date?: string | null
           id?: string
           manual_override_active?: boolean
@@ -5236,11 +5274,22 @@ export type Database = {
         }
         Relationships: []
       }
-      v_player_membership_usage: {
+      v_player_membership_usage_secure: {
         Row: {
-          credits_remaining: number | null
-          has_active_membership: boolean | null
+          allocated_classes: number | null
+          allocation_type: string | null
+          days_left: number | null
+          end_date: string | null
+          is_expired: boolean | null
+          membership_id: string | null
+          membership_type_name: string | null
           player_id: string | null
+          player_name: string | null
+          remaining_classes: number | null
+          should_deactivate: boolean | null
+          start_date: string | null
+          status: string | null
+          used_classes: number | null
         }
         Relationships: []
       }
@@ -5392,6 +5441,10 @@ export type Database = {
       fn_get_membership_summary: {
         Args: { target_player_id: string }
         Returns: Json
+      }
+      fn_pick_active_membership: {
+        Args: { p_player: string }
+        Returns: string
       }
       generate_payslips_for_period: {
         Args: { period_id: string }
@@ -5839,6 +5892,10 @@ export type Database = {
           status: string
         }[]
       }
+      rpc_save_event_grades: {
+        Args: { p_event_id: string; p_metrics: Json; p_player_id: string }
+        Returns: undefined
+      }
       rpc_save_player_grades: {
         Args: { p_event_id: string; p_items: Json; p_player_id: string }
         Returns: {
@@ -5863,6 +5920,16 @@ export type Database = {
       }
       rpc_update_chat_meta: {
         Args: { p_chat_id: string; p_new_status?: string; p_new_title?: string }
+        Returns: undefined
+      }
+      rpc_upsert_attendance: {
+        Args: {
+          p_event_id: string
+          p_notes?: string
+          p_player_id: string
+          p_status: string
+          p_team_id: string
+        }
         Returns: undefined
       }
       rpc_upsert_partner: {

@@ -112,12 +112,16 @@ export const useAssignMembership = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const assignMembership = async (membership: Omit<PlayerMembership, 'id'>) => {
+  const assignMembership = async (membership: Omit<PlayerMembership, 'id'> & { classes_total: number }) => {
     setLoading(true);
     try {
       const { error } = await supabase
         .from('player_memberships')
-        .insert(membership);
+        .insert({
+          ...membership,
+          classes_total: membership.classes_total || 10, // Ensure classes_total is provided
+          classes_used: 0 // Initialize classes_used
+        });
 
       if (error) throw error;
 
