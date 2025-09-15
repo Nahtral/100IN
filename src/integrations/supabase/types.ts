@@ -5658,6 +5658,14 @@ export type Database = {
         }
         Returns: string
       }
+      rpc_approve_user_secure: {
+        Args: {
+          approval_decision?: string
+          rejection_reason?: string
+          target_user_id: string
+        }
+        Returns: Json
+      }
       rpc_create_chat: {
         Args:
           | {

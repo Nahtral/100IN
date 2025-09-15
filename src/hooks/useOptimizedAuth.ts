@@ -131,12 +131,31 @@ export const useOptimizedAuth = () => {
     }, 5000);
 
     try {
-      const userData = await fetchUserAuthData(session.user.id);
+      // Retry logic for robust profile fetching
+      let userData = null;
+      let lastError = null;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          userData = await fetchUserAuthData(session.user.id);
+          break; // Success, exit retry loop
+        } catch (error) {
+          lastError = error;
+          if (attempt < 3) {
+            // Wait 200ms * attempt before retrying
+            await new Promise(resolve => setTimeout(resolve, 200 * attempt));
+          }
+        }
+      }
       
       // Clear timeout if successful
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
+      }
+
+      if (!userData && lastError) {
+        throw lastError;
       }
 
       setState({
