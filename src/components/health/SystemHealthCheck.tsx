@@ -13,6 +13,13 @@ interface HealthCheck {
   created_at: string;
 }
 
+interface AnalyticsEvent {
+  created_at: string;
+  event_data: any;
+  event_type: string;
+  id: string;
+}
+
 export const SystemHealthCheck = () => {
   const [healthChecks, setHealthChecks] = useState<HealthCheck[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,8 +96,15 @@ export const SystemHealthCheck = () => {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (!error) {
-        setHealthChecks(data || []);
+      if (!error && data) {
+        const transformedData: HealthCheck[] = data.map((event: AnalyticsEvent) => ({
+          check_type: event.event_data?.check_type || 'unknown',
+          status: event.event_data?.status || 'failed',
+          response_time_ms: event.event_data?.response_time_ms || 0,
+          error_message: event.event_data?.error_message,
+          created_at: event.created_at
+        }));
+        setHealthChecks(transformedData);
       }
     } catch (error) {
       console.error('Failed to fetch health checks:', error);

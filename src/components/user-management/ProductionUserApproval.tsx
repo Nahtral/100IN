@@ -8,14 +8,13 @@ import { Check, X, Clock, AlertCircle } from 'lucide-react';
 import { useRequireRole } from '@/hooks/useRequireRole';
 
 interface PendingUser {
-  id: string;
+  user_id: string;
   email: string;
   full_name: string;
   approval_status: string;
-  rejection_reason?: string;
+  preferred_role: string;
   created_at: string;
   updated_at: string;
-  roles: string[];
 }
 
 export const ProductionUserApproval = () => {
@@ -88,7 +87,7 @@ export const ProductionUserApproval = () => {
       toast.success(`User ${decision === 'approved' ? 'approved' : 'rejected'} successfully`);
       
       // Remove from pending list immediately for better UX
-      setPendingUsers(prev => prev.filter(user => user.id !== userId));
+      setPendingUsers(prev => prev.filter(user => user.user_id !== userId));
       
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -138,7 +137,7 @@ export const ProductionUserApproval = () => {
       ) : (
         <div className="grid gap-4">
           {pendingUsers.map((user) => (
-            <Card key={user.id}>
+            <Card key={user.user_id}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -154,15 +153,15 @@ export const ProductionUserApproval = () => {
                 <div className="space-y-4">
                   <div className="text-sm text-muted-foreground">
                     <p>Registered: {new Date(user.created_at).toLocaleDateString()}</p>
-                    {user.roles?.length > 0 && (
-                      <p>Requested roles: {user.roles.join(', ')}</p>
+                    {user.preferred_role && (
+                      <p>Requested role: {user.preferred_role}</p>
                     )}
                   </div>
                   
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleApproval(user.id, 'approved')}
-                      disabled={processingUsers.has(user.id)}
+                      onClick={() => handleApproval(user.user_id, 'approved')}
+                      disabled={processingUsers.has(user.user_id)}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -171,8 +170,8 @@ export const ProductionUserApproval = () => {
                     </Button>
                     
                     <Button
-                      onClick={() => handleApproval(user.id, 'rejected', 'Rejected by admin')}
-                      disabled={processingUsers.has(user.id)}
+                      onClick={() => handleApproval(user.user_id, 'rejected', 'Rejected by admin')}
+                      disabled={processingUsers.has(user.user_id)}
                       variant="destructive"
                       size="sm"
                     >
@@ -181,7 +180,7 @@ export const ProductionUserApproval = () => {
                     </Button>
                   </div>
                   
-                  {processingUsers.has(user.id) && (
+                  {processingUsers.has(user.user_id) && (
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Clock className="h-4 w-4 mr-1 animate-spin" />
                       Processing...

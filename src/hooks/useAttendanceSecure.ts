@@ -38,7 +38,7 @@ export const useAttendanceSecure = () => {
       const { data, error } = await supabase.rpc('rpc_save_attendance_batch', {
         p_event_id: eventId,
         p_team_id: teamId,
-        p_entries: entries
+        p_entries: entries as any
       });
 
       if (error) {
