@@ -6,9 +6,9 @@ import { format } from 'date-fns';
 
 interface PlayerGrade {
   id: string;
-  overall_grade: number;
-  event_type: string;
+  overall: number; // updated field name from overall_grade
   created_at: string;
+  event_type?: string;
   schedules?: {
     title: string;
     start_time: string;
@@ -22,8 +22,8 @@ interface PlayerGradesCardProps {
 
 const PlayerGradesCard: React.FC<PlayerGradesCardProps> = ({ grades, loading }) => {
   const recentGrades = grades.slice(0, 5);
-  const averageGrade = grades.length > 0 
-    ? grades.reduce((sum, grade) => sum + grade.overall_grade, 0) / grades.length 
+const averageGrade = grades.length > 0 
+    ? grades.reduce((sum, grade) => sum + grade.overall, 0) / grades.length 
     : 0;
 
   const getGradeColor = (score: number) => {
@@ -39,8 +39,8 @@ const PlayerGradesCard: React.FC<PlayerGradesCardProps> = ({ grades, loading }) 
     
     if (recent.length === 0 || older.length === 0) return null;
     
-    const recentAvg = recent.reduce((sum, g) => sum + g.overall_grade, 0) / recent.length;
-    const olderAvg = older.reduce((sum, g) => sum + g.overall_grade, 0) / older.length;
+const recentAvg = recent.reduce((sum, g) => sum + g.overall, 0) / recent.length;
+const olderAvg = older.reduce((sum, g) => sum + g.overall, 0) / older.length;
     
     return recentAvg > olderAvg ? 'improving' : recentAvg < olderAvg ? 'declining' : 'stable';
   };
@@ -134,14 +134,16 @@ const PlayerGradesCard: React.FC<PlayerGradesCardProps> = ({ grades, loading }) 
                         ? format(new Date(grade.schedules.start_time), 'MMM d, yyyy')
                         : format(new Date(grade.created_at), 'MMM d, yyyy')
                       }
-                      <Badge variant="outline" className="text-xs">
-                        {grade.event_type}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Badge className={getGradeColor(grade.overall_grade)}>
-                    {grade.overall_grade.toFixed(1)}
-                  </Badge>
+{grade.event_type && (
+  <Badge variant="outline" className="text-xs">
+    {grade.event_type}
+  </Badge>
+)}
+</div>
+</div>
+<Badge className={getGradeColor(grade.overall)}>
+  {grade.overall.toFixed(1)}
+</Badge>
                 </div>
               ))}
             </div>

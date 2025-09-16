@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,7 +64,9 @@ interface RoleTemplate {
 }
 
 const EnhancedUserManagement = () => {
-  const { currentUser, isSuper } = useCurrentUser();
+  const { currentUser } = useCurrentUser();
+  const { isSuperAdmin } = useOptimizedAuth();
+  const isSuper = isSuperAdmin();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
@@ -86,36 +89,50 @@ const EnhancedUserManagement = () => {
     }
   }, [isSuper]);
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          user_roles!inner(
-            role,
-            is_active,
-            created_at
-          )
-        `)
-        .order('created_at', { ascending: false });
+const fetchUsers = async () => {
+  try {
+    setLoading(true);
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
+    if (profilesError) throw profilesError;
 
-      const processedUsers = data?.map(user => ({
-        ...user,
-        roles: user.user_roles || []
-      })) || [];
+    const { data: rolesData, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('user_id, role, is_active, created_at');
 
-      setUsers(processedUsers);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to fetch users');
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (rolesError) throw rolesError;
+
+    const rolesByUser = new Map<string, { role: string; is_active: boolean; created_at: string; }[]>();
+    (rolesData || []).forEach((r) => {
+      const arr = rolesByUser.get(r.user_id) || [];
+      arr.push({ role: r.role as string, is_active: r.is_active as boolean, created_at: r.created_at as string });
+      rolesByUser.set(r.user_id, arr);
+    });
+
+    const processedUsers: UserProfile[] = (profiles || []).map((u: any) => ({
+      id: u.id,
+      email: u.email,
+      full_name: u.full_name,
+      phone: u.phone ?? undefined,
+      approval_status: (u.approval_status as 'pending' | 'approved' | 'rejected') ?? 'pending',
+      rejection_reason: u.rejection_reason ?? undefined,
+      latest_tryout_total: u.latest_tryout_total ?? undefined,
+      latest_tryout_placement: u.latest_tryout_placement ?? undefined,
+      latest_tryout_date: u.latest_tryout_date ?? undefined,
+      roles: rolesByUser.get(u.id) || []
+    }));
+
+    setUsers(processedUsers);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    toast.error('Failed to fetch users');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchPermissions = async () => {
     try {
@@ -131,23 +148,32 @@ const EnhancedUserManagement = () => {
     }
   };
 
-  const fetchRoleTemplates = async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_role_templates');
-      if (error) throw error;
-      setRoleTemplates(data || []);
-    } catch (error) {
-      console.error('Error fetching role templates:', error);
-    }
-  };
+const fetchRoleTemplates = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('role_templates')
+      .select('id, name, description')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const templates: RoleTemplate[] = (data || []).map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      user_count: 0,
+      permissions: []
+    }));
+    setRoleTemplates(templates);
+  } catch (error) {
+    console.error('Error fetching role templates:', error);
+  }
+};
 
-  const handleAssignRole = async (userId: string, role: string, reason: string) => {
-    try {
-      const { error } = await supabase.rpc('assign_user_role', {
-        target_user_id: userId,
-        target_role: role,
-        assigned_by_user_id: currentUser?.id
-      });
+const handleAssignRole = async (userId: string, role: string, reason: string) => {
+  try {
+    const { error } = await supabase.rpc('assign_user_role', {
+      target_user_id: userId,
+      target_role: role as any
+    });
 
       if (error) throw error;
       
@@ -161,11 +187,10 @@ const EnhancedUserManagement = () => {
 
   const revokeRole = async (userId: string, role: string) => {
     try {
-      const { error } = await supabase.rpc('remove_user_role', {
-        target_user_id: userId,
-        target_role: role,
-        removed_by_user_id: currentUser?.id
-      });
+const { error } = await supabase.rpc('remove_user_role', {
+  target_user_id: userId,
+  target_role: role as any
+});
 
       if (error) throw error;
       

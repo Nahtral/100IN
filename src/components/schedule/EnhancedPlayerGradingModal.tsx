@@ -131,26 +131,27 @@ const EnhancedPlayerGradingModal: React.FC<PlayerGradingModalProps> = ({
   useEffect(() => {
     if (selectedPlayer) {
       const existingGrade = getPlayerGrade(selectedPlayer);
-      if (existingGrade) {
+if (existingGrade) {
+        const metrics = (existingGrade as any)?.metrics || {};
         const newGradeData = {
-          shooting: existingGrade.shooting || 5,
-          ball_handling: existingGrade.ball_handling || 5,
-          passing: existingGrade.passing || 5,
-          rebounding: existingGrade.rebounding || 5,
-          footwork: existingGrade.footwork || 5,
-          decision_making: existingGrade.decision_making || 5,
-          consistency: existingGrade.consistency || 5,
-          communication: existingGrade.communication || 5,
-          cutting: existingGrade.cutting || 5,
-          teammate_support: existingGrade.teammate_support || 5,
-          competitiveness: existingGrade.competitiveness || 5,
-          coachable: existingGrade.coachable || 5,
-          leadership: existingGrade.leadership || 5,
-          reaction_time: existingGrade.reaction_time || 5,
-          game_iq: existingGrade.game_iq || 5,
-          boxout_frequency: existingGrade.boxout_frequency || 5,
-          court_vision: existingGrade.court_vision || 5,
-          notes: existingGrade.notes || ''
+          shooting: metrics.shooting ?? 5,
+          ball_handling: metrics.ball_handling ?? 5,
+          passing: metrics.passing ?? 5,
+          rebounding: metrics.rebounding ?? 5,
+          footwork: metrics.footwork ?? 5,
+          decision_making: metrics.decision_making ?? 5,
+          consistency: metrics.consistency ?? 5,
+          communication: metrics.communication ?? 5,
+          cutting: metrics.cutting ?? 5,
+          teammate_support: metrics.teammate_support ?? 5,
+          competitiveness: metrics.competitiveness ?? 5,
+          coachable: metrics.coachable ?? 5,
+          leadership: metrics.leadership ?? 5,
+          reaction_time: metrics.reaction_time ?? 5,
+          game_iq: metrics.game_iq ?? 5,
+          boxout_frequency: metrics.boxout_frequency ?? 5,
+          court_vision: metrics.court_vision ?? 5,
+          notes: metrics.notes ?? ''
         };
         setGradeData(newGradeData);
       } else {
@@ -305,11 +306,11 @@ const EnhancedPlayerGradingModal: React.FC<PlayerGradingModalProps> = ({
                               #{player.jersey_number}
                             </Badge>
                           )}
-                          {existingGrade && (
-                            <Badge className={getGradeBadgeColor(existingGrade.overall_grade || 0)}>
-                              {existingGrade.overall_grade?.toFixed(1)}
-                            </Badge>
-                          )}
+{existingGrade && (
+                              <Badge className={getGradeBadgeColor((existingGrade as any).overall || 0)}>
+                                {(existingGrade as any).overall?.toFixed(1)}
+                              </Badge>
+                            )}
                         </div>
                       </div>
                     </div>

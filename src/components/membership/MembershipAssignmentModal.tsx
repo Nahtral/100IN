@@ -38,18 +38,18 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
   const handleSubmit = async () => {
     if (!selectedType) return;
 
-    const membershipData = {
-      player_id: playerId,
-      membership_type_id: selectedType.id,
-      start_date: format(startDate, 'yyyy-MM-dd'),
-      end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
-      allocated_classes_override: allocatedClassesOverride,
-      classes_total: allocatedClassesOverride || 10, // Required for new schema
-      status: 'ACTIVE' as const,
-      auto_deactivate_when_used_up: autoDeactivate,
-      manual_override_active: false,
-      notes: notes || null,
-    };
+const membershipData = {
+  player_id: playerId,
+  membership_type_id: selectedType.id,
+  start_date: format(startDate, 'yyyy-MM-dd'),
+  end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
+  allocated_classes_override: allocatedClassesOverride,
+  allocated_classes: (allocatedClassesOverride ?? selectedType.allocated_classes ?? 10),
+  status: 'ACTIVE' as const,
+  auto_deactivate_when_used_up: autoDeactivate,
+  manual_override_active: false,
+  notes: notes || null,
+};
 
     const success = await assignMembership(membershipData);
     if (success) {
