@@ -2,12 +2,6 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface AttendanceEntry {
-  player_id: string;
-  status: 'present' | 'absent' | 'late' | 'excused';
-  notes?: string;
-}
-
 export const useAttendanceSecure = () => {
   const [saving, setSaving] = useState(false);
 
@@ -26,8 +20,8 @@ export const useAttendanceSecure = () => {
     setSaving(true);
     
     try {
-      // Use new production-ready RPC function
-      const { error } = await supabase.rpc('rpc_upsert_attendance', {
+      // Use the production-hardened RPC function with automatic membership deduction
+      const { data, error } = await supabase.rpc('rpc_upsert_attendance', {
         p_event_id: eventId,
         p_team_id: teamId,
         p_player_id: playerId,
@@ -41,7 +35,14 @@ export const useAttendanceSecure = () => {
         return false;
       }
 
-      toast.success('Attendance saved successfully');
+      const result = data as { success: boolean; status: string; membership_updated: boolean };
+      
+      if (result.membership_updated) {
+        toast.success(`Attendance saved - ${status === 'present' ? 'Class deducted' : 'Class refunded'}`);
+      } else {
+        toast.success('Attendance saved successfully');
+      }
+      
       return true;
     } catch (error) {
       console.error('Unexpected attendance error:', error);

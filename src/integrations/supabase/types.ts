@@ -78,7 +78,22 @@ export type Database = {
           status?: string
           team_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       benefit_plans: {
         Row: {
@@ -1175,117 +1190,39 @@ export type Database = {
       }
       event_player_grades: {
         Row: {
-          ball_handling: number | null
-          boxout_frequency: number | null
-          coachable: number | null
-          communication: number | null
-          competitiveness: number | null
-          consistency: number | null
-          court_vision: number | null
-          created_at: string | null
-          cutting: number | null
-          decision_making: number | null
-          event_type: string
-          footwork: number | null
-          game_iq: number | null
-          graded_by: string
-          grading_session_id: string | null
+          created_at: string
+          created_by: string
+          event_id: string
           id: string
-          leadership: number | null
-          notes: string | null
-          overall_grade: number | null
-          passing: number | null
+          metrics: Json
+          overall: number
           player_id: string
-          reaction_time: number | null
-          rebounding: number | null
-          schedule_id: string
-          shooting: number | null
-          teammate_support: number | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          ball_handling?: number | null
-          boxout_frequency?: number | null
-          coachable?: number | null
-          communication?: number | null
-          competitiveness?: number | null
-          consistency?: number | null
-          court_vision?: number | null
-          created_at?: string | null
-          cutting?: number | null
-          decision_making?: number | null
-          event_type: string
-          footwork?: number | null
-          game_iq?: number | null
-          graded_by: string
-          grading_session_id?: string | null
+          created_at?: string
+          created_by: string
+          event_id: string
           id?: string
-          leadership?: number | null
-          notes?: string | null
-          overall_grade?: number | null
-          passing?: number | null
+          metrics?: Json
+          overall?: number
           player_id: string
-          reaction_time?: number | null
-          rebounding?: number | null
-          schedule_id: string
-          shooting?: number | null
-          teammate_support?: number | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          ball_handling?: number | null
-          boxout_frequency?: number | null
-          coachable?: number | null
-          communication?: number | null
-          competitiveness?: number | null
-          consistency?: number | null
-          court_vision?: number | null
-          created_at?: string | null
-          cutting?: number | null
-          decision_making?: number | null
-          event_type?: string
-          footwork?: number | null
-          game_iq?: number | null
-          graded_by?: string
-          grading_session_id?: string | null
+          created_at?: string
+          created_by?: string
+          event_id?: string
           id?: string
-          leadership?: number | null
-          notes?: string | null
-          overall_grade?: number | null
-          passing?: number | null
+          metrics?: Json
+          overall?: number
           player_id?: string
-          reaction_time?: number | null
-          rebounding?: number | null
-          schedule_id?: string
-          shooting?: number | null
-          teammate_support?: number | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "event_player_grades_graded_by_fkey"
-            columns: ["graded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_player_grades_graded_by_fkey"
-            columns: ["graded_by"]
-            isOneToOne: false
-            referencedRelation: "v_pending_users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "event_player_grades_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_player_grades_schedule_id_fkey"
-            columns: ["schedule_id"]
+            foreignKeyName: "event_player_grades_event_id_fkey"
+            columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "schedules"
             referencedColumns: ["id"]
@@ -1983,45 +1920,48 @@ export type Database = {
       membership_ledger: {
         Row: {
           created_at: string
+          created_by: string
           delta: number
           event_id: string | null
           id: string
-          membership_id: string | null
+          membership_id: string
           player_id: string
           reason: string
         }
         Insert: {
           created_at?: string
+          created_by: string
           delta: number
           event_id?: string | null
           id?: string
-          membership_id?: string | null
+          membership_id: string
           player_id: string
           reason: string
         }
         Update: {
           created_at?: string
+          created_by?: string
           delta?: number
           event_id?: string | null
           id?: string
-          membership_id?: string | null
+          membership_id?: string
           player_id?: string
           reason?: string
         }
         Relationships: [
           {
-            foreignKeyName: "membership_ledger_membership_id_fkey"
-            columns: ["membership_id"]
+            foreignKeyName: "membership_ledger_event_id_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "player_memberships"
+            referencedRelation: "schedules"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "membership_ledger_membership_id_fkey"
             columns: ["membership_id"]
             isOneToOne: false
-            referencedRelation: "v_player_membership_usage_secure"
-            referencedColumns: ["membership_id"]
+            referencedRelation: "player_memberships"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "membership_ledger_membership_id_fkey"
@@ -2096,29 +2036,7 @@ export type Database = {
           player_membership_id?: string
           usage_date?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "membership_usage_player_membership_id_fkey"
-            columns: ["player_membership_id"]
-            isOneToOne: false
-            referencedRelation: "player_memberships"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "membership_usage_player_membership_id_fkey"
-            columns: ["player_membership_id"]
-            isOneToOne: false
-            referencedRelation: "v_player_membership_usage_secure"
-            referencedColumns: ["membership_id"]
-          },
-          {
-            foreignKeyName: "membership_usage_player_membership_id_fkey"
-            columns: ["player_membership_id"]
-            isOneToOne: false
-            referencedRelation: "vw_player_membership_usage_secure"
-            referencedColumns: ["membership_id"]
-          },
-        ]
+        Relationships: []
       }
       message_reactions: {
         Row: {
@@ -3367,12 +3285,12 @@ export type Database = {
       }
       player_memberships: {
         Row: {
-          allocated_classes_override: number | null
           auto_deactivate_when_used_up: boolean
           classes_remaining: number | null
           classes_total: number
           classes_used: number
           created_at: string
+          created_by: string
           end_date: string | null
           id: string
           manual_override_active: boolean
@@ -3384,12 +3302,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          allocated_classes_override?: number | null
           auto_deactivate_when_used_up?: boolean
           classes_remaining?: number | null
-          classes_total: number
+          classes_total?: number
           classes_used?: number
           created_at?: string
+          created_by: string
           end_date?: string | null
           id?: string
           manual_override_active?: boolean
@@ -3401,12 +3319,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          allocated_classes_override?: number | null
           auto_deactivate_when_used_up?: boolean
           classes_remaining?: number | null
           classes_total?: number
           classes_used?: number
           created_at?: string
+          created_by?: string
           end_date?: string | null
           id?: string
           manual_override_active?: boolean
@@ -5255,43 +5173,24 @@ export type Database = {
         }
         Relationships: []
       }
-      v_player_attendance_summary: {
-        Row: {
-          absent_count: number | null
-          excused_count: number | null
-          late_count: number | null
-          player_id: string | null
-          present_count: number | null
-        }
-        Relationships: []
-      }
       v_player_latest_grade: {
         Row: {
+          created_at: string | null
           event_id: string | null
+          metrics: Json | null
           overall: number | null
           player_id: string | null
           updated_at: string | null
         }
-        Relationships: []
-      }
-      v_player_membership_usage_secure: {
-        Row: {
-          allocated_classes: number | null
-          allocation_type: string | null
-          days_left: number | null
-          end_date: string | null
-          is_expired: boolean | null
-          membership_id: string | null
-          membership_type_name: string | null
-          player_id: string | null
-          player_name: string | null
-          remaining_classes: number | null
-          should_deactivate: boolean | null
-          start_date: string | null
-          status: string | null
-          used_classes: number | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "event_player_grades_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vw_player_membership_usage_secure: {
         Row: {
@@ -5443,7 +5342,7 @@ export type Database = {
         Returns: Json
       }
       fn_pick_active_membership: {
-        Args: { p_player: string }
+        Args: { p_player_id: string }
         Returns: string
       }
       generate_payslips_for_period: {
@@ -5809,13 +5708,12 @@ export type Database = {
       rpc_get_pending_users: {
         Args: Record<PropertyKey, never>
         Returns: {
-          approval_status: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          preferred_role: string | null
-          updated_at: string | null
-          user_id: string | null
+          approval_status: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
         }[]
       }
       rpc_list_chats: {
@@ -5895,7 +5793,7 @@ export type Database = {
       }
       rpc_save_event_grades: {
         Args: { p_event_id: string; p_metrics: Json; p_player_id: string }
-        Returns: undefined
+        Returns: Json
       }
       rpc_save_player_grades: {
         Args: { p_event_id: string; p_items: Json; p_player_id: string }
@@ -5931,7 +5829,7 @@ export type Database = {
           p_status: string
           p_team_id: string
         }
-        Returns: undefined
+        Returns: Json
       }
       rpc_upsert_partner: {
         Args: {

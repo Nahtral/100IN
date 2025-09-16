@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { useProductionGrading } from '@/hooks/useProductionGrading';
+import { supabase } from '@/integrations/supabase/client';
 import { Save, Users, TrendingUp } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Player {
   id: string;
@@ -82,9 +84,32 @@ export const ProductionGradingModal: React.FC<GradingModalProps> = ({
   const handleSaveGrades = async () => {
     if (!selectedPlayer) return;
 
-    const success = await savePlayerGrades(selectedPlayer.user_id, currentGrades);
-    if (success) {
-      // Grades are automatically updated via the hook
+    try {
+      // Use the new hardened RPC function
+      const metrics = Object.entries(currentGrades).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = { score: value };
+        }
+        return acc;
+      }, {} as Record<string, { score: number }>);
+
+      const { data, error } = await supabase.rpc('rpc_save_event_grades', {
+        p_event_id: eventId,
+        p_player_id: selectedPlayer.user_id,
+        p_metrics: metrics
+      });
+
+      if (error) {
+        console.error('Error saving grades:', error);
+        toast.error(`Failed to save grades: ${error.message}`);
+        return;
+      }
+
+      const result = data as { success: boolean; overall: number; metrics_count: number };
+      toast.success(`Grades saved! Overall: ${result.overall.toFixed(1)}`);
+    } catch (error) {
+      console.error('Unexpected error saving grades:', error);
+      toast.error('An unexpected error occurred');
     }
   };
 
