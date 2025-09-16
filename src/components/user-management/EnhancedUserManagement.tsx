@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus, Shield, TestTube } from 'lucide-react';
 import UserActionsDropdown from './UserActionsDropdown';
 import UserDetailsView from './UserDetailsView';
-import { UserApprovalDashboard } from './UserApprovalDashboard';
+import { HardenedUserApproval } from './HardenedUserApproval';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
 import PermissionManager from './PermissionManager';
 import { EnhancedProductionReadiness } from '../admin/EnhancedProductionReadiness';
@@ -786,38 +786,49 @@ const EnhancedUserManagement = () => {
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Approval Requests</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Review and approve new player, parent, and coach requests
-              </p>
-            </CardHeader>
-            <CardContent>
-              {approvalRequests.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      <span className="text-sm text-green-800">
-                        User Approvals loaded successfully - Found {approvalRequests.length} requests
-                      </span>
-                    </div>
-                  </div>
+          <HardenedUserApproval />
+        </TabsContent>
+      </Tabs>
 
-                  <h3 className="text-lg font-semibold">User Approval Requests ({approvalRequests.length})</h3>
-                  
-                  {approvalRequests.map((request) => (
-                    <div key={request.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold">{request.user?.full_name || 'Unknown User'}</h4>
-                            <Badge 
-                              variant={request.status === 'approved' ? 'default' : 'secondary'}
-                            >
-                              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                            </Badge>
+      {/* User Details Modal */}
+      <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          {selectedViewUser && (
+            <UserDetailsView user={selectedViewUser} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Permission Manager Modal */}
+      <Dialog open={permissionManagerOpen} onOpenChange={setPermissionManagerOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Permissions</DialogTitle>
+          </DialogHeader>
+          {permissionManagerUser && (
+            <PermissionManager 
+              user={permissionManagerUser} 
+              onClose={() => setPermissionManagerOpen(false)}
+              onUserUpdate={fetchUsers}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+
+  const UserEditForm = ({ user, permissions, roleTemplates, onSave, onAssignRole, onRevokeRole, onGrantPermission, onApplyTemplate }: {
+    user: UserProfile | null;
+    permissions: Permission[];
+    roleTemplates: RoleTemplate[];
+    onSave: () => void;
+    onAssignRole: (userId: string, role: string) => void;
+    onRevokeRole: (userId: string, role: string) => void;
+    onGrantPermission: (userId: string, permissionId: string, reason: string) => void;
+    onApplyTemplate: (userId: string, templateId: string) => void;
                           </div>
                           <p className="text-sm text-muted-foreground">{request.user?.email}</p>
                           <p className="text-xs text-muted-foreground">

@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface PlayerGrade {
   id: string;
-  overall_grade: number;
-  event_type: string;
+  overall: number;  // Using overall instead of overall_grade
   created_at: string;
   schedules?: {
     title: string;
@@ -38,10 +37,9 @@ export const usePlayerGrades = (playerId?: string): UsePlayerGradesReturn => {
         .from('event_player_grades')
         .select(`
           id,
-          overall_grade,
-          event_type,
+          overall,
           created_at,
-          schedules!schedule_id(
+          schedules!event_id(
             title,
             start_time
           )

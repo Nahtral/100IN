@@ -5173,6 +5173,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_player_attendance_summary: {
+        Row: {
+          absent_count: number | null
+          excused_count: number | null
+          late_count: number | null
+          player_id: string | null
+          present_count: number | null
+          total_events: number | null
+        }
+        Relationships: []
+      }
       v_player_latest_grade: {
         Row: {
           created_at: string | null
@@ -5613,7 +5624,7 @@ export type Database = {
       }
       rpc_approve_user_secure: {
         Args: {
-          approval_decision?: string
+          approval_decision: string
           rejection_reason?: string
           target_user_id: string
         }
@@ -5712,8 +5723,10 @@ export type Database = {
           created_at: string
           email: string
           full_name: string
-          id: string
           phone: string
+          preferred_role: string
+          updated_at: string
+          user_id: string
         }[]
       }
       rpc_list_chats: {

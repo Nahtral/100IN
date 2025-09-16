@@ -8,11 +8,14 @@ import { UserCheck, UserX, Clock, RefreshCw } from 'lucide-react';
 
 interface PendingUser {
   id: string;
+  user_id: string;
   email: string;
   full_name: string;
-  phone: string;
-  created_at: string;
+  phone?: string;
   approval_status: string;
+  preferred_role: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export const HardenedUserApproval = () => {
@@ -33,7 +36,12 @@ export const HardenedUserApproval = () => {
         return;
       }
 
-      setPendingUsers(data || []);
+      // Transform the data to include id field
+      const transformedUsers = (data || []).map(user => ({
+        ...user,
+        id: user.user_id
+      }));
+      setPendingUsers(transformedUsers);
     } catch (error: any) {
       console.error('Unexpected error:', error);
       toast.error('An unexpected error occurred');

@@ -4,29 +4,11 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface EventPlayerGrade {
   id: string;
-  schedule_id: string;
+  event_id: string;  // Using event_id instead of schedule_id
   player_id: string;
-  graded_by: string;
-  shooting?: number;
-  ball_handling?: number;
-  passing?: number;
-  rebounding?: number;
-  footwork?: number;
-  decision_making?: number;
-  consistency?: number;
-  communication?: number;
-  cutting?: number;
-  teammate_support?: number;
-  competitiveness?: number;
-  coachable?: number;
-  leadership?: number;
-  reaction_time?: number;
-  game_iq?: number;
-  boxout_frequency?: number;
-  court_vision?: number;
-  overall_grade?: number;
-  notes?: string;
-  event_type: string;
+  created_by: string;  // Using created_by instead of graded_by
+  metrics: any;  // JSONB field containing all metrics
+  overall: number;  // Using overall instead of overall_grade
   created_at: string;
   updated_at: string;
   grader_profile?: {
@@ -91,20 +73,20 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
         .from('event_player_grades')
         .select(`
           *,
-          grader_profile:profiles!graded_by(full_name),
+          grader_profile:profiles!created_by(full_name),
           player_profile:players!player_id(
             profiles!user_id(full_name),
             jersey_number
           )
         `)
-        .eq('schedule_id', scheduleId)
+        .eq('event_id', scheduleId)
         .order('created_at', { ascending: false });
 
       if (queryError) {
         throw queryError;
       }
 
-      setGrades(data || []);
+      setGrades((data || []) as any);
     } catch (err: any) {
       console.error('Error fetching event grades:', err);
       setError(err.message || 'Failed to load grades');
@@ -124,17 +106,12 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
         .eq('id', scheduleId)
         .single();
 
-      // Note: overall_grade will be calculated automatically by the database trigger
-      const { error } = await supabase
-        .from('event_player_grades')
-        .insert({
-          schedule_id: scheduleId,
-          player_id: playerId,
-          event_type: eventData?.event_type || 'training',
-          graded_by: (await supabase.auth.getUser()).data.user?.id!,
-          ...gradeData
-          // overall_grade is automatically calculated by database trigger
-        });
+      // Use the hardened RPC for saving grades
+      const { error } = await supabase.rpc('rpc_save_event_grades', {
+        p_event_id: scheduleId,
+        p_player_id: playerId,
+        p_metrics: gradeData as any
+      });
 
       if (error) {
         throw error;
@@ -160,11 +137,12 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
 
   const updateGrade = async (gradeId: string, gradeData: Partial<GradeFormData>): Promise<boolean> => {
     try {
-      // Note: overall_grade will be recalculated automatically by the database trigger
-      const { error } = await supabase
-        .from('event_player_grades')
-        .update(gradeData)
-        .eq('id', gradeId);
+      // Use the hardened RPC for updating grades
+      const { error } = await supabase.rpc('rpc_save_event_grades', {
+        p_event_id: scheduleId,
+        p_player_id: grades.find(g => g.id === gradeId)?.player_id,
+        p_metrics: gradeData as any
+      });
 
       if (error) {
         throw error;
@@ -205,7 +183,7 @@ export const useEventGrades = (scheduleId?: string): UseEventGradesReturn => {
             event: '*',
             schema: 'public',
             table: 'event_player_grades',
-            filter: `schedule_id=eq.${scheduleId}`
+            filter: `event_id=eq.${scheduleId}`
           },
           () => {
             fetchGrades();
