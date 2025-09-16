@@ -40,8 +40,13 @@ export const useHardenedPlayerMembership = (playerId?: string) => {
         .eq('player_id', playerId)
         .maybeSingle();
 
-      if (error) throw error;
-      setMembershipUsage(data);
+if (error) throw error;
+const typedData: MembershipUsage = data ? {
+  ...data,
+  has_active_membership: data.status === 'ACTIVE',
+  status: data.status || 'INACTIVE'
+} : null;
+setMembershipUsage(typedData);
     } catch (error: any) {
       console.error('Error fetching membership usage:', error);
       setMembershipUsage(null);

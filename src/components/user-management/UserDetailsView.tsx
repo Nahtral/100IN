@@ -36,6 +36,7 @@ interface UserProfile {
   phone?: string;
   created_at: string;
   approval_status: string;
+  permissions?: any[];
 }
 
 interface Role {

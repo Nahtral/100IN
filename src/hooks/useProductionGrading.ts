@@ -40,45 +40,46 @@ export const useProductionGrading = (eventId?: string) => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('event_player_grades')
-        .select('*')
-        .eq('schedule_id', eventId);
+const { data, error } = await supabase
+  .from('event_player_grades')
+  .select('*')
+  .eq('event_id', eventId);
 
-      if (error) {
-        console.error('Error fetching grades:', error);
-        return;
-      }
+if (error) {
+  console.error('Error fetching grades:', error);
+  return;
+}
 
-      const gradeMap = new Map<string, PlayerGrade>();
-      data?.forEach((grade) => {
-        const gradingData: GradingData = {
-          shooting: grade.shooting || undefined,
-          ball_handling: grade.ball_handling || undefined,
-          passing: grade.passing || undefined,
-          rebounding: grade.rebounding || undefined,
-          footwork: grade.footwork || undefined,
-          decision_making: grade.decision_making || undefined,
-          consistency: grade.consistency || undefined,
-          communication: grade.communication || undefined,
-          cutting: grade.cutting || undefined,
-          teammate_support: grade.teammate_support || undefined,
-          competitiveness: grade.competitiveness || undefined,
-          coachable: grade.coachable || undefined,
-          leadership: grade.leadership || undefined,
-          reaction_time: grade.reaction_time || undefined,
-          game_iq: grade.game_iq || undefined,
-          boxout_frequency: grade.boxout_frequency || undefined,
-          court_vision: grade.court_vision || undefined,
-        };
+const gradeMap = new Map<string, PlayerGrade>();
+data?.forEach((grade) => {
+  const metrics = (typeof grade.metrics === 'object' && grade.metrics !== null) ? grade.metrics as Record<string, any> : {};
+  const gradingData: GradingData = {
+    shooting: metrics.shooting || undefined,
+    ball_handling: metrics.ball_handling || undefined,
+    passing: metrics.passing || undefined,
+    rebounding: metrics.rebounding || undefined,
+    footwork: metrics.footwork || undefined,
+    decision_making: metrics.decision_making || undefined,
+    consistency: metrics.consistency || undefined,
+    communication: metrics.communication || undefined,
+    cutting: metrics.cutting || undefined,
+    teammate_support: metrics.teammate_support || undefined,
+    competitiveness: metrics.competitiveness || undefined,
+    coachable: metrics.coachable || undefined,
+    leadership: metrics.leadership || undefined,
+    reaction_time: metrics.reaction_time || undefined,
+    game_iq: metrics.game_iq || undefined,
+    boxout_frequency: metrics.boxout_frequency || undefined,
+    court_vision: metrics.court_vision || undefined,
+  };
 
-        gradeMap.set(grade.player_id, {
-          playerId: grade.player_id,
-          grades: gradingData,
-          overall: grade.overall_grade || 0,
-          lastSaved: grade.updated_at ? new Date(grade.updated_at) : undefined
-        });
-      });
+  gradeMap.set(grade.player_id, {
+    playerId: grade.player_id,
+    grades: gradingData,
+    overall: grade.overall || 0,
+    lastSaved: grade.updated_at ? new Date(grade.updated_at) : undefined
+  });
+});
 
       setGrades(gradeMap);
     } catch (error) {
@@ -172,8 +173,8 @@ export const useProductionGrading = (eventId?: string) => {
         {
           event: '*',
           schema: 'public',
-          table: 'event_player_grades',
-          filter: `schedule_id=eq.${eventId}`
+table: 'event_player_grades',
+filter: `event_id=eq.${eventId}`
         },
         () => {
           // Refetch grades when changes occur

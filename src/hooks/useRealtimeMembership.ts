@@ -33,19 +33,36 @@ export const useRealtimeMembership = (playerId?: string) => {
       setLoading(true);
       setError(null);
 
-      const { data, error: membershipError } = await supabase
-        .from('v_player_membership_usage_secure')
-        .select('*')
-        .eq('player_id', playerId)
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .single();
+const { data, error: membershipError } = await supabase
+  .from('vw_player_membership_usage_secure')
+  .select('*')
+  .eq('player_id', playerId)
+  .order('start_date', { ascending: false })
+  .limit(1)
+  .maybeSingle();
 
-      if (membershipError) {
-        throw membershipError;
-      }
+if (membershipError) {
+  throw membershipError;
+}
 
-      setMembership(data);
+const typedData: MembershipData | null = data ? {
+  membership_id: data.membership_id || '',
+  player_id: data.player_id || '',
+  player_name: data.player_name || '',
+  allocated_classes: data.allocated_classes || 0,
+  used_classes: data.used_classes || 0,
+  remaining_classes: data.remaining_classes || 0,
+  status: data.status || 'INACTIVE',
+  membership_type_name: data.membership_type_name || '',
+  days_left: data.days_left || null,
+  should_deactivate: data.should_deactivate || false,
+  is_expired: data.is_expired || false,
+  start_date: data.start_date || '',
+  end_date: data.end_date || null,
+  allocation_type: data.allocation_type || ''
+} : null;
+
+setMembership(typedData);
     } catch (err: any) {
       console.error('Error fetching membership:', err);
       setError(err.message || 'Failed to load membership data');

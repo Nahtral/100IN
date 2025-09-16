@@ -49,16 +49,16 @@ export const useHardenedEventGrades = (eventId?: string, playerId?: string) => {
         throw queryError;
       }
 
-      // Transform the data to match our interface
-      const transformedGrades = (data || []).map(grade => ({
-        player_id: grade.player_id,
-        event_id: grade.event_id,
-        metrics: grade.metrics || {},
-        overall_score: grade.overall || 0,
-        last_saved: grade.updated_at
-      }));
+// Transform the data to match our interface
+const transformedGrades: PlayerGrade[] = (data || []).map(grade => ({
+  player_id: grade.player_id,
+  event_id: grade.event_id,
+  metrics: (typeof grade.metrics === 'object' && grade.metrics !== null) ? grade.metrics as GradeMetrics : {},
+  overall_score: grade.overall || 0,
+  last_saved: grade.updated_at
+}));
 
-      setGrades(transformedGrades);
+setGrades(transformedGrades);
     } catch (err: any) {
       console.error('Error fetching grades:', err);
       setError(err.message || 'Failed to load grades');
