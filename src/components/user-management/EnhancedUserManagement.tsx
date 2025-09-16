@@ -1,40 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Users, 
+  Shield, 
+  UserPlus, 
+  Edit, 
+  Eye, 
+  X, 
+  Settings,
+  AlertTriangle,
+  Search,
+  Filter
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, Users, Eye, Edit, Trash2, Check, X, UserPlus, Shield, TestTube } from 'lucide-react';
-import UserActionsDropdown from './UserActionsDropdown';
+import { toast } from 'sonner';
 import UserDetailsView from './UserDetailsView';
-import { HardenedUserApproval } from './HardenedUserApproval';
-import { useActivityLogger } from '@/hooks/useActivityLogger';
 import PermissionManager from './PermissionManager';
+import UserActionsDropdown from './UserActionsDropdown';
 import { EnhancedProductionReadiness } from '../admin/EnhancedProductionReadiness';
+import { HardenedUserApproval } from './HardenedUserApproval';
 
 interface UserProfile {
   id: string;
   email: string;
   full_name: string;
-  created_at: string;
+  phone?: string;
+  approval_status: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  latest_tryout_total?: number;
+  latest_tryout_placement?: string;
+  latest_tryout_date?: string;
   roles: Array<{
     role: string;
     is_active: boolean;
-  }>;
-  permissions: Array<{
-    permission_name: string;
-    permission_description: string;
-    source: string;
+    created_at: string;
   }>;
 }
 
@@ -49,519 +58,257 @@ interface RoleTemplate {
   id: string;
   name: string;
   description: string;
-  role: string;
-  is_default: boolean;
-  permissions: Permission[];
   user_count: number;
-}
-
-interface ApprovalRequest {
-  id: string;
-  user_id: string;
-  requested_role: string;
-  status: string;
-  requested_at: string;
-  reviewed_by?: string;
-  reviewed_at?: string;
-  notes?: string;
-  reason?: string;
-  user: {
-    email: string;
-    full_name: string;
-  } | null;
+  permissions: Permission[];
 }
 
 const EnhancedUserManagement = () => {
-  const { isSuperAdmin } = useOptimizedAuth();
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('users');
+  const { currentUser, isSuper } = useCurrentUser();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
-  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [selectedViewUser, setSelectedViewUser] = useState<UserProfile | null>(null);
+  const [permissionManagerUser, setPermissionManagerUser] = useState<UserProfile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
-  const [userStatuses, setUserStatuses] = useState<Record<string, string>>({});
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const [grantReason, setGrantReason] = useState('');
   const [permissionManagerOpen, setPermissionManagerOpen] = useState(false);
-  const [permissionManagerUser, setPermissionManagerUser] = useState<UserProfile | null>(null);
-  const { logUserAction, logRoleChange, logPermissionChange } = useActivityLogger();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   useEffect(() => {
-    if (isSuperAdmin) {
-      fetchData();
+    if (isSuper) {
+      fetchUsers();
+      fetchPermissions();
+      fetchRoleTemplates();
     }
-  }, [isSuperAdmin]);
+  }, [isSuper]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchUsers = async () => {
     try {
-      // Batch fetch critical data first, then load less important data
-      await Promise.all([
-        fetchUsers(),
-        fetchPermissions()
-      ]);
-      
-      // Load remaining data in background
-      setTimeout(() => {
-        Promise.all([
-          fetchRoleTemplates(),
-          fetchApprovalRequests(),
-          fetchUserStatuses()
-        ]).catch(console.error);
-      }, 100);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_roles!inner(
+            role,
+            is_active,
+            created_at
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const processedUsers = data?.map(user => ({
+        ...user,
+        roles: user.user_roles || []
+      })) || [];
+
+      setUsers(processedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUsers = async () => {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, created_at');
-
-    if (profiles) {
-      const usersWithRoles = await Promise.all(
-        profiles.map(async (profile) => {
-          // Fetch roles
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role, is_active')
-            .eq('user_id', profile.id);
-
-          // Fetch permissions
-          const { data: permissions } = await supabase
-            .rpc('get_user_permissions', { _user_id: profile.id });
-
-          return {
-            ...profile,
-            roles: roles || [],
-            permissions: permissions || []
-          };
-        })
-      );
-      setUsers(usersWithRoles);
-    }
-  };
-
   const fetchPermissions = async () => {
-    const { data } = await supabase
-      .from('permissions')
-      .select('*')
-      .order('category', { ascending: true });
-    
-    if (data) setPermissions(data);
+    try {
+      const { data, error } = await supabase
+        .from('permissions')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (error) throw error;
+      setPermissions(data || []);
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+    }
   };
 
   const fetchRoleTemplates = async () => {
-    const { data: templates } = await supabase
-      .from('role_templates')
-      .select(`
-        *,
-        template_permissions!inner(
-          permission:permissions(*)
-        )
-      `);
-
-    if (templates) {
-      const templatesWithCounts = await Promise.all(
-        templates.map(async (template) => {
-          const { count } = await supabase
-            .from('user_roles')
-            .select('*', { count: 'exact', head: true })
-            .eq('role', template.role)
-            .eq('is_active', true);
-
-          return {
-            ...template,
-            permissions: template.template_permissions?.map((tp: any) => tp.permission) || [],
-            user_count: count || 0
-          };
-        })
-      );
-      setRoleTemplates(templatesWithCounts);
-    }
-  };
-
-  const fetchApprovalRequests = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_approval_requests')
-        .select('*')
-        .eq('status', 'pending')
-        .order('requested_at', { ascending: false });
-
-      if (!error && data) {
-        // Fetch user profiles separately
-        const userIds = data.map(req => req.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, email, full_name')
-          .in('id', userIds);
-
-        // Combine the data
-        const combinedData = data.map(request => ({
-          ...request,
-          user: profiles?.find(p => p.id === request.user_id) || null
-        }));
-
-        setApprovalRequests(combinedData);
-      }
-
-      if (error) {
-        console.error('Error fetching approval requests:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load approval requests",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      const { data, error } = await supabase.rpc('get_role_templates');
+      if (error) throw error;
+      setRoleTemplates(data || []);
     } catch (error) {
-      console.error('Error fetching approval requests:', error);
-      toast({
-        title: "Error", 
-        description: "Failed to load approval requests",
-        variant: "destructive",
-      });
+      console.error('Error fetching role templates:', error);
     }
   };
 
   const handleAssignRole = async (userId: string, role: string, reason: string) => {
     try {
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role: role as any, // Cast to match enum type
-          is_active: true
-        });
+      const { error } = await supabase.rpc('assign_user_role', {
+        target_user_id: userId,
+        target_role: role,
+        assigned_by_user_id: currentUser?.id
+      });
 
       if (error) throw error;
-
-      // Log the action
-      await supabase
-        .from('role_change_audit')
-        .insert({
-          user_id: userId,
-          new_role: role,
-          reason,
-          changed_by: (await supabase.auth.getUser()).data.user?.id
-        });
-
-      toast({
-        title: "Role assigned successfully",
-        description: `User has been assigned the ${role} role.`,
-      });
-
-      // Log the role change activity
-      logRoleChange(role, undefined, reason);
-
-      fetchUsers();
+      
+      toast.success(`Role ${role} assigned successfully`);
+      await fetchUsers();
     } catch (error) {
       console.error('Error assigning role:', error);
-      toast({
-        title: "Error",
-        description: "Failed to assign role. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('Failed to assign role');
     }
   };
 
   const revokeRole = async (userId: string, role: string) => {
     try {
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ is_active: false })
-        .eq('user_id', userId)
-        .eq('role', role as any);
-
-      if (error) throw error;
-
-      toast({
-        title: "Role revoked successfully",
-        description: `${role} role has been revoked from the user.`,
+      const { error } = await supabase.rpc('remove_user_role', {
+        target_user_id: userId,
+        target_role: role,
+        removed_by_user_id: currentUser?.id
       });
 
-      fetchUsers();
+      if (error) throw error;
+      
+      toast.success(`Role ${role} revoked successfully`);
+      await fetchUsers();
     } catch (error) {
       console.error('Error revoking role:', error);
-      toast({
-        title: "Error",
-        description: "Failed to revoke role. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const grantMultiplePermissions = async (userId: string, permissionIds: string[], reason: string) => {
-    try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      // Insert multiple permissions at once
-      const permissionInserts = permissionIds.map(permissionId => ({
-        user_id: userId,
-        permission_id: permissionId,
-        granted_by: currentUser?.id,
-        reason,
-        is_active: true
-      }));
-
-      const { error } = await supabase
-        .from('user_permissions')
-        .insert(permissionInserts);
-
-      if (error) throw error;
-
-      toast({
-        title: "Permissions granted successfully",
-        description: `${permissionIds.length} permission(s) have been granted to the user.`,
-      });
-
-      // Log permission changes
-      permissionIds.forEach(permissionId => {
-        const permission = permissions.find(p => p.id === permissionId);
-        if (permission) {
-          logPermissionChange(permission.name, 'granted', reason);
-        }
-      });
-
-      fetchUsers();
-      setSelectedPermissions([]);
-      setGrantReason('');
-      setShowEditModal(false);
-    } catch (error) {
-      console.error('Error granting permissions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to grant permissions. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('Failed to revoke role');
     }
   };
 
   const grantPermission = async (userId: string, permissionId: string, reason: string) => {
-    return grantMultiplePermissions(userId, [permissionId], reason);
-  };
-
-  const handleApprovalAction = async (requestId: string, approved: boolean) => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const permission = permissions.find(p => p.id === permissionId);
+      if (!permission) throw new Error('Permission not found');
+
+      const { error } = await supabase.rpc('assign_user_permission', {
+        target_user_id: userId,
+        permission_name: permission.name,
+        assigned_by_user_id: currentUser?.id,
+        assignment_reason: reason
+      });
+
+      if (error) throw error;
       
-      const { error } = await supabase
-        .from('user_approval_requests')
-        .update({
-          status: approved ? 'approved' : 'rejected',
-          reviewed_by: currentUser?.id,
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      // If approved, assign the requested role to the user
-      if (approved) {
-        const request = approvalRequests.find(r => r.id === requestId);
-        if (request) {
-          await handleAssignRole(request.user_id, request.requested_role, `Auto-assigned after approval of request ${requestId}`);
-        }
-      }
-
-      toast({
-        title: approved ? "Request Approved" : "Request Rejected",
-        description: `User request has been ${approved ? 'approved' : 'rejected'} successfully.`,
-      });
-
-      fetchApprovalRequests();
-      fetchUsers(); // Refresh user list to show role changes
+      toast.success(`Permission ${permission.name} granted successfully`);
+      await fetchUsers();
     } catch (error) {
-      console.error('Error processing approval:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process approval request",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const viewApprovalDetails = (request: ApprovalRequest) => {
-    // Create a temporary user object for the approval request
-    const tempUser: UserProfile = {
-      id: request.user_id,
-      email: request.user?.email || '',
-      full_name: request.user?.full_name || '',
-      created_at: request.requested_at,
-      roles: [],
-      permissions: []
-    };
-    setSelectedUser(tempUser);
-    setViewDetailsOpen(true);
-  };
-
-  const editApprovalRequest = (request: ApprovalRequest) => {
-    // For approval requests, we can edit the notes/reason
-    const tempUser: UserProfile = {
-      id: request.user_id,
-      email: request.user?.email || '',
-      full_name: request.user?.full_name || '',
-      created_at: request.requested_at,
-      roles: [],
-      permissions: []
-    };
-    setSelectedUser(tempUser);
-    setEditMode(true);
-    setShowEditModal(true);
-  };
-
-  const deleteApprovalRequest = async (requestId: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_approval_requests')
-        .delete()
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Request Deleted",
-        description: "Approval request has been deleted successfully.",
-      });
-
-      fetchApprovalRequests();
-    } catch (error) {
-      console.error('Error deleting approval request:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete approval request",
-        variant: "destructive",
-      });
+      console.error('Error granting permission:', error);
+      toast.error('Failed to grant permission');
     }
   };
 
   const applyTemplate = async (templateId: string, userId: string) => {
     try {
-      const template = roleTemplates.find(t => t.id === templateId);
-      if (!template) return;
-
-      // Assign the role
-      await handleAssignRole(userId, template.role, `Applied ${template.name} template`);
-
-      // Grant template permissions
-      for (const permission of template.permissions) {
-        await grantPermission(userId, permission.id, `From ${template.name} template`);
-      }
-
-      toast({
-        title: "Template applied successfully",
-        description: `${template.name} template has been applied to the user.`,
+      const { error } = await supabase.rpc('apply_role_template', {
+        template_id: templateId,
+        user_id: userId
       });
+
+      if (error) throw error;
+      
+      toast.success('Role template applied successfully');
+      await fetchUsers();
     } catch (error) {
       console.error('Error applying template:', error);
-      toast({
-        title: "Error",
-        description: "Failed to apply template. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('Failed to apply template');
     }
-  };
-
-  const fetchUserStatuses = async () => {
-    // Since the table may not exist in types yet, we'll set empty status for now
-    setUserStatuses({});
   };
 
   const archiveUser = async (userId: string, reason: string) => {
     try {
-      // For now, just deactivate roles until the function is available
       const { error } = await supabase
-        .from('user_roles')
-        .update({ is_active: false })
-        .eq('user_id', userId);
+        .from('profiles')
+        .update({ 
+          approval_status: 'rejected',
+          rejection_reason: reason 
+        })
+        .eq('id', userId);
 
       if (error) throw error;
-
-      toast({
-        title: "User archived successfully",
-        description: "User has been archived and their access has been revoked.",
-      });
-
-      fetchUsers();
-      fetchUserStatuses();
+      
+      toast.success('User archived successfully');
+      await fetchUsers();
     } catch (error) {
       console.error('Error archiving user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to archive user. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('Failed to archive user');
     }
   };
 
   const reactivateUser = async (userId: string, reason: string) => {
-    toast({
-      title: "Feature coming soon",
-      description: "User reactivation will be available after database migration is complete.",
-    });
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          approval_status: 'approved',
+          rejection_reason: null 
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+      
+      toast.success('User reactivated successfully');
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error reactivating user:', error);
+      toast.error('Failed to reactivate user');
+    }
   };
 
   const deleteUser = async (userId: string, reason: string) => {
     try {
-      // For now, just remove from profiles table
       const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userId);
 
       if (error) throw error;
-
-      toast({
-        title: "User deleted successfully",
-        description: "User has been permanently deleted from the system.",
-      });
-
-      fetchUsers();
-      fetchUserStatuses();
+      
+      toast.success('User deleted successfully');
+      await fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete user. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('Failed to delete user');
     }
   };
 
   const viewUserDetails = (user: UserProfile) => {
-    setSelectedUser(user);
+    setSelectedViewUser(user);
     setViewDetailsOpen(true);
   };
 
-  if (!isSuperAdmin) {
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || user.approval_status === statusFilter;
+    
+    const matchesRole = roleFilter === 'all' || 
+                       user.roles.some(r => r.is_active && r.role === roleFilter);
+    
+    return matchesSearch && matchesStatus && matchesRole;
+  });
+
+  if (!isSuper) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-destructive">Access Denied</h3>
-            <p className="text-muted-foreground">You don't have permission to access user management.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
+          <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+          <p className="text-muted-foreground">
+            You need super admin privileges to access user management.
+          </p>
+        </div>
+      </div>
     );
   }
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">Loading user management...</div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
@@ -569,128 +316,136 @@ const EnhancedUserManagement = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+          <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">
-            Manage user roles, permissions, and account settings
+            Manage user accounts, roles, and permissions
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-sm">
-            {users.length} Total Users
-          </Badge>
-        </div>
+        <Button>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Add User
+        </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-fit">
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
-            Users
+            Users ({users.length})
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
+            <Shield className="w-4 h-4" />
             Templates
           </TabsTrigger>
           <TabsTrigger value="production" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Production Readiness
+            <Settings className="w-4 h-4" />
+            Production
           </TabsTrigger>
           <TabsTrigger value="approvals" className="flex items-center gap-2">
-            <UserPlus className="w-4 h-4" />
-            Audit Log
+            <Shield className="w-4 h-4" />
+            Approvals
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
+              <CardTitle>User Accounts</CardTitle>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 pr-4 py-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="coach">Coach</SelectItem>
+                      <SelectItem value="medical">Medical</SelectItem>
+                      <SelectItem value="partner">Partner</SelectItem>
+                      <SelectItem value="player">Player</SelectItem>
+                      <SelectItem value="parent">Parent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {users.map((user) => (
-                  <div 
-                    key={user.id} 
-                    className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer group"
-                    onClick={() => viewUserDetails(user)}
-                  >
+                {filteredUsers.map((user) => (
+                  <div key={user.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-medium">
-                              {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                            </span>
-                          </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
                           <div>
-                            <h3 className="font-semibold group-hover:text-primary transition-colors">{user.full_name}</h3>
+                            <h3 className="font-semibold">{user.full_name || 'Unnamed User'}</h3>
                             <p className="text-sm text-muted-foreground">{user.email}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Joined: {new Date(user.created_at).toLocaleDateString()}
-                            </p>
                           </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex gap-2">
+                            <Badge 
+                              variant={
+                                user.approval_status === 'approved' ? 'default' :
+                                user.approval_status === 'pending' ? 'secondary' : 'destructive'
+                              }
+                            >
+                              {user.approval_status}
+                            </Badge>
                             {user.roles.filter(r => r.is_active).map((roleObj) => (
-                              <Badge 
-                                key={roleObj.role} 
-                                variant={roleObj.role === 'super_admin' ? 'default' : 'secondary'}
-                              >
-                                {roleObj.role === 'super_admin' ? 'Super Admin' : roleObj.role}
+                              <Badge key={roleObj.role} variant="outline">
+                                {roleObj.role}
                               </Badge>
                             ))}
-                            {userStatuses[user.id] && userStatuses[user.id] !== 'active' && (
-                              <Badge variant="destructive">
-                                {userStatuses[user.id]}
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <h4 className="text-sm font-medium text-muted-foreground mb-2">Active Permissions:</h4>
-                            <div className="flex flex-wrap gap-1">
-                              {user.permissions.slice(0, 10).map((perm) => (
-                                <Badge key={perm.permission_name} variant="outline" className="text-xs">
-                                  {perm.permission_name.replace('_', ' ')}
-                                </Badge>
-                              ))}
-                              {user.permissions.length > 10 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{user.permissions.length - 10} more
-                                </Badge>
-                              )}
-                            </div>
                           </div>
                         </div>
+                        {user.phone && (
+                          <p className="text-sm text-muted-foreground">Phone: {user.phone}</p>
+                        )}
+                        {user.rejection_reason && (
+                          <p className="text-sm text-red-600 mt-1">
+                            Rejection reason: {user.rejection_reason}
+                          </p>
+                        )}
                       </div>
-                      
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => viewUserDetails(user)}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
-                        <Button 
-                          variant="outline" 
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => {
                             setPermissionManagerUser(user);
                             setPermissionManagerOpen(true);
                           }}
-                          className="text-primary"
                         >
                           <Shield className="w-4 h-4 mr-1" />
                           Permissions
                         </Button>
-                        <Dialog open={editDialogOpen && selectedUser?.id === user.id} onOpenChange={setEditDialogOpen}>
+                        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => setSelectedUser(user)}
                             >
@@ -819,7 +574,7 @@ const EnhancedUserManagement = () => {
       </Dialog>
     </div>
   );
-
+};
 
 const UserEditForm = ({ 
   user, 
