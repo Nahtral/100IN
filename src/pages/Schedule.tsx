@@ -9,6 +9,7 @@ import { Plus, Calendar, Clock, MapPin, Users, Eye, RefreshCw, Upload } from 'lu
 import { Skeleton } from '@/components/ui/skeleton';
 import ScheduleForm from '@/components/forms/ScheduleForm';
 import { RebuildAttendanceModal } from '@/components/attendance/RebuildAttendanceModal';
+import { HardenedBulkAttendanceModal } from '@/components/attendance/HardenedBulkAttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import DuplicateEventModal from '@/components/schedule/DuplicateEventModal';
@@ -579,14 +580,23 @@ const Schedule = () => {
           isEditing={!!editingEvent}
         />
 
-        {/* Attendance Modal */}
-        <RebuildAttendanceModal
+        {/* Attendance Modal - HardenedBulkAttendanceModal (New) */}
+        <HardenedBulkAttendanceModal
           isOpen={attendanceModal.isOpen}
           onClose={() => setAttendanceModal({ isOpen: false, event: null })}
           eventId={attendanceModal.event?.id || ''}
           eventTitle={attendanceModal.event?.title || ''}
           teamIds={attendanceModal.event?.team_ids || []}
         />
+
+        {/* Legacy Attendance Modal - RebuildAttendanceModal (Backup) */}
+        {/* <RebuildAttendanceModal
+          isOpen={attendanceModal.isOpen}
+          onClose={() => setAttendanceModal({ isOpen: false, event: null })}
+          eventId={attendanceModal.event?.id || ''}
+          eventTitle={attendanceModal.event?.title || ''}
+          teamIds={attendanceModal.event?.team_ids || []}
+        /> */}
 
         {/* Event Details Modal */}
         <EventDetailsModal
