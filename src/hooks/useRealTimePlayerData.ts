@@ -38,13 +38,13 @@ export const useRealTimePlayerData = (playerId?: string) => {
       const [attendanceRes, gradesRes, healthRes, shotsRes, membershipRes] = await Promise.all([
         // Attendance data
         supabase
-          .from('player_attendance')
+          .from('attendance')
           .select(`
             *,
-            schedules!schedule_id(title, start_time, event_type)
+            schedules!event_id(title, start_time, event_type)
           `)
           .eq('player_id', playerId)
-          .order('created_at', { ascending: false })
+          .order('recorded_at', { ascending: false })
           .limit(20),
 
         // Grades data
@@ -125,7 +125,7 @@ export const useRealTimePlayerData = (playerId?: string) => {
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
-          table: 'player_attendance',
+          table: 'attendance',
           filter: `player_id=eq.${playerId}`
         }, () => {
           fetchAllPlayerData();

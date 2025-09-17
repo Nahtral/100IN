@@ -39,19 +39,18 @@ export const usePlayerAttendance = (playerId?: string): UsePlayerAttendanceRetur
       setLoading(true);
       setError(null);
 
-      // Get player's attendance records with event details
+      // Get player's attendance records with event details from new attendance table
       const { data: attendanceRecords, error: attendanceError } = await supabase
-        .from('player_attendance')
+        .from('attendance')
         .select(`
           id,
           player_id,
-          schedule_id,
+          event_id,
           status,
           notes,
-          marked_by,
-          marked_at,
-          created_at,
-          schedules!inner(
+          recorded_by,
+          recorded_at,
+          schedules!event_id(
             id,
             title,
             start_time,
@@ -59,7 +58,7 @@ export const usePlayerAttendance = (playerId?: string): UsePlayerAttendanceRetur
           )
         `)
         .eq('player_id', playerId)
-        .order('created_at', { ascending: false })
+        .order('recorded_at', { ascending: false })
         .limit(50);
 
       if (attendanceError) {

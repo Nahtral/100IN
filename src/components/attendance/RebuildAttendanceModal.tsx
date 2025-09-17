@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, AlertCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAttendanceData } from '@/hooks/useAttendanceData';
+import { saveAttendanceRecords } from '@/utils/attendanceHelpers';
 import { AttendanceSummary } from './AttendanceSummary';
 import { BulkOperations } from './BulkOperations';
 import { AttendancePlayerCard } from './AttendancePlayerCard';
@@ -89,29 +89,47 @@ export const RebuildAttendanceModal: React.FC<RebuildAttendanceModalProps> = ({
     setSaving(true);
     
     try {
-      const attendanceRecords = players.map(player => ({
-        player_id: player.id,
-        schedule_id: eventId,
-        status: player.status,
-        notes: player.notes?.trim() || null,
-        marked_by: user.id,
-        marked_at: new Date().toISOString()
-      }));
+      // Group players by team and save attendance using the hardened RPC
+      const teamGroups = new Map<string, typeof players>();
+      
+      players.forEach(player => {
+        const teamId = player.team_id;
+        if (!teamId) {
+          console.warn(`Player ${player.id} has no team_id, skipping`);
+          return;
+        }
+        
+        if (!teamGroups.has(teamId)) {
+          teamGroups.set(teamId, []);
+        }
+        teamGroups.get(teamId)!.push(player);
+      });
 
-      console.log('💾 Saving attendance records:', attendanceRecords);
+      console.log('💾 Saving attendance for teams:', Array.from(teamGroups.keys()));
 
-      const { error } = await supabase
-        .from('player_attendance')
-        .upsert(attendanceRecords, {
-          onConflict: 'player_id,schedule_id',
-          ignoreDuplicates: false
+      let totalSaved = 0;
+      
+      // Save attendance for each team using the hardened RPC
+      for (const [teamId, teamPlayers] of teamGroups) {
+        const attendanceData: Record<string, { player_id: string; status: string; notes?: string }> = {};
+        
+        teamPlayers.forEach(player => {
+          attendanceData[player.id] = {
+            player_id: player.id,
+            status: player.status,
+            notes: player.notes?.trim() || ''
+          };
         });
 
-      if (error) throw error;
+        const result = await saveAttendanceRecords(eventId, teamId, attendanceData);
+        if (result.success) {
+          totalSaved += teamPlayers.length;
+        }
+      }
 
       toast({
         title: "Attendance Saved",
-        description: `Successfully saved attendance for ${attendanceRecords.length} player(s).`,
+        description: `Successfully saved attendance for ${totalSaved} player(s).`,
       });
       
       onClose();

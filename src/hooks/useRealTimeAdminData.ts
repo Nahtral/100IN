@@ -56,11 +56,11 @@ export const useRealTimeAdminData = () => {
 
         // Today's attendance
         supabase
-          .from('player_attendance')
+          .from('attendance')
           .select('id', { count: 'exact' })
           .eq('status', 'present')
-          .gte('created_at', `${today}T00:00:00Z`)
-          .lte('created_at', `${today}T23:59:59Z`),
+          .gte('recorded_at', `${today}T00:00:00Z`)
+          .lte('recorded_at', `${today}T23:59:59Z`),
 
         // Pending user approvals
         supabase
@@ -143,7 +143,7 @@ export const useRealTimeAdminData = () => {
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
-          table: 'player_attendance'
+          table: 'attendance'
         }, () => {
           fetchAdminData();
         })
