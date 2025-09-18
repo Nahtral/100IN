@@ -11,6 +11,8 @@ export interface MembershipType {
   start_date_required: boolean;
   end_date_required: boolean;
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface PlayerMembership {
@@ -90,13 +92,20 @@ export const useMembershipTypes = () => {
     const fetchTypes = async () => {
       try {
         const { data, error } = await supabase
-          .from('membership_types_v')
+          .from('membership_types')
           .select('*')
           .eq('is_active', true)
           .order('name');
 
         if (error) throw error;
-        setTypes((data || []) as MembershipType[]);
+        
+        // Map allocated_classes to class_count for consistency
+        const mappedData = (data || []).map(type => ({
+          ...type,
+          class_count: type.allocated_classes
+        })) as MembershipType[];
+        
+        setTypes(mappedData);
       } catch (error) {
         console.error('Error fetching membership types:', error);
       } finally {
@@ -117,12 +126,12 @@ export const useAssignMembership = () => {
   const assignMembership = async (membership: {
     player_id: string;
     membership_type_id: string;
-    start_date: string; // ISO format YYYY-MM-DD
-    end_date?: string; // ISO format YYYY-MM-DD
+    start_date: string;
+    end_date?: string;
     override_class_count?: number;
     auto_deactivate_when_used_up?: boolean;
     notes?: string;
-  }) => {
+  }): Promise<string | false> => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('rpc_assign_membership', {
@@ -144,7 +153,7 @@ export const useAssignMembership = () => {
         description: "Membership assigned successfully",
       });
 
-      return data; // Return the membership ID
+      return data as string;
     } catch (error: any) {
       console.error('Error assigning membership:', error);
       
