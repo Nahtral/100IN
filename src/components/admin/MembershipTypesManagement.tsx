@@ -23,16 +23,14 @@ import {
 interface MembershipType {
   id: string;
   name: string;
-  allocation_type: 'CLASS_COUNT' | 'UNLIMITED' | 'DATE_RANGE';
+  allocation_type: string;
   allocated_classes: number | null;
   start_date_required: boolean;
   end_date_required: boolean;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
-interface MembershipFormData {
+interface FormData {
   name: string;
   allocation_type: 'CLASS_COUNT' | 'UNLIMITED' | 'DATE_RANGE';
   allocated_classes: number | null;
@@ -47,7 +45,7 @@ export const MembershipTypesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<MembershipType | null>(null);
-  const [formData, setFormData] = useState<MembershipFormData>({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     allocation_type: 'CLASS_COUNT',
     allocated_classes: null,
@@ -130,7 +128,7 @@ export const MembershipTypesManagement = () => {
     setEditingType(type);
     setFormData({
       name: type.name,
-      allocation_type: type.allocation_type,
+      allocation_type: type.allocation_type as 'CLASS_COUNT' | 'UNLIMITED' | 'DATE_RANGE',
       allocated_classes: type.allocated_classes,
       start_date_required: type.start_date_required,
       end_date_required: type.end_date_required,

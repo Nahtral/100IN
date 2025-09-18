@@ -33,7 +33,7 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
   const [selectedType, setSelectedType] = useState<MembershipType | null>(null);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>();
-  const [allocatedClassesOverride, setAllocatedClassesOverride] = useState<number | null>(null);
+  const [overrideClassCount, setOverrideClassCount] = useState<number | null>(null);
   const [autoDeactivate, setAutoDeactivate] = useState(true);
   const [notes, setNotes] = useState('');
 
@@ -52,7 +52,7 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
       membership_type_id: selectedType.id,
       start_date: format(startDate, 'yyyy-MM-dd'),
       end_date: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
-      allocated_classes_override: allocatedClassesOverride,
+      override_class_count: overrideClassCount,
       auto_deactivate_when_used_up: autoDeactivate,
       notes: notes || undefined,
     };
@@ -69,7 +69,7 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
     setSelectedType(null);
     setStartDate(new Date());
     setEndDate(undefined);
-    setAllocatedClassesOverride(null);
+    setOverrideClassCount(null);
     setAutoDeactivate(true);
     setNotes('');
   };
@@ -159,10 +159,10 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
               <Input
                 type="number"
                 placeholder={`Default: ${selectedType?.allocated_classes || 0}`}
-                value={allocatedClassesOverride || ''}
+                value={overrideClassCount || ''}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setAllocatedClassesOverride(value ? parseInt(value) : null);
+                  setOverrideClassCount(value ? parseInt(value) : null);
                 }}
               />
             </div>

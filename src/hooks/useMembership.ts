@@ -18,7 +18,8 @@ export interface PlayerMembership {
   membership_type_id: string;
   start_date: string;
   end_date: string | null;
-  allocated_classes_override: number | null;
+  override_class_count: number | null;
+  remaining_classes: number | null;
   status: 'ACTIVE' | 'INACTIVE' | 'PAUSED';
   auto_deactivate_when_used_up: boolean;
   manual_override_active: boolean;
@@ -117,7 +118,7 @@ export const useAssignMembership = () => {
     membership_type_id: string;
     start_date: string; // ISO format YYYY-MM-DD
     end_date?: string; // ISO format YYYY-MM-DD
-    allocated_classes_override?: number;
+    override_class_count?: number;
     auto_deactivate_when_used_up?: boolean;
     notes?: string;
   }) => {
@@ -128,7 +129,7 @@ export const useAssignMembership = () => {
         p_membership_type_id: membership.membership_type_id,
         p_start_date: membership.start_date,
         p_end_date: membership.end_date || null,
-        p_allocated_classes_override: membership.allocated_classes_override || null,
+        p_override_class_count: membership.override_class_count || null,
         p_auto_deactivate_when_used_up: membership.auto_deactivate_when_used_up ?? true,
         p_notes: membership.notes || null
       });

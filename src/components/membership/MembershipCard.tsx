@@ -80,8 +80,10 @@ export const MembershipCard: React.FC<MembershipCardProps> = ({
   };
 
   const getProgressValue = () => {
-    if (summary.allocation_type === 'CLASS_COUNT' && summary.allocated_classes) {
-      return (summary.used_classes / summary.allocated_classes) * 100;
+    if (summary.allocation_type === 'CLASS_COUNT' && summary.remaining_classes !== null) {
+      // Calculate used classes from total - remaining  
+      const totalClasses = summary.remaining_classes + summary.used_classes;
+      return totalClasses > 0 ? (summary.used_classes / totalClasses) * 100 : 0;
     }
     return 0;
   };

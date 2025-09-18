@@ -5707,11 +5707,11 @@ export type Database = {
       }
       rpc_assign_membership: {
         Args: {
-          p_allocated_classes_override?: number
           p_auto_deactivate_when_used_up?: boolean
           p_end_date?: string
           p_membership_type_id: string
           p_notes?: string
+          p_override_class_count?: number
           p_player_id: string
           p_start_date: string
         }

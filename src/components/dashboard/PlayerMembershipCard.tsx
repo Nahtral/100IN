@@ -64,8 +64,10 @@ export const PlayerMembershipCard: React.FC<PlayerMembershipCardProps> = ({
   };
 
   const getProgressValue = () => {
-    if (membership.allocation_type === 'CLASS_COUNT' && membership.allocated_classes) {
-      return (membership.used_classes / membership.allocated_classes) * 100;
+    if (membership.allocation_type === 'CLASS_COUNT' && membership.remaining_classes !== null) {
+      // Calculate used classes from total - remaining
+      const totalClasses = membership.remaining_classes + membership.used_classes;
+      return totalClasses > 0 ? (membership.used_classes / totalClasses) * 100 : 0;
     }
     return 0;
   };
