@@ -66,7 +66,7 @@ const ParentDashboard = () => {
 
         // Get attendance data
         const { data: attendanceData } = await supabase
-          .from('player_attendance')
+          .from('attendance')
           .select('status')
           .eq('player_id', player.id);
 

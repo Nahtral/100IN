@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  saveAttendanceRecords,
-  PlayerWithAttendance
-} from '@/utils/attendanceHelpers';
+import { supabase } from '@/integrations/supabase/client';
+import { PlayerWithAttendance } from '@/utils/attendanceHelpers';
 
 interface UseAttendanceOperationsProps {
   eventId: string;
@@ -35,32 +33,34 @@ export const useAttendanceOperations = ({
     setSaving(true);
     
     try {
-      // Use new RPC function that handles both attendance and membership automatically
-      const result = await saveAttendanceRecords(eventId, teamId, attendance);
-      const results = result.results;
-      
-      // Count successful credit deductions
-      const creditedPlayers = results?.filter(r => r.credited)?.length || 0;
-      const totalPresent = results?.filter(r => r.status === 'present')?.length || 0;
+      // Prepare records for batch RPC call
+      const attendanceRecords = Object.values(attendance).map(record => {
+        const player = players.find(p => p.id === record.player_id);
+        return {
+          event_id: eventId,
+          team_id: player?.team_id || teamId || null,
+          player_id: record.player_id,
+          status: record.status,
+          notes: record.notes || null
+        };
+      });
 
-      // Show success feedback
-      let description = "Attendance updated successfully.";
-      if (autoDeductMembership && totalPresent > 0) {
-        if (creditedPlayers > 0) {
-          description += ` ${creditedPlayers} player(s) had membership credits deducted.`;
-        }
-        if (creditedPlayers < totalPresent) {
-          description += ` ${totalPresent - creditedPlayers} player(s) had no remaining credits.`;
-        }
+      // Call the new RPC function
+      const { error } = await supabase.rpc('rpc_save_attendance_batch', {
+        p_records: attendanceRecords
+      });
+
+      if (error) {
+        throw error;
       }
       
       toast({
         title: "Success",
-        description,
+        description: 'Attendance saved successfully - membership automatically managed',
       });
-
+      
       onSuccess?.();
-      return { success: true, results };
+      return { success: true };
 
     } catch (error: any) {
       console.error('Error saving attendance:', error);

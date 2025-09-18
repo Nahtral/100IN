@@ -72,8 +72,8 @@ const CoachDashboard = () => {
 
         // Get attendance data for team chemistry
         const { data: attendanceData } = await supabase
-          .from('player_attendance')
-          .select('status, schedule_id')
+          .from('attendance')
+          .select('status, event_id')
           .in('player_id', (players || []).map(p => p.id));
 
         const totalAttendanceRecords = attendanceData?.length || 0;

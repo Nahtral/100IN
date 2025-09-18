@@ -38,7 +38,6 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
-  const [autoDeductMembership, setAutoDeductMembership] = useState(true);
   const [playerDetailsModal, setPlayerDetailsModal] = useState<{
     isOpen: boolean;
     player: any | null;
@@ -130,7 +129,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
   const handleSaveAttendance = async () => {
     try {
-      await saveAttendance(attendance, players, autoDeductMembership);
+      await saveAttendance(attendance, players, true); // Always use automatic membership management
     } catch (error) {
       // Error handling is done in the hook
       console.error('Save attendance failed:', error);
@@ -228,23 +227,24 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
               <CardHeader>
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  Membership Settings
+                  Membership Management
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="auto-deduct" className="text-sm font-medium">
-                      Auto-deduct class usage for present players
+                      Automatic membership deduction (enabled by default)
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Automatically deduct 1 class from each player's membership when marked present
+                      Classes are automatically deducted/refunded based on attendance changes
                     </p>
                   </div>
                   <Switch
                     id="auto-deduct"
-                    checked={autoDeductMembership}
-                    onCheckedChange={setAutoDeductMembership}
+                    checked={true}
+                    disabled={true}
+                    onCheckedChange={() => {}}
                   />
                 </div>
               </CardContent>
@@ -375,7 +375,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 Cancel
               </Button>
               <Button onClick={handleSaveAttendance} disabled={saving} className="transition-all duration-200 hover:scale-105">
-                {saving ? 'Saving...' : (autoDeductMembership ? 'Save Attendance & Deduct Classes' : 'Save Attendance')}
+                {saving ? 'Saving...' : 'Save Attendance'}
               </Button>
             </div>
           </div>

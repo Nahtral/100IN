@@ -5353,7 +5353,7 @@ export type Database = {
         Returns: Json
       }
       fn_pick_active_membership: {
-        Args: { p_player_id: string }
+        Args: { p_player: string }
         Returns: string
       }
       generate_payslips_for_period: {
@@ -5797,12 +5797,10 @@ export type Database = {
         Returns: Json
       }
       rpc_save_attendance_batch: {
-        Args: { p_entries: Json; p_event_id: string; p_team_id: string }
-        Returns: {
-          credited: boolean
-          player_id: string
-          status: string
-        }[]
+        Args:
+          | { p_entries: Json; p_event_id: string; p_team_id: string }
+          | { p_records: Json }
+        Returns: undefined
       }
       rpc_save_event_grades: {
         Args: { p_event_id: string; p_metrics: Json; p_player_id: string }

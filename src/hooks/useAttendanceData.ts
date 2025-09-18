@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchPlayersForTeams, fetchExistingAttendance, PlayerWithAttendance } from '@/utils/attendanceHelpers';
+import { fetchPlayersForTeams, PlayerWithAttendance } from '@/utils/attendanceHelpers';
+import { supabase } from '@/integrations/supabase/client';
 
 // Export type for use in other components
 export type { PlayerWithAttendance };
@@ -30,12 +31,16 @@ export const useAttendanceData = (eventId: string, teamIds: string[], isOpen: bo
 
       const playerIds = playersData.map(p => p.id);
 
-      // Fetch existing attendance
-      const existingAttendance = await fetchExistingAttendance(eventId, playerIds);
+      // Fetch existing attendance from new table
+      const { data: existingAttendance } = await supabase
+        .from('attendance')
+        .select('player_id, status, notes')
+        .eq('event_id', eventId)
+        .in('player_id', playerIds);
       
       // Create attendance status map from existing records
       const attendanceMap = new Map<string, { status: string; notes: string }>();
-      existingAttendance.forEach((record: any) => {
+      (existingAttendance || []).forEach((record: any) => {
         attendanceMap.set(record.player_id, {
           status: record.status,
           notes: record.notes || ''

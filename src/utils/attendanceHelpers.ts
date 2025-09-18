@@ -179,7 +179,7 @@ export const fetchPlayersForTeams = async (teamIds: string[]): Promise<{
 };
 
 /**
- * Fetches existing attendance records for players and schedule
+ * Fetches existing attendance records for players and event
  */
 export const fetchExistingAttendance = async (
   eventId: string,
@@ -223,34 +223,31 @@ export const saveAttendanceRecords = async (
 ): Promise<{ success: true; results: any[] }> => {
   console.log('Saving attendance using new RPC function');
 
-  // Format entries for RPC call
-  const entries = Object.values(attendance).map(entry => ({
-    player_id: entry.player_id,
-    status: entry.status,
-    notes: entry.notes || ''
+  // Format entries for RPC call with proper structure
+  const attendanceRecords = Object.values(attendance).map(record => ({
+    event_id: eventId,
+    team_id: teamId || null,
+    player_id: record.player_id,
+    status: record.status,
+    notes: record.notes || null
   }));
 
   console.log('Calling rpc_save_attendance_batch with:', {
-    p_event_id: eventId,
-    p_team_id: teamId,
-    p_entries: entries
+    p_records: attendanceRecords
   });
 
   // Call the new RPC function
-  const { data: results, error } = await supabase
-    .rpc('rpc_save_attendance_batch', {
-      p_event_id: eventId,
-      p_team_id: teamId,
-      p_entries: entries
-    });
+  const { error } = await supabase.rpc('rpc_save_attendance_batch', {
+    p_records: attendanceRecords
+  });
 
   if (error) {
     console.error('Error saving attendance via RPC:', error);
     throw new Error(`Failed to save attendance: ${error.message}`);
   }
 
-  console.log('Successfully saved attendance records:', results);
-  return { success: true, results: results || [] };
+  console.log('Successfully saved attendance records');
+  return { success: true, results: [] };
 };
 
 /**
