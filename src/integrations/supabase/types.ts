@@ -2038,6 +2038,55 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_usage_ledger: {
+        Row: {
+          attendance_id: string
+          classes_deducted: number
+          created_at: string
+          id: string
+          notes: string | null
+          player_membership_id: string
+        }
+        Insert: {
+          attendance_id: string
+          classes_deducted?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_membership_id: string
+        }
+        Update: {
+          attendance_id?: string
+          classes_deducted?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_membership_usage_ledger_attendance_id"
+            columns: ["attendance_id"]
+            isOneToOne: false
+            referencedRelation: "attendance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_membership_usage_ledger_player_membership_id"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "player_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_membership_usage_ledger_player_membership_id"
+            columns: ["player_membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_membership_usage_secure"
+            referencedColumns: ["membership_id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string | null
@@ -3336,6 +3385,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_player_memberships_membership_type_id"
+            columns: ["membership_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "player_memberships_membership_type_id_fkey"
             columns: ["membership_type_id"]
@@ -5220,7 +5283,15 @@ export type Database = {
           status: string | null
           used_classes: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -5622,6 +5693,10 @@ export type Database = {
         }
         Returns: string
       }
+      rpc_apply_attendance_membership: {
+        Args: { p_attendance_id: string }
+        Returns: undefined
+      }
       rpc_approve_user_secure: {
         Args: {
           approval_decision: string
@@ -5629,6 +5704,18 @@ export type Database = {
           target_user_id: string
         }
         Returns: Json
+      }
+      rpc_assign_membership: {
+        Args: {
+          p_allocated_classes_override?: number
+          p_auto_deactivate_when_used_up?: boolean
+          p_end_date?: string
+          p_membership_type_id: string
+          p_notes?: string
+          p_player_id: string
+          p_start_date: string
+        }
+        Returns: string
       }
       rpc_create_chat: {
         Args:

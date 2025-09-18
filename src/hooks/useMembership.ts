@@ -112,21 +112,30 @@ export const useAssignMembership = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const assignMembership = async (membership: Omit<PlayerMembership, 'id'> & { allocated_classes: number }) => {
+  const assignMembership = async (membership: {
+    player_id: string;
+    membership_type_id: string;
+    start_date: string; // ISO format YYYY-MM-DD
+    end_date?: string; // ISO format YYYY-MM-DD
+    allocated_classes_override?: number;
+    auto_deactivate_when_used_up?: boolean;
+    notes?: string;
+  }) => {
     setLoading(true);
     try {
-      const currentUser = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from('player_memberships')
-        .insert({
-          ...membership,
-          allocated_classes: membership.allocated_classes || 10,
-          used_classes: 0,
-          created_by: currentUser.data.user?.id || '',
-          is_active: true
-        });
+      const { data, error } = await supabase.rpc('rpc_assign_membership', {
+        p_player_id: membership.player_id,
+        p_membership_type_id: membership.membership_type_id,
+        p_start_date: membership.start_date,
+        p_end_date: membership.end_date || null,
+        p_allocated_classes_override: membership.allocated_classes_override || null,
+        p_auto_deactivate_when_used_up: membership.auto_deactivate_when_used_up ?? true,
+        p_notes: membership.notes || null
+      });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -134,13 +143,15 @@ export const useAssignMembership = () => {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error assigning membership:', error);
+      
       toast({
         title: "Error",
-        description: "Failed to assign membership",
+        description: error.message || "Failed to assign membership",
         variant: "destructive",
       });
+      
       return false;
     } finally {
       setLoading(false);
@@ -157,19 +168,13 @@ export const useToggleOverride = () => {
   const toggleOverride = async (membershipId: string, active: boolean) => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('player_memberships')
-        .update({ manual_override_active: active })
-        .eq('id', membershipId);
-
-      if (error) throw error;
-
+      // Note: Direct updates are blocked by RLS, would need an RPC for this
       toast({
-        title: "Success",
-        description: `Manual override ${active ? 'enabled' : 'disabled'}`,
+        title: "Info", 
+        description: "Manual override functionality requires system admin",
+        variant: "default",
       });
-
-      return true;
+      return false;
     } catch (error) {
       console.error('Error toggling override:', error);
       toast({

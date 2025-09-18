@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useMembershipTypes, useAssignMembership, MembershipType } from '@/hooks/useMembership';
+import { useToast } from '@/hooks/use-toast';
 
 interface MembershipAssignmentModalProps {
   open: boolean;
@@ -27,6 +28,7 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
 }) => {
   const { types, loading: typesLoading } = useMembershipTypes();
   const { assignMembership, loading: assigning } = useAssignMembership();
+  const { toast } = useToast();
   
   const [selectedType, setSelectedType] = useState<MembershipType | null>(null);
   const [startDate, setStartDate] = useState<Date>(new Date());
@@ -36,20 +38,24 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
   const [notes, setNotes] = useState('');
 
   const handleSubmit = async () => {
-    if (!selectedType) return;
+    if (!selectedType) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a membership type",
+        variant: "destructive",
+      });
+      return;
+    }
 
-const membershipData = {
-  player_id: playerId,
-  membership_type_id: selectedType.id,
-  start_date: format(startDate, 'yyyy-MM-dd'),
-  end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
-  allocated_classes_override: allocatedClassesOverride,
-  allocated_classes: (allocatedClassesOverride ?? selectedType.allocated_classes ?? 10),
-  status: 'ACTIVE' as const,
-  auto_deactivate_when_used_up: autoDeactivate,
-  manual_override_active: false,
-  notes: notes || null,
-};
+    const membershipData = {
+      player_id: playerId,
+      membership_type_id: selectedType.id,
+      start_date: format(startDate, 'yyyy-MM-dd'),
+      end_date: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
+      allocated_classes_override: allocatedClassesOverride,
+      auto_deactivate_when_used_up: autoDeactivate,
+      notes: notes || undefined,
+    };
 
     const success = await assignMembership(membershipData);
     if (success) {
