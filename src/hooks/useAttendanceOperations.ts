@@ -53,10 +53,27 @@ export const useAttendanceOperations = ({
       if (error) {
         throw error;
       }
+
+      // Apply membership deductions for players marked as present
+      if (autoDeductMembership) {
+        const presentAttendance = Object.values(attendance).filter(record => record.status === 'present');
+        
+        for (const record of presentAttendance) {
+          try {
+            await supabase.rpc('rpc_apply_attendance_membership', {
+              p_player_id: record.player_id,
+              p_event_id: eventId
+            });
+          } catch (membershipError) {
+            console.warn('Failed to deduct membership for player:', record.player_id, membershipError);
+            // Don't fail the entire operation if membership deduction fails
+          }
+        }
+      }
       
       toast({
         title: "Success",
-        description: 'Attendance saved successfully - membership automatically managed',
+        description: 'Attendance saved successfully - membership classes deducted automatically',
       });
       
       onSuccess?.();

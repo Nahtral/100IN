@@ -165,6 +165,9 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
                   setOverrideClassCount(value ? parseInt(value) : null);
                 }}
               />
+              <p className="text-sm text-muted-foreground">
+                Default: {selectedType?.class_count || 0} classes
+              </p>
             </div>
           )}
 

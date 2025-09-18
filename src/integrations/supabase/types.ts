@@ -1976,6 +1976,7 @@ export type Database = {
         Row: {
           allocated_classes: number | null
           allocation_type: string
+          class_count: number | null
           created_at: string
           end_date_required: boolean
           id: string
@@ -1987,6 +1988,7 @@ export type Database = {
         Insert: {
           allocated_classes?: number | null
           allocation_type: string
+          class_count?: number | null
           created_at?: string
           end_date_required?: boolean
           id?: string
@@ -1998,6 +2000,7 @@ export type Database = {
         Update: {
           allocated_classes?: number | null
           allocation_type?: string
+          class_count?: number | null
           created_at?: string
           end_date_required?: boolean
           id?: string
@@ -5750,7 +5753,9 @@ export type Database = {
         Returns: string
       }
       rpc_apply_attendance_membership: {
-        Args: { p_attendance_id: string }
+        Args:
+          | { p_attendance_id: string }
+          | { p_event_id: string; p_player_id: string }
         Returns: undefined
       }
       rpc_approve_user_secure: {
@@ -5762,15 +5767,25 @@ export type Database = {
         Returns: Json
       }
       rpc_assign_membership: {
-        Args: {
-          p_auto_deactivate_when_used_up?: boolean
-          p_end_date?: string
-          p_membership_type_id: string
-          p_notes?: string
-          p_override_class_count?: number
-          p_player_id: string
-          p_start_date: string
-        }
+        Args:
+          | {
+              p_auto_deactivate_when_used_up?: boolean
+              p_end_date?: string
+              p_membership_type_id: string
+              p_notes?: string
+              p_override_class_count?: number
+              p_player_id: string
+              p_start_date: string
+            }
+          | {
+              p_auto_deactivate_when_used_up?: boolean
+              p_end_date?: string
+              p_membership_type_id: string
+              p_notes?: string
+              p_override_class_count?: number
+              p_player_id: string
+              p_start_date: string
+            }
         Returns: string
       }
       rpc_create_chat: {

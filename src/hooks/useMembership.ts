@@ -6,8 +6,7 @@ export interface MembershipType {
   id: string;
   name: string;
   allocation_type: 'CLASS_COUNT' | 'UNLIMITED' | 'DATE_RANGE';
-  allocated_classes: number | null;
-  class_count: number | null;
+  class_count: number;
   start_date_required: boolean;
   end_date_required: boolean;
   is_active: boolean;
@@ -101,8 +100,15 @@ export const useMembershipTypes = () => {
         
         // Map allocated_classes to class_count for consistency
         const mappedData = (data || []).map(type => ({
-          ...type,
-          class_count: type.allocated_classes
+          id: type.id,
+          name: type.name,
+          allocation_type: type.allocation_type as 'CLASS_COUNT' | 'UNLIMITED' | 'DATE_RANGE',
+          class_count: type.allocated_classes || type.class_count || 0,
+          start_date_required: type.start_date_required,
+          end_date_required: type.end_date_required,
+          is_active: type.is_active,
+          created_at: type.created_at,
+          updated_at: type.updated_at
         })) as MembershipType[];
         
         setTypes(mappedData);
@@ -150,7 +156,7 @@ export const useAssignMembership = () => {
 
       toast({
         title: "Success",
-        description: "Membership assigned successfully",
+        description: "Membership assigned successfully - remaining classes initialized automatically",
       });
 
       return data as string;
