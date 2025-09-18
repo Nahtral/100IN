@@ -3335,7 +3335,6 @@ export type Database = {
       player_memberships: {
         Row: {
           auto_deactivate_when_used_up: boolean
-          classes_remaining: number | null
           classes_total: number
           classes_used: number
           created_at: string
@@ -3345,14 +3344,15 @@ export type Database = {
           manual_override_active: boolean
           membership_type_id: string
           notes: string | null
+          override_class_count: number | null
           player_id: string
+          remaining_classes: number | null
           start_date: string
           status: string
           updated_at: string
         }
         Insert: {
           auto_deactivate_when_used_up?: boolean
-          classes_remaining?: number | null
           classes_total?: number
           classes_used?: number
           created_at?: string
@@ -3362,14 +3362,15 @@ export type Database = {
           manual_override_active?: boolean
           membership_type_id: string
           notes?: string | null
+          override_class_count?: number | null
           player_id: string
+          remaining_classes?: number | null
           start_date: string
           status?: string
           updated_at?: string
         }
         Update: {
           auto_deactivate_when_used_up?: boolean
-          classes_remaining?: number | null
           classes_total?: number
           classes_used?: number
           created_at?: string
@@ -3379,7 +3380,9 @@ export type Database = {
           manual_override_active?: boolean
           membership_type_id?: string
           notes?: string | null
+          override_class_count?: number | null
           player_id?: string
+          remaining_classes?: number | null
           start_date?: string
           status?: string
           updated_at?: string
@@ -3390,6 +3393,13 @@ export type Database = {
             columns: ["membership_type_id"]
             isOneToOne: false
             referencedRelation: "membership_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_membership_type_id"
+            columns: ["membership_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_types_v"
             referencedColumns: ["id"]
           },
           {
@@ -3404,6 +3414,13 @@ export type Database = {
             columns: ["membership_type_id"]
             isOneToOne: false
             referencedRelation: "membership_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_memberships_membership_type_id_fkey"
+            columns: ["membership_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_types_v"
             referencedColumns: ["id"]
           },
         ]
@@ -5162,6 +5179,45 @@ export type Database = {
       }
     }
     Views: {
+      membership_types_v: {
+        Row: {
+          allocated_classes: number | null
+          allocation_type: string | null
+          class_count: number | null
+          created_at: string | null
+          end_date_required: boolean | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          start_date_required: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          allocated_classes?: number | null
+          allocation_type?: string | null
+          class_count?: number | null
+          created_at?: string | null
+          end_date_required?: boolean | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          start_date_required?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          allocated_classes?: number | null
+          allocation_type?: string | null
+          class_count?: number | null
+          created_at?: string | null
+          end_date_required?: boolean | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          start_date_required?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       v_chat_display: {
         Row: {
           chat_id: string | null

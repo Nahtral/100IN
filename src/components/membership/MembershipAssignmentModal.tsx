@@ -57,8 +57,8 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
       notes: notes || undefined,
     };
 
-    const success = await assignMembership(membershipData);
-    if (success) {
+    const result = await assignMembership(membershipData);
+    if (result) {
       onSuccess?.();
       onClose();
       resetForm();
@@ -158,7 +158,7 @@ export const MembershipAssignmentModal: React.FC<MembershipAssignmentModalProps>
               <Label>Override Class Count (optional)</Label>
               <Input
                 type="number"
-                placeholder={`Default: ${selectedType?.allocated_classes || 0}`}
+                placeholder={`Default: ${selectedType?.class_count || 0}`}
                 value={overrideClassCount || ''}
                 onChange={(e) => {
                   const value = e.target.value;

@@ -7,6 +7,7 @@ export interface MembershipType {
   name: string;
   allocation_type: 'CLASS_COUNT' | 'UNLIMITED' | 'DATE_RANGE';
   allocated_classes: number | null;
+  class_count: number | null;
   start_date_required: boolean;
   end_date_required: boolean;
   is_active: boolean;
@@ -89,7 +90,7 @@ export const useMembershipTypes = () => {
     const fetchTypes = async () => {
       try {
         const { data, error } = await supabase
-          .from('membership_types')
+          .from('membership_types_v')
           .select('*')
           .eq('is_active', true)
           .order('name');
@@ -143,7 +144,7 @@ export const useAssignMembership = () => {
         description: "Membership assigned successfully",
       });
 
-      return true;
+      return data; // Return the membership ID
     } catch (error: any) {
       console.error('Error assigning membership:', error);
       
