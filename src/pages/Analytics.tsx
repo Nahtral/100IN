@@ -167,7 +167,7 @@ const Analytics = () => {
               <CardTitle>Key Metrics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">{keyMetrics.winRate}%</div>
                   <div className="text-sm text-muted-foreground">Win Rate</div>
@@ -177,12 +177,20 @@ const Analytics = () => {
                   <div className="text-sm text-muted-foreground">Avg Attendance</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{keyMetrics.avgPointsPerGame}</div>
-                  <div className="text-sm text-muted-foreground">Avg Points/Game</div>
+                  <div className="text-2xl font-bold text-purple-600">{keyMetrics.avgShootingPercentage}%</div>
+                  <div className="text-sm text-muted-foreground">Shooting %</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">{keyMetrics.injuryRate}%</div>
                   <div className="text-sm text-muted-foreground">Injury Rate</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-teal-600">{keyMetrics.avgHealthScore}</div>
+                  <div className="text-sm text-muted-foreground">Health Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-indigo-600">{keyMetrics.totalSessions}</div>
+                  <div className="text-sm text-muted-foreground">Training Sessions</div>
                 </div>
               </div>
             </CardContent>
