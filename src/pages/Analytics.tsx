@@ -45,7 +45,7 @@ const Analytics = () => {
             <TabsContent value="health" className="space-y-6">
               <HealthAnalytics 
                 userRole={currentUser?.role || 'player'} 
-                isSuperAdmin={currentUser?.isSuperAdmin || false} 
+                isSuperAdmin={currentUser?.role === 'super_admin'} 
               />
             </TabsContent>
           </Tabs>
