@@ -17,6 +17,7 @@ import PlayerGradesCard from '@/components/dashboard/PlayerGradesCard';
 import { PlayerDashboardError } from '@/components/dashboard/PlayerDashboardError';
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
 import { RealTimeIndicator } from '@/components/dashboard/RealTimeIndicator';
+import { RealTimeUpdateToast } from '@/components/dashboard/RealTimeUpdateToast';
 import { User, Target, Shield } from 'lucide-react';
 
 // Simple error boundary component
@@ -113,6 +114,8 @@ export const EnhancedPlayerDashboard: React.FC = () => {
 
   return (
     <div className="mobile-container mobile-space-y">
+        {/* Real-time update notifications */}
+        <RealTimeUpdateToast isRealTime={isRealTime} />
         {/* Header */}
         <div className="text-center sm:text-left space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
