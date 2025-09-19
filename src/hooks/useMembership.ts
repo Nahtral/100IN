@@ -137,7 +137,7 @@ export const useAssignMembership = () => {
     override_class_count?: number;
     auto_deactivate_when_used_up?: boolean;
     notes?: string;
-  }): Promise<string | false> => {
+  }): Promise<string | boolean> => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('rpc_assign_membership', {
@@ -159,7 +159,7 @@ export const useAssignMembership = () => {
         description: "Membership assigned successfully - remaining classes initialized automatically",
       });
 
-      return data as string;
+      return data?.id || 'success';
     } catch (error: any) {
       console.error('Error assigning membership:', error);
       

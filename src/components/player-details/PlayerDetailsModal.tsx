@@ -700,7 +700,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
       <MembershipAssignmentModal
         open={showMembershipAssignment}
         onClose={() => setShowMembershipAssignment(false)}
-        playerId={player.id}
+        playerId={player.user_id}
         onSuccess={() => {
           refetchMembership();
           onUpdate();
