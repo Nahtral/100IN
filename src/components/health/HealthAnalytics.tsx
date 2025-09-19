@@ -1,21 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Activity,
+  Users, 
+  AlertTriangle, 
+  Activity, 
   Heart,
-  AlertTriangle,
-  Users,
-  Calendar,
-  Download
+  TrendingUp,
+  FileDown,
+  BarChart3,
+  Target,
+  Clock
 } from 'lucide-react';
 import { useHealthMetrics } from '@/hooks/useHealthMetrics';
+import { useInjuryBreakdown } from '@/hooks/useInjuryBreakdown';
+import { InjuryPlayersModal } from './InjuryPlayersModal';
 import PlayerDetailsModal from './PlayerDetailsModal';
 import InjuryDetailsModal from './InjuryDetailsModal';
 import FitnessDetailsModal from './FitnessDetailsModal';
@@ -26,11 +34,17 @@ interface HealthAnalyticsProps {
   isSuperAdmin: boolean;
 }
 
-const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({ 
+export const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({ 
   userRole, 
   isSuperAdmin 
 }) => {
   const [timeframe, setTimeframe] = useState('30d');
+  const [playerModalOpen, setPlayerModalOpen] = useState(false);
+  const [injuryModalOpen, setInjuryModalOpen] = useState(false);
+  const [fitnessModalOpen, setFitnessModalOpen] = useState(false);
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+  const [injuryPlayersModalOpen, setInjuryPlayersModalOpen] = useState(false);
+  const [selectedInjury, setSelectedInjury] = useState<{ location: string; type: string } | null>(null);
   
   // Get timeframe in days
   const timeframeDays = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : timeframe === '90d' ? 90 : 365;
@@ -39,17 +53,20 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
     userRole,
     timeframeDays
   });
-  
-  // Modal states
-  const [playerModalOpen, setPlayerModalOpen] = useState(false);
-  const [injuryModalOpen, setInjuryModalOpen] = useState(false);
-  const [fitnessModalOpen, setFitnessModalOpen] = useState(false);
-  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+
+  const { 
+    data: injuryData, 
+    loading: injuryLoading 
+  } = useInjuryBreakdown(timeframeDays);
+
+  const handleInjuryClick = (location: string, type: string) => {
+    setSelectedInjury({ location, type });
+    setInjuryPlayersModalOpen(true);
+  };
 
   useEffect(() => {
     refreshMetrics();
   }, [timeframe]);
-
 
   if (loading) {
     return (
@@ -58,8 +75,9 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardContent className="p-6">
-                <div className="h-4 bg-gray-200 rounded mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
               </CardContent>
             </Card>
           ))}
@@ -69,120 +87,91 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Health Analytics</h2>
-          <p className="text-gray-600">Comprehensive health and wellness data analysis</p>
+          <h2 className="text-2xl font-bold">Health Analytics</h2>
+          <p className="text-muted-foreground">Comprehensive health and wellness data analysis</p>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-3">
           <Select value={timeframe} onValueChange={setTimeframe}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select timeframe" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
               <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="1y">Last year</SelectItem>
+              <SelectItem value="365d">Last year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+          
+          <Button variant="outline" size="sm">
+            <FileDown className="h-4 w-4 mr-2" />
             Export
           </Button>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card 
-          className="border-blue-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-blue-300"
-          onClick={() => setPlayerModalOpen(true)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Players</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalPlayers || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              Active in health system
-            </p>
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setPlayerModalOpen(true)}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Players</p>
+                <p className="text-3xl font-bold text-primary">{metrics?.totalPlayers || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">Active in health system</p>
+              </div>
+              <Users className="h-8 w-8 text-primary" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card 
-          className="border-red-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-red-300"
-          onClick={() => setInjuryModalOpen(true)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Injuries</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.activeInjuries || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.injuryTrendPercent !== 0 && (
-                <>
-                  {metrics.injuryTrendPercent < 0 ? (
-                    <TrendingDown className="h-3 w-3 inline mr-1 text-green-500" />
-                  ) : (
-                    <TrendingUp className="h-3 w-3 inline mr-1 text-red-500" />
-                  )}
-                  {Math.abs(metrics.injuryTrendPercent)}% {metrics.injuryTrendPercent < 0 ? 'decrease' : 'increase'} from last period
-                </>
-              )}
-              {metrics.injuryTrendPercent === 0 && 'No change from last period'}
-            </p>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setInjuryModalOpen(true)}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Active Injuries</p>
+                <p className="text-3xl font-bold text-destructive">{injuryData?.active_injuries || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">No change from last period</p>
+              </div>
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card 
-          className="border-green-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-green-300"
-          onClick={() => setFitnessModalOpen(true)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Fitness Score</CardTitle>
-            <Activity className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.avgFitnessScore || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.fitnessTrendPercent !== 0 && (
-                <>
-                  {metrics.fitnessTrendPercent > 0 ? (
-                    <TrendingUp className="h-3 w-3 inline mr-1 text-green-500" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3 inline mr-1 text-red-500" />
-                  )}
-                  {Math.abs(metrics.fitnessTrendPercent)}% {metrics.fitnessTrendPercent > 0 ? 'improvement' : 'decrease'} from last period
-                </>
-              )}
-              {metrics.fitnessTrendPercent === 0 && 'No change from last period'}
-            </p>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setFitnessModalOpen(true)}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Avg Fitness Score</p>
+                <p className="text-3xl font-bold text-green-600">{metrics?.avgFitnessScore || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">No change from last period</p>
+              </div>
+              <Activity className="h-8 w-8 text-green-600" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card 
-          className="border-orange-200 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-orange-300"
-          onClick={() => setCheckInModalOpen(true)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Health Check-ins</CardTitle>
-            <Heart className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.checkInCompletionRate}%</div>
-            <p className="text-xs text-muted-foreground">
-              Daily completion rate
-            </p>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setCheckInModalOpen(true)}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Health Check-ins</p>
+                <p className="text-3xl font-bold text-pink-600">{metrics?.checkInCompletionRate || 0}%</p>
+                <p className="text-xs text-muted-foreground mt-1">Daily completion rate</p>
+              </div>
+              <Heart className="h-8 w-8 text-pink-600" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Analytics Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="injury-analysis">Injury Analysis</TabsTrigger>
@@ -191,62 +180,49 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Wellness Trends Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Wellness Trends
-                </CardTitle>
+                <CardTitle>Wellness Trends</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] flex items-center justify-center text-gray-500">
                   <div className="text-center">
                     <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                    <p>Wellness trend visualization</p>
-                    <p className="text-sm">Data visualization component would go here</p>
+                    <p>Wellness trends chart</p>
+                    <p className="text-sm">Real-time data visualization coming soon</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Health Summary */}
             <Card>
               <CardHeader>
                 <CardTitle>Health Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Overall Health Score</p>
-                    <p className="text-sm text-gray-600">Team average</p>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="font-medium">Excellent Health</span>
+                    </div>
+                    <Badge variant="secondary">65% of players</Badge>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-green-600">{metrics.avgFitnessScore || 0}</div>
-                    <Badge variant="default" className="bg-green-100 text-green-800">
-                      Excellent
-                    </Badge>
+                  
+                  <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <span className="font-medium">Monitor Closely</span>
+                    </div>
+                    <Badge variant="secondary">25% of players</Badge>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Injury Risk Level</p>
-                    <p className="text-sm text-gray-600">Current assessment</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="secondary">Low</Badge>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Recovery Rate</p>
-                    <p className="text-sm text-gray-600">Average time to return</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold">12 days</div>
-                    <p className="text-xs text-gray-500">20% faster than league avg</p>
+                  
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span className="font-medium">Needs Attention</span>
+                    </div>
+                    <Badge variant="secondary">10% of players</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -261,25 +237,35 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
                 <CardTitle>Injury Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { type: 'Ankle Sprains', count: 8, percentage: 35 },
-                    { type: 'Knee Injuries', count: 5, percentage: 22 },
-                    { type: 'Shoulder Injuries', count: 4, percentage: 17 },
-                    { type: 'Back Injuries', count: 3, percentage: 13 },
-                    { type: 'Other', count: 3, percentage: 13 }
-                  ].map((injury, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{injury.type}</p>
-                        <p className="text-sm text-gray-600">{injury.count} cases</p>
+                {injuryLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {injuryData?.breakdown?.length ? (
+                      injuryData.breakdown.map((injury, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => handleInjuryClick(injury.location, injury.type)}
+                        >
+                          <div>
+                            <p className="font-medium">{injury.type}</p>
+                            <p className="text-sm text-gray-600">{injury.count} cases</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-lg font-semibold">{injury.percentage}%</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">No injury data available for the selected period</p>
                       </div>
-                      <div className="text-right">
-                        <span className="text-lg font-semibold">{injury.percentage}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -354,12 +340,25 @@ const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
         onClose={() => setFitnessModalOpen(false)}
         isSuperAdmin={isSuperAdmin}
       />
-      
+
       <CheckInDetailsModal
         isOpen={checkInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
         isSuperAdmin={isSuperAdmin}
       />
+
+      {selectedInjury && (
+        <InjuryPlayersModal
+          isOpen={injuryPlayersModalOpen}
+          onClose={() => {
+            setInjuryPlayersModalOpen(false);
+            setSelectedInjury(null);
+          }}
+          injuryLocation={selectedInjury.location}
+          injuryType={selectedInjury.type}
+          timeframeDays={timeframeDays}
+        />
+      )}
     </div>
   );
 };

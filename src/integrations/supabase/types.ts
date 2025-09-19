@@ -6245,6 +6245,10 @@ export type Database = {
           role_display: string
         }[]
       }
+      rpc_get_injury_breakdown: {
+        Args: { days_back?: number }
+        Returns: Json
+      }
       rpc_get_messages: {
         Args: { before?: string; chat: string; limit_n?: number }
         Returns: {
