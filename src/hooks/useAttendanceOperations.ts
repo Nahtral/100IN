@@ -45,8 +45,9 @@ export const useAttendanceOperations = ({
         };
       });
 
-      // Call the new RPC function
+      // Call the new RPC function with new signature
       const { error } = await supabase.rpc('rpc_save_attendance_batch', {
+        p_event_id: eventId,
         p_records: attendanceRecords
       });
 
@@ -54,26 +55,12 @@ export const useAttendanceOperations = ({
         throw error;
       }
 
-      // Apply membership deductions for players marked as present
-      if (autoDeductMembership) {
-        const presentAttendance = Object.values(attendance).filter(record => record.status === 'present');
-        
-        for (const record of presentAttendance) {
-          try {
-            await supabase.rpc('rpc_apply_attendance_membership', {
-              p_player_id: record.player_id,
-              p_event_id: eventId
-            });
-          } catch (membershipError) {
-            console.warn('Failed to deduct membership for player:', record.player_id, membershipError);
-            // Don't fail the entire operation if membership deduction fails
-          }
-        }
-      }
+      // Note: Class deduction now happens automatically via database triggers
+      // when attendance status is set to 'present'
       
       toast({
         title: "Success",
-        description: 'Attendance saved successfully - membership classes deducted automatically',
+        description: 'Attendance saved successfully - membership classes will be deducted automatically when marked present',
       });
       
       onSuccess?.();
