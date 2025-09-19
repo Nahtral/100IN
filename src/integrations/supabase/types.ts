@@ -5767,26 +5767,33 @@ export type Database = {
         Returns: Json
       }
       rpc_assign_membership: {
-        Args:
-          | {
-              p_auto_deactivate_when_used_up?: boolean
-              p_end_date?: string
-              p_membership_type_id: string
-              p_notes?: string
-              p_override_class_count?: number
-              p_player_id: string
-              p_start_date: string
-            }
-          | {
-              p_auto_deactivate_when_used_up?: boolean
-              p_end_date?: string
-              p_membership_type_id: string
-              p_notes?: string
-              p_override_class_count?: number
-              p_player_id: string
-              p_start_date: string
-            }
-        Returns: string
+        Args: {
+          p_auto_deactivate_when_used_up?: boolean
+          p_end_date?: string
+          p_membership_type_id: string
+          p_notes?: string
+          p_override_class_count?: number
+          p_player_id: string
+          p_start_date: string
+        }
+        Returns: {
+          auto_deactivate_when_used_up: boolean
+          classes_total: number
+          classes_used: number
+          created_at: string
+          created_by: string
+          end_date: string | null
+          id: string
+          manual_override_active: boolean
+          membership_type_id: string
+          notes: string | null
+          override_class_count: number | null
+          player_id: string
+          remaining_classes: number | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
       }
       rpc_create_chat: {
         Args:
