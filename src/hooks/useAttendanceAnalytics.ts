@@ -64,14 +64,19 @@ export const useAttendanceAnalytics = (timeframeDays: number = 30) => {
 
         if (attendanceError) throw attendanceError;
 
-        // Get player names separately
+        // Get player names and team names
         const playerIds = [...new Set(attendanceData?.map(a => a.player_id))];
+        const teamIds = [...new Set(attendanceData?.map(a => a.team_id).filter(Boolean))];
+
+        // Fetch players with multiple fallback options for names
         const { data: playersData, error: playersError } = await supabase
           .from('players')
           .select(`
             id,
             user_id,
-            profiles!inner(
+            name,
+            manual_entry_name,
+            profiles(
               full_name
             )
           `)
@@ -79,10 +84,28 @@ export const useAttendanceAnalytics = (timeframeDays: number = 30) => {
 
         if (playersError) throw playersError;
 
-        // Create player lookup map
+        // Fetch teams for real team names
+        const { data: teamsData, error: teamsError } = await supabase
+          .from('teams')
+          .select('id, name')
+          .in('id', teamIds);
+
+        if (teamsError) throw teamsError;
+
+        // Create player lookup map with fallbacks
         const playerLookup = new Map();
         playersData?.forEach(player => {
-          playerLookup.set(player.id, player.profiles.full_name);
+          const playerName = player.profiles?.full_name || 
+                           player.name || 
+                           player.manual_entry_name || 
+                           `Player ${player.id.slice(0, 8)}`;
+          playerLookup.set(player.id, playerName);
+        });
+
+        // Create team lookup map
+        const teamLookup = new Map();
+        teamsData?.forEach(team => {
+          teamLookup.set(team.id, team.name);
         });
 
         // Process weekly trends
@@ -184,7 +207,7 @@ export const useAttendanceAnalytics = (timeframeDays: number = 30) => {
         const teamComparison = Array.from(teamMap.entries())
           .map(([teamId, data]) => ({
             teamId,
-            teamName: `Team ${teamId.slice(0, 8)}`, // Simplified team name
+            teamName: teamLookup.get(teamId) || `Team ${teamId.slice(0, 8)}`,
             attendanceRate: data.total > 0 ? Math.round((data.present / data.total) * 100) : 0,
             totalPlayers: data.players.size
           }))
