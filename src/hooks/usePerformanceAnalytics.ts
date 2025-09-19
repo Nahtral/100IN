@@ -70,13 +70,15 @@ export const usePerformanceAnalytics = (timeframeDays: number = 30) => {
         // Get unique player IDs from grades first
         const playerIds = [...new Set(gradesData?.map(g => g.player_id))];
         
-        // Get player names separately
+        // Get player names with multiple fallback options
         const { data: playersData, error: playersError } = await supabase
           .from('players')
           .select(`
             id,
             user_id,
-            profiles!inner(
+            name,
+            manual_entry_name,
+            profiles(
               full_name
             )
           `)
@@ -123,10 +125,14 @@ export const usePerformanceAnalytics = (timeframeDays: number = 30) => {
 
         if (tryoutError) throw tryoutError;
 
-        // Create player lookup map
+        // Create player lookup map with fallbacks
         const playerLookup = new Map();
         playersData?.forEach(player => {
-          playerLookup.set(player.id, player.profiles.full_name);
+          const playerName = player.profiles?.full_name || 
+                           player.name || 
+                           player.manual_entry_name || 
+                           `Player ${player.id.slice(0, 8)}`;
+          playerLookup.set(player.id, playerName);
         });
 
         // Process grades data
