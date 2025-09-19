@@ -7,7 +7,7 @@ import { Users, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAttendanceData } from '@/hooks/useAttendanceData';
-import { saveAttendanceRecords } from '@/utils/attendanceHelpers';
+import { saveAttendanceRecordsV2 } from '@/utils/attendanceHelpers';
 import { AttendanceSummary } from './AttendanceSummary';
 import { BulkOperations } from './BulkOperations';
 import { AttendancePlayerCard } from './AttendancePlayerCard';
@@ -111,17 +111,17 @@ export const RebuildAttendanceModal: React.FC<RebuildAttendanceModalProps> = ({
       
       // Save attendance for each team using the hardened RPC
       for (const [teamId, teamPlayers] of teamGroups) {
-        const attendanceData: Record<string, { player_id: string; status: string; notes?: string }> = {};
+        const attendanceData: Record<string, { user_id: string; status: string; notes?: string }> = {};
         
         teamPlayers.forEach(player => {
           attendanceData[player.id] = {
-            player_id: player.id,
+            user_id: player.id, // Changed from player_id to user_id
             status: player.status,
             notes: player.notes?.trim() || ''
           };
         });
 
-        const result = await saveAttendanceRecords(eventId, teamId, attendanceData);
+        const result = await saveAttendanceRecordsV2(eventId, teamId, attendanceData);
         if (result.success) {
           totalSaved += teamPlayers.length;
         }

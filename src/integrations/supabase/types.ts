@@ -1972,6 +1972,102 @@ export type Database = {
           },
         ]
       }
+      membership_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string
+          created_by: string
+          delta: number
+          event_id: string | null
+          id: string
+          membership_id: string
+          reason: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          created_by: string
+          delta: number
+          event_id?: string | null
+          id?: string
+          membership_id: string
+          reason: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          created_by?: string
+          delta?: number
+          event_id?: string | null
+          id?: string
+          membership_id?: string
+          reason?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_membership_transactions_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_membership_transactions_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_membership_transactions_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_membership_transactions_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "player_memberships_v2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_attendance_with_membership_v2"
+            referencedColumns: ["membership_id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "vw_membership_summary_v2"
+            referencedColumns: ["membership_id"]
+          },
+        ]
+      }
       membership_types: {
         Row: {
           allocated_classes: number | null
@@ -2072,6 +2168,13 @@ export type Database = {
             columns: ["attendance_id"]
             isOneToOne: false
             referencedRelation: "attendance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_membership_usage_ledger_attendance_id"
+            columns: ["attendance_id"]
+            isOneToOne: false
+            referencedRelation: "vw_attendance_with_membership_v2"
             referencedColumns: ["id"]
           },
           {
@@ -3421,6 +3524,97 @@ export type Database = {
           },
           {
             foreignKeyName: "player_memberships_membership_type_id_fkey"
+            columns: ["membership_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_types_v"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_memberships_v2: {
+        Row: {
+          allocated_classes: number
+          auto_deactivate: boolean
+          created_at: string
+          created_by: string
+          end_date: string | null
+          id: string
+          membership_type_id: string
+          notes: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          used_classes: number
+          user_id: string
+        }
+        Insert: {
+          allocated_classes?: number
+          auto_deactivate?: boolean
+          created_at?: string
+          created_by: string
+          end_date?: string | null
+          id?: string
+          membership_type_id: string
+          notes?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          used_classes?: number
+          user_id: string
+        }
+        Update: {
+          allocated_classes?: number
+          auto_deactivate?: boolean
+          created_at?: string
+          created_by?: string
+          end_date?: string | null
+          id?: string
+          membership_type_id?: string
+          notes?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          used_classes?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_player_memberships_v2_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_v2_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_v2_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_v2_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "player_memberships_v2_membership_type_id_fkey"
+            columns: ["membership_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_memberships_v2_membership_type_id_fkey"
             columns: ["membership_type_id"]
             isOneToOne: false
             referencedRelation: "membership_types_v"
@@ -5325,6 +5519,72 @@ export type Database = {
           },
         ]
       }
+      vw_attendance_with_membership_v2: {
+        Row: {
+          event_id: string | null
+          id: string | null
+          membership_id: string | null
+          membership_type_name: string | null
+          notes: string | null
+          player_id: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          remaining_classes: number | null
+          should_deactivate: boolean | null
+          status: string | null
+          team_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_membership_summary_v2: {
+        Row: {
+          allocated_classes: number | null
+          allocation_type: string | null
+          days_left: number | null
+          end_date: string | null
+          is_expired: boolean | null
+          membership_id: string | null
+          membership_type_name: string | null
+          player_name: string | null
+          remaining_classes: number | null
+          should_deactivate: boolean | null
+          start_date: string | null
+          status: string | null
+          used_classes: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_player_memberships_v2_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_v2_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       vw_player_membership_usage_secure: {
         Row: {
           allocated_classes: number | null
@@ -5480,6 +5740,10 @@ export type Database = {
       }
       fn_get_membership_summary: {
         Args: { target_player_id: string }
+        Returns: Json
+      }
+      fn_get_membership_summary_v2: {
+        Args: { target_user_id: string }
         Returns: Json
       }
       fn_pick_active_membership: {
@@ -5795,6 +6059,18 @@ export type Database = {
           updated_at: string
         }
       }
+      rpc_assign_membership_v2: {
+        Args: {
+          p_auto_deactivate?: boolean
+          p_end_date?: string
+          p_membership_type_id: string
+          p_notes?: string
+          p_override_class_count?: number
+          p_start_date: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       rpc_create_chat: {
         Args:
           | {
@@ -5960,6 +6236,18 @@ export type Database = {
       rpc_partner_analytics: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      rpc_record_attendance_with_membership_v2: {
+        Args: {
+          p_attendance_records: Json
+          p_event_id: string
+          p_team_id: string
+        }
+        Returns: {
+          membership_deducted: boolean
+          status: string
+          user_id: string
+        }[]
       }
       rpc_save_attendance_batch: {
         Args:

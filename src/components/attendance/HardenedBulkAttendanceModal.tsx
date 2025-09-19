@@ -11,7 +11,7 @@ import { Users, AlertCircle, Loader2, UserCheck, UserX, Clock, CreditCard, Check
 import { useToast } from '@/hooks/use-toast';
 import { useAttendanceData } from '@/hooks/useAttendanceData';
 import { useHardenedMembership } from '@/hooks/useHardenedMembership';
-import { saveAttendanceRecords } from '@/utils/attendanceHelpers';
+import { saveAttendanceRecordsV2 } from '@/utils/attendanceHelpers';
 import { AttendanceSummary } from './AttendanceSummary';
 
 interface PlayerWithMembership {
@@ -136,7 +136,7 @@ export const HardenedBulkAttendanceModal: React.FC<HardenedBulkAttendanceModalPr
           };
         });
 
-        const result = await saveAttendanceRecords(eventId, teamId, attendanceData);
+        const result = await saveAttendanceRecordsV2(eventId, teamId, attendanceData);
         if (result.success) {
           totalSaved += teamPlayers.length;
         }

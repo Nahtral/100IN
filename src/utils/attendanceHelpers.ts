@@ -216,29 +216,32 @@ export const fetchExistingAttendance = async (
 /**
  * Saves attendance records using the new RPC function
  */
-export const saveAttendanceRecords = async (
+// Save attendance records using the NEW atomic V2 RPC
+export const saveAttendanceRecordsV2 = async (
   eventId: string,
   teamId: string,
-  attendance: Record<string, { player_id: string; status: string; notes?: string }>
+  attendance: Record<string, { user_id: string; status: string; notes?: string }>
 ): Promise<{ success: true; results: any[] }> => {
-  console.log('Saving attendance using new RPC function');
+  console.log('Saving attendance using new V2 RPC function');
 
-  // Format entries for RPC call with proper structure
-  const attendanceRecords = Object.values(attendance).map(record => ({
-    event_id: eventId,
-    team_id: teamId || null,
-    player_id: record.player_id,
+  // Format records for the NEW V2 RPC (uses user_id consistently)
+  const records = Object.values(attendance).map(record => ({
+    user_id: record.user_id, // KEY CHANGE: using user_id instead of player_id
     status: record.status,
     notes: record.notes || null
   }));
 
-  console.log('Calling rpc_save_attendance_batch with:', {
-    p_records: attendanceRecords
+  console.log('Calling rpc_record_attendance_with_membership_v2 with:', {
+    p_event_id: eventId,
+    p_team_id: teamId,
+    p_attendance_records: records
   });
 
-  // Call the new RPC function
-  const { error } = await supabase.rpc('rpc_save_attendance_batch', {
-    p_records: attendanceRecords
+  // Call the NEW atomic RPC that handles attendance + membership deduction
+  const { data, error } = await supabase.rpc('rpc_record_attendance_with_membership_v2', {
+    p_event_id: eventId,
+    p_team_id: teamId,
+    p_attendance_records: records
   });
 
   if (error) {
@@ -247,7 +250,7 @@ export const saveAttendanceRecords = async (
   }
 
   console.log('Successfully saved attendance records');
-  return { success: true, results: [] };
+  return { success: true, results: data || [] };
 };
 
 /**

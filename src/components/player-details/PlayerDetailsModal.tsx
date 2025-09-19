@@ -15,8 +15,9 @@ import { User, Edit, Archive, Trash2, Save, X, Phone, Mail, Calendar, MapPin, Us
 import { TeamManagementModal } from '@/components/player-teams/TeamManagementModal';
 import MedicalInsuranceTab from './MedicalInsuranceTab';
 import { MembershipCard } from '@/components/membership/MembershipCard';
-import { MembershipAssignmentModal } from '@/components/membership/MembershipAssignmentModal';
-import { useMembershipSummary, useToggleOverride, useActivatePlayer, useSendMembershipReminder } from '@/hooks/useMembership';
+import { MembershipAssignmentModalV2 } from '@/components/membership/MembershipAssignmentModalV2';
+import { AdjustUsageModal } from '@/components/membership/AdjustUsageModal';
+import { useMembershipSummaryV2 } from '@/hooks/useMembershipV2';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -79,10 +80,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const { isSuperAdmin, hasRole } = useOptimizedAuth();
   const { user } = useAuth();
   
-  // Always call hooks consistently - prevent conditional hook usage
-  const { summary: membershipSummary, loading: membershipLoading, refetch: refetchMembership } = useMembershipSummary(player?.id || '');
-  const { toggleOverride } = useToggleOverride();
-  const { sendReminder } = useSendMembershipReminder();
+  const { membership, loading: membershipLoading, error: membershipError, refetch: refetchMembership } = useMembershipSummaryV2(player?.user_id);
   
   // Only show membership data if user has permission to view it
   const shouldShowMembership = isSuperAdmin || hasRole('staff') || hasRole('coach') || user?.id === player?.user_id;
@@ -697,10 +695,10 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
         onUpdate={onUpdate}
       />
 
-      <MembershipAssignmentModal
+      <MembershipAssignmentModalV2
         open={showMembershipAssignment}
         onClose={() => setShowMembershipAssignment(false)}
-        playerId={player.id}
+        userId={player.user_id}
         onSuccess={() => {
           refetchMembership();
           onUpdate();
