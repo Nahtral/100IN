@@ -60,12 +60,7 @@ export const usePerformanceAnalytics = (timeframeDays: number = 30) => {
             overall,
             created_at,
             player_id,
-            event_id,
-            schedules!inner(
-              id,
-              title,
-              start_time
-            )
+            event_id
           `)
           .gte('created_at', startDate.toISOString())
           .order('created_at', { ascending: false });

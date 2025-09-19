@@ -7,6 +7,7 @@ import AttendanceAnalytics from '@/components/analytics/AttendanceAnalytics';
 import PerformanceAnalytics from '@/components/analytics/PerformanceAnalytics';
 import ShotIQAnalytics from '@/components/analytics/ShotIQAnalytics';
 import HealthAnalytics from '@/components/health/HealthAnalytics';
+import { HealthProvider } from '@/contexts/HealthContext';
 
 const Analytics = () => {
   const { currentUser } = useCurrentUser();
@@ -43,10 +44,12 @@ const Analytics = () => {
             </TabsContent>
 
             <TabsContent value="health" className="space-y-6">
-              <HealthAnalytics 
-                userRole={currentUser?.role || 'player'} 
-                isSuperAdmin={currentUser?.role === 'super_admin'} 
-              />
+              <HealthProvider>
+                <HealthAnalytics 
+                  userRole={currentUser?.role || 'player'} 
+                  isSuperAdmin={currentUser?.role === 'super_admin'} 
+                />
+              </HealthProvider>
             </TabsContent>
           </Tabs>
         </div>
