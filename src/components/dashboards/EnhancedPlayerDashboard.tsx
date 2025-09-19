@@ -18,6 +18,8 @@ import { PlayerDashboardError } from '@/components/dashboard/PlayerDashboardErro
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
 import { RealTimeIndicator } from '@/components/dashboard/RealTimeIndicator';
 import { RealTimeUpdateToast } from '@/components/dashboard/RealTimeUpdateToast';
+import Layout from '@/components/layout/Layout';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { User, Target, Shield } from 'lucide-react';
 
 // Simple error boundary component
@@ -44,6 +46,7 @@ class SimpleErrorBoundary extends React.Component<
 
 export const EnhancedPlayerDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { primaryRole } = useOptimizedAuth();
   const { profile, loading: profileLoading, error: profileError, refetch: refetchProfile } = usePlayerProfile();
   const { data: dashboardData, loading: dashboardLoading, error: dashboardError, refetch: refetchDashboard, isRealTime } = useRealTimePlayerDashboard(profile?.id);
   const { attendance, loading: attendanceLoading, error: attendanceError, refetch: refetchAttendance } = usePlayerAttendance(profile?.id);
@@ -113,20 +116,25 @@ export const EnhancedPlayerDashboard: React.FC = () => {
                     'Player';
 
   return (
-    <div className="mobile-container mobile-space-y">
-        {/* Real-time update notifications */}
-        <RealTimeUpdateToast isRealTime={isRealTime} />
-        {/* Header */}
-        <div className="text-center sm:text-left space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
-                Player Dashboard
-              </h1>
-              <p className="mobile-text text-muted-foreground mt-2">
-                Welcome back, {playerName}! Here's your performance overview.
-              </p>
-            </div>
+    <Layout currentUser={{ 
+      name: playerName,
+      role: primaryRole || 'Player',
+      avatar: '' 
+    }}>
+      <div className="mobile-container mobile-space-y">
+          {/* Real-time update notifications */}
+          <RealTimeUpdateToast isRealTime={isRealTime} />
+          {/* Header */}
+          <div className="text-center sm:text-left space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
+                  Player Dashboard
+                </h1>
+                <p className="mobile-text text-muted-foreground mt-2">
+                  Welcome back, {playerName}! Here's your performance overview.
+                </p>
+              </div>
             
             <RealTimeIndicator 
               isRealTime={isRealTime} 
@@ -299,13 +307,14 @@ export const EnhancedPlayerDashboard: React.FC = () => {
           />
         </SimpleErrorBoundary>
 
-        {/* Quick Actions Footer */}
-        <div className="text-center pt-4">
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Target className="h-4 w-4" />
-            <span>Keep pushing towards your goals!</span>
+          {/* Quick Actions Footer */}
+          <div className="text-center pt-4">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Target className="h-4 w-4" />
+              <span>Keep pushing towards your goals!</span>
+            </div>
           </div>
         </div>
-      </div>
+    </Layout>
   );
 };
