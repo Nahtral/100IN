@@ -104,10 +104,8 @@ export const AttendanceModalV2Fixed: React.FC<AttendanceModalV2Props> = ({
         const attendance = attendanceRecords?.find(ar => ar.player_id === member.user_id);
         const membership = membershipData?.find(md => md.user_id === member.user_id);
         
-        // Type guard for profiles
-        const profile = member.profiles && typeof member.profiles === 'object' && 'full_name' in member.profiles 
-          ? member.profiles as any 
-          : null;
+        // Handle profiles safely with proper typing
+        const profile = member.profiles as { full_name?: string; email?: string } | null;
         
         return {
           id: member.user_id,

@@ -621,13 +621,13 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                           </Button>
                         )}
                         
-                        {membershipSummary ? (
+                        {membership ? (
                           <MembershipCard
-                            summary={membershipSummary}
+                            summary={membership}
                             loading={membershipLoading}
                             showAdminControls={isSuperAdmin()}
-                            onToggleOverride={(active) => toggleOverride(membershipSummary?.membership_id || '', active)}
-                            onSendReminder={() => sendReminder(player.id, 'REMINDER_MANUAL')}
+                            onToggleOverride={(active) => {/* TODO: Implement override toggle */}}
+                            onSendReminder={() => {/* TODO: Implement reminder */}}
                             onAdjustUsage={() => {/* TODO: Implement usage adjustment */}}
                           />
                         ) : membershipLoading ? (

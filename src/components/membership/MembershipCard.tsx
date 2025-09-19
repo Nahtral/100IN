@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Calendar, Clock, Users, AlertTriangle, Settings } from 'lucide-react';
 import { MembershipSummary } from '@/hooks/useMembership';
+import { MembershipSummaryV2 } from '@/hooks/useMembershipV2';
 import { AdjustUsageModal } from './AdjustUsageModal';
 import { useAdjustUsage } from '@/hooks/useAdjustUsage';
 
 interface MembershipCardProps {
-  summary: MembershipSummary | null;
+  summary: MembershipSummary | MembershipSummaryV2 | null;
   loading: boolean;
   onToggleOverride?: (active: boolean) => void;
   onSendReminder?: () => void;
@@ -120,7 +121,9 @@ export const MembershipCard: React.FC<MembershipCardProps> = ({
           {/* Membership Type and Dates */}
           <div className="space-y-3">
             <div>
-              <h4 className="font-semibold text-lg">{summary.type}</h4>
+              <h4 className="font-semibold text-lg">
+                {('type' in summary) ? summary.type : summary.membership_type_name}
+              </h4>
               <p className="text-sm text-muted-foreground">
                 {summary.allocation_type === 'CLASS_COUNT' && 'Class-based membership'}
                 {summary.allocation_type === 'UNLIMITED' && 'Unlimited access'}

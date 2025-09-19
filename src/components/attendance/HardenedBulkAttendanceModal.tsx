@@ -126,11 +126,11 @@ export const HardenedBulkAttendanceModal: React.FC<HardenedBulkAttendanceModalPr
       
       // Save attendance for each team using the hardened RPC
       for (const [teamId, teamPlayers] of teamGroups) {
-        const attendanceData: Record<string, { player_id: string; status: string; notes?: string }> = {};
+        const attendanceData: Record<string, { user_id: string; status: string; notes?: string }> = {};
         
         teamPlayers.forEach(player => {
           attendanceData[player.id] = {
-            player_id: player.id,
+            user_id: player.id, // Using user_id for V2 compatibility
             status: player.status,
             notes: player.notes?.trim() || ''
           };

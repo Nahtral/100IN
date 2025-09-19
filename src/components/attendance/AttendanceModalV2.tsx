@@ -67,7 +67,7 @@ export const AttendanceModalV2: React.FC<AttendanceModalV2Props> = ({
         .from('team_members')
         .select(`
           user_id,
-          profiles!inner(
+          profiles(
             id,
             full_name,
             email
@@ -96,15 +96,18 @@ export const AttendanceModalV2: React.FC<AttendanceModalV2Props> = ({
         console.warn('Could not fetch membership data:', membershipError);
       }
 
-      // Combine the data
+      // Combine the data with proper null handling
       const playersWithAttendance = teamMembers?.map(member => {
         const attendance = attendanceRecords?.find(ar => ar.player_id === member.user_id);
         const membership = membershipData?.find(md => md.user_id === member.user_id);
         
+        // Handle profiles safely
+        const profile = member.profiles as { full_name?: string; email?: string } | null;
+        
         return {
           id: member.user_id,
           user_id: member.user_id, // Same as id, for consistency
-          full_name: member.profiles?.full_name || member.profiles?.email || 'Unknown',
+          full_name: profile?.full_name || profile?.email || 'Unknown',
           status: attendance?.status,
           notes: attendance?.notes,
           membership_id: membership?.membership_id,

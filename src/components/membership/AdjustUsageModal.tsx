@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle, Minus, Plus } from 'lucide-react';
 import { MembershipSummary } from '@/hooks/useMembership';
+import { MembershipSummaryV2 } from '@/hooks/useMembershipV2';
 
 interface AdjustUsageModalProps {
   isOpen: boolean;
   onClose: () => void;
-  membershipSummary: MembershipSummary;
+  membershipSummary: MembershipSummary | MembershipSummaryV2;
   onAdjust: (delta: number, reason: string) => Promise<boolean>;
   loading: boolean;
 }
@@ -74,7 +75,9 @@ export const AdjustUsageModal: React.FC<AdjustUsageModalProps> = ({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Membership Type:</span>
-                  <span className="font-medium">{membershipSummary.type}</span>
+                  <span className="font-medium">
+                    {('type' in membershipSummary) ? membershipSummary.type : membershipSummary.membership_type_name}
+                  </span>
                 </div>
                 {membershipSummary.allocation_type === 'CLASS_COUNT' && (
                   <>
