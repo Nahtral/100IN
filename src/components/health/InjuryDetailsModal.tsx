@@ -71,13 +71,15 @@ const InjuryDetailsModal: React.FC<InjuryDetailsModalProps> = ({
         .from('health_wellness')
         .select(`
           *,
-          players!inner(
+          players!health_wellness_player_id_fkey(
             id,
-            profiles!inner(full_name, email),
-            teams(name)
+            profiles!players_user_id_fkey(full_name, email),
+            player_teams!inner(
+              teams!inner(name)
+            )
           )
         `)
-        .eq('injury_status', 'injured')
+        .in('injury_status', ['injured', 'recovering'])
         .order('date', { ascending: false });
 
       if (error) throw error;

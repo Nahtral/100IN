@@ -55,8 +55,10 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
         .from('players')
         .select(`
           *,
-          profiles!inner(full_name, email, phone),
-          teams(name),
+          profiles!players_user_id_fkey(full_name, email, phone),
+          player_teams!inner(
+            teams!inner(name)
+          ),
           health_wellness(fitness_score, injury_status),
           daily_health_checkins(check_in_date)
         `)

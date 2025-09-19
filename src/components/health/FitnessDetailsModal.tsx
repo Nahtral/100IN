@@ -78,10 +78,12 @@ const FitnessDetailsModal: React.FC<FitnessDetailsModalProps> = ({
         .from('health_wellness')
         .select(`
           *,
-          players!inner(
+          players!health_wellness_player_id_fkey(
             id,
-            profiles!inner(full_name, email),
-            teams(name)
+            profiles!players_user_id_fkey(full_name, email),
+            player_teams!inner(
+              teams!inner(name)
+            )
           )
         `)
         .not('fitness_score', 'is', null)

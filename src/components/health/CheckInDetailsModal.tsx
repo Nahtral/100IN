@@ -86,13 +86,13 @@ const CheckInDetailsModal: React.FC<CheckInDetailsModalProps> = ({
         .from('daily_health_checkins')
         .select(`
           *,
-          profiles!inner(
+          players!daily_health_checkins_player_id_fkey(
             id,
-            full_name, 
-            email
-          ),
-          players!inner(
-            id,
+            profiles!players_user_id_fkey(
+              id,
+              full_name, 
+              email
+            ),
             player_teams!inner(
               teams!inner(name)
             )
