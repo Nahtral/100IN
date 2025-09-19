@@ -86,10 +86,16 @@ const CheckInDetailsModal: React.FC<CheckInDetailsModalProps> = ({
         .from('daily_health_checkins')
         .select(`
           *,
+          profiles!inner(
+            id,
+            full_name, 
+            email
+          ),
           players!inner(
             id,
-            profiles!inner(full_name, email),
-            teams(name)
+            player_teams!inner(
+              teams!inner(name)
+            )
           )
         `)
         .order('check_in_date', { ascending: false })
