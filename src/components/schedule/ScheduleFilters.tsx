@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, X, Calendar, MapPin } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Search, Filter, X, Calendar, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +21,7 @@ interface Team {
 }
 
 const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({ onFiltersChange, onClear }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [eventType, setEventType] = useState('');
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -116,10 +117,11 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({ onFiltersChange, onCl
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => setIsOpen(!isOpen)}
             className="text-sm"
           >
-            {isExpanded ? 'Collapse' : 'Expand'}
+            {isOpen ? 'Collapse' : 'Expand'}
+            {isOpen ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
           </Button>
         </div>
       </CardHeader>
@@ -153,7 +155,7 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({ onFiltersChange, onCl
         </div>
 
         {/* Advanced Filters - Collapsible */}
-        {isExpanded && (
+        {isOpen && (
           <div className="space-y-4 pt-4 border-t">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Event Type */}

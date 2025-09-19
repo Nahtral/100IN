@@ -120,6 +120,9 @@ export const useScheduleCache = () => {
           .lte('start_time', filters.date_range.end);
       }
 
+      // Don't apply default sorting in cache - let the component handle it
+      // This allows different tabs to have different sorting logic
+
       // Apply pagination
       if (pagination) {
         const from = (pagination.page - 1) * pagination.limit;
@@ -127,7 +130,7 @@ export const useScheduleCache = () => {
         query = query.range(from, to);
       }
 
-      // Order by start time
+      // Default order by start time (component will re-sort as needed)
       query = query.order('start_time', { ascending: true });
 
       const { data, error: fetchError, count } = await query;

@@ -11,6 +11,8 @@ import ScheduleForm from '@/components/forms/ScheduleForm';
 import { RebuildAttendanceModal } from '@/components/attendance/RebuildAttendanceModal';
 import { HardenedBulkAttendanceModal } from '@/components/attendance/HardenedBulkAttendanceModal';
 import ScheduleFilters from '@/components/schedule/ScheduleFilters';
+import QuickFilters from '@/components/schedule/QuickFilters';
+import FiltersStatus from '@/components/schedule/FiltersStatus';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import DuplicateEventModal from '@/components/schedule/DuplicateEventModal';
 import EventActionMenu from '@/components/schedule/EventActionMenu';
@@ -98,6 +100,13 @@ const Schedule = () => {
     refetch 
   } = useScheduleCache();
 
+  // Apply filters when they change
+  useEffect(() => {
+    if (Object.keys(debouncedFilters).length > 0 || Object.keys(filters).length === 0) {
+      fetchEvents(debouncedFilters);
+    }
+  }, [debouncedFilters, fetchEvents]);
+
   // Debounced refetch to prevent excessive calls
   const debouncedRefetch = useDebouncedCallback(() => refetch(), 1000);
 
@@ -164,17 +173,23 @@ const Schedule = () => {
         event.start_time >= now && 
         (!event.status || event.status === 'active')
       );
+      // Sort upcoming events: earliest first
+      filtered.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
     } else if (activeTab === 'past') {
       filtered = filtered.filter(event => 
         event.start_time < now && 
         (!event.status || event.status === 'active')
       );
+      // Sort past events: most recent first (newest to oldest)
+      filtered.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     } else if (activeTab === 'archived') {
       filtered = filtered.filter(event => event.status === 'archived');
+      // Sort archived events: most recent first
+      filtered.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     }
     
     return filtered;
-  }, [events, activeTab, isSuperAdmin]);
+  }, [events, activeTab, isSuperAdmin, primaryRole, userTeamIds]);
 
   const handleNewEventSave = async (eventData: any) => {
     try {
@@ -404,7 +419,14 @@ const Schedule = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Quick Filters */}
+        <QuickFilters
+          onFiltersChange={setFilters}
+          activeFilters={filters}
+          onClearFilters={() => setFilters({})}
+        />
+
+        {/* Advanced Filters (Collapsible) */}
         <ScheduleFilters
           onFiltersChange={setFilters}
           onClear={() => setFilters({})}
@@ -429,6 +451,14 @@ const Schedule = () => {
 
           <TabsContent value={activeTab} className="space-y-4">{activeTab !== 'locations' && (
             <>
+              {/* Filters Status */}
+              <FiltersStatus
+                activeFilters={filters}
+                onClearFilters={() => setFilters({})}
+                filteredCount={filteredEvents.length}
+                totalCount={events?.length || 0}
+              />
+
               {loading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
