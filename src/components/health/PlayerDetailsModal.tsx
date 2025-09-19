@@ -12,10 +12,10 @@ import {
   Trash2, 
   Activity,
   Calendar,
-  UserCheck
+  UserCheck,
+  Loader2
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { usePlayerHealthData } from '@/hooks/usePlayerHealthData';
 
 interface PlayerDetailsModalProps {
   isOpen: boolean;
@@ -28,17 +28,16 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   onClose,
   isSuperAdmin
 }) => {
-  const [players, setPlayers] = useState<any[]>([]);
   const [filteredPlayers, setFilteredPlayers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const { toast } = useToast();
+  
+  const { players, loading, error, refetch, deactivatePlayer } = usePlayerHealthData();
 
   useEffect(() => {
     if (isOpen) {
-      fetchPlayers();
+      refetch();
     }
-  }, [isOpen]);
+  }, [isOpen, refetch]);
 
   useEffect(() => {
     const filtered = players.filter(player =>
@@ -48,72 +47,21 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
     setFilteredPlayers(filtered);
   }, [searchTerm, players]);
 
-  const fetchPlayers = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('players')
-        .select(`
-          *,
-          profiles!players_user_id_fkey(full_name, email, phone),
-          player_teams!inner(
-            teams!inner(name)
-          ),
-          health_wellness(fitness_score, injury_status),
-          daily_health_checkins(check_in_date)
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPlayers(data || []);
-    } catch (error) {
-      console.error('Error fetching players:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load player data",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeactivatePlayer = async (playerId: string) => {
     if (!isSuperAdmin) return;
-
-    try {
-      const { error } = await supabase
-        .from('players')
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq('id', playerId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Player deactivated successfully"
-      });
-      fetchPlayers();
-    } catch (error) {
-      console.error('Error deactivating player:', error);
-      toast({
-        title: "Error",
-        description: "Failed to deactivate player",
-        variant: "destructive"
-      });
-    }
+    await deactivatePlayer(playerId);
   };
 
   const getHealthStatus = (player: any) => {
-    const latestHealth = player.health_wellness?.[0];
-    if (!latestHealth) return { status: 'No Data', color: 'gray' };
+    if (!player.fitness_score && !player.injury_status) {
+      return { status: 'No Data', color: 'gray' };
+    }
     
-    if (latestHealth.injury_status === 'injured') {
+    if (player.injury_status === 'injured') {
       return { status: 'Injured', color: 'red' };
-    } else if (latestHealth.fitness_score >= 80) {
+    } else if (player.fitness_score >= 80) {
       return { status: 'Excellent', color: 'green' };
-    } else if (latestHealth.fitness_score >= 60) {
+    } else if (player.fitness_score >= 60) {
       return { status: 'Good', color: 'blue' };
     } else {
       return { status: 'Needs Attention', color: 'yellow' };
@@ -121,14 +69,8 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   };
 
   const getLastCheckIn = (player: any) => {
-    const checkIns = player.daily_health_checkins || [];
-    if (checkIns.length === 0) return 'Never';
-    
-    const latest = checkIns.reduce((latest: any, current: any) => 
-      new Date(current.check_in_date) > new Date(latest.check_in_date) ? current : latest
-    );
-    
-    return new Date(latest.check_in_date).toLocaleDateString();
+    if (!player.latest_checkin) return 'Never';
+    return new Date(player.latest_checkin).toLocaleDateString();
   };
 
   return (
@@ -190,7 +132,14 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
           {/* Player List */}
           <div className="space-y-3">
             {loading ? (
-              <div className="text-center py-8">Loading players...</div>
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                Loading players...
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">
+                Error loading players: {error}
+              </div>
             ) : filteredPlayers.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 No players found matching your search.
@@ -212,7 +161,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                             <h3 className="font-semibold">{player.profiles?.full_name || 'Unknown'}</h3>
                             <p className="text-sm text-gray-600">{player.profiles?.email}</p>
                             <p className="text-xs text-gray-500">
-                              Team: {player.teams?.name || 'Not assigned'}
+                              Team: {player.team_name || 'Not assigned'}
                             </p>
                           </div>
                         </div>
@@ -239,7 +188,7 @@ const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
                           <div className="text-center">
                             <div className="flex items-center gap-1 text-sm">
                               <Activity className="h-3 w-3" />
-                              {player.health_wellness?.[0]?.fitness_score || 'N/A'}
+                              {player.fitness_score || 'N/A'}
                             </div>
                             <p className="text-xs text-gray-500">Fitness Score</p>
                           </div>
