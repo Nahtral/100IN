@@ -5650,18 +5650,15 @@ export type Database = {
       }
       vw_player_dashboard_metrics: {
         Row: {
-          active_goals_count: number | null
-          avg_goal_progress: number | null
-          avg_points: number | null
-          check_in_streak: number | null
-          completed_goals_count: number | null
-          current_energy_level: number | null
-          fitness_score: number | null
-          games_played: number | null
-          last_updated: string | null
+          attendance_rate: number | null
+          avg_energy_level: number | null
+          avg_sleep_hours: number | null
+          completed_goals: number | null
           player_id: string | null
           shooting_percentage: number | null
+          total_goals: number | null
           total_makes: number | null
+          total_sessions: number | null
           total_shots: number | null
           user_id: string | null
         }
