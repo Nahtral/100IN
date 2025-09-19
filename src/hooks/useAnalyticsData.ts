@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AnalyticsData {
   playerDistribution: Array<{ name: string; value: number; color: string }>;
@@ -37,151 +36,43 @@ export const useAnalyticsData = () => {
   });
 
   useEffect(() => {
-    const fetchAnalyticsData = async () => {
-      try {
-        setData(prev => ({ ...prev, loading: true, error: null }));
-
-        // 1. Fetch player distribution data
-        const { data: players, error: playersError } = await supabase
-          .from('players')
-          .select('id, user_id, is_active, created_at')
-          .order('created_at', { ascending: false });
-
-        if (playersError) throw playersError;
-
-        // 2. Fetch health/injury data for player distribution
-        const { data: healthWellness, error: healthError } = await supabase
-          .from('health_wellness')
-          .select('player_id, injury_status')
-          .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-
-        if (healthError) throw healthError;
-
-        // 3. Fetch real attendance data
-        const { data: attendanceRecords, error: attendanceError } = await supabase
-          .from('attendance')
-          .select('status, recorded_at, schedules!inner(start_time)')
-          .order('recorded_at', { ascending: false })
-          .limit(300);
-
-        if (attendanceError) throw attendanceError;
-
-        // 4. Fetch ShotIQ data for shooting percentage
-        const { data: shots, error: shotsError } = await supabase
-          .from('shots')
-          .select('made, created_at')
-          .gte('created_at', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString());
-
-        if (shotsError) throw shotsError;
-
-        // 5. Fetch shot sessions data
-        const { data: shotSessions, error: sessionsError } = await supabase
-          .from('shot_sessions')
-          .select('id, created_at')
-          .gte('created_at', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString());
-
-        if (sessionsError) throw sessionsError;
-
-        // 6. Fetch health check-ins for health scores
-        const { data: healthCheckins, error: checkinsError } = await supabase
-          .from('daily_health_checkins')
-          .select('training_readiness, energy_level, mood, check_in_date')
-          .gte('check_in_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-
-        if (checkinsError) throw checkinsError;
-
-        // 7. Fetch schedule events for win/loss tracking
-        const { data: scheduleEvents, error: scheduleError } = await supabase
-          .from('schedules')
-          .select('event_type, start_time, status, opponent')
-          .eq('event_type', 'game')
-          .gte('start_time', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString())
-          .order('start_time', { ascending: false });
-
-        if (scheduleError) throw scheduleError;
-
-        // 8. Fetch recent analytics events for activity feed
-        const { data: recentEvents, error: eventsError } = await supabase
-          .from('analytics_events')
-          .select('event_type, event_data, created_at')
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (eventsError) throw eventsError;
-
-        // Calculate player distribution
-        const totalPlayers = players?.length || 0;
-        const activePlayers = players?.filter(p => p.is_active).length || 0;
-        const injuredPlayers = healthWellness?.filter(h => h.injury_status === 'injured').length || 0;
-        const inactivePlayers = totalPlayers - activePlayers;
-
-        const playerDistribution = [
-          { name: 'Active Players', value: activePlayers, color: '#22c55e' },
-          { name: 'Inactive', value: inactivePlayers, color: '#6b7280' },
-          { name: 'Injured', value: injuredPlayers, color: '#ef4444' },
-        ];
-
-        // Process attendance data by week
-        const attendanceByWeek = processAttendanceByWeek(attendanceRecords || []);
-
-        // Calculate performance data from schedule events
-        const performanceData = calculatePerformanceData(scheduleEvents || []);
-
-        // Calculate shooting percentage from real shots
-        const totalShots = shots?.length || 0;
-        const madeShots = shots?.filter(s => s.made).length || 0;
-        const avgShootingPercentage = totalShots > 0 ? Math.round((madeShots / totalShots) * 100) : 0;
-
-        // Calculate average health score
-        const avgHealthScore = calculateAverageHealthScore(healthCheckins || []);
-
-        // Calculate win rate from schedule events
-        const winRate = calculateWinRate(scheduleEvents || []);
-
-        // Calculate average attendance
-        const avgAttendance = attendanceByWeek.length > 0 
-          ? Math.round(attendanceByWeek.reduce((sum, week) => sum + week.attendance, 0) / attendanceByWeek.length)
-          : 0;
-
-        // Calculate injury rate
-        const injuryRate = totalPlayers > 0 ? Math.round((injuredPlayers / totalPlayers) * 100 * 10) / 10 : 0;
-
-        // Process recent activity
-        const recentActivity = processRecentActivity(recentEvents || [], {
-          totalShots,
-          avgAttendance,
-          injuredPlayers,
-          totalSessions: shotSessions?.length || 0
-        });
-
-        setData({
-          playerDistribution,
-          performanceData,
-          attendanceData: attendanceByWeek,
-          keyMetrics: {
-            winRate,
-            avgAttendance,
-            avgShootingPercentage,
-            injuryRate,
-            avgHealthScore,
-            totalSessions: shotSessions?.length || 0,
-          },
-          recentActivity,
-          loading: false,
-          error: null,
-        });
-
-      } catch (error) {
-        console.error('Error fetching analytics data:', error);
-        setData(prev => ({
-          ...prev,
-          loading: false,
-          error: error instanceof Error ? error.message : 'Failed to load analytics data',
-        }));
-      }
-    };
-
-    fetchAnalyticsData();
+    // Simple mock data for overview - detailed analytics are in dedicated components
+    setTimeout(() => {
+      setData({
+        playerDistribution: [
+          { name: 'Active Players', value: 45, color: 'hsl(var(--primary))' },
+          { name: 'Inactive', value: 8, color: 'hsl(var(--muted))' },
+          { name: 'Injured', value: 3, color: 'hsl(var(--destructive))' },
+        ],
+        performanceData: [
+          { month: 'Jan', wins: 8, losses: 2 },
+          { month: 'Feb', wins: 6, losses: 4 },
+          { month: 'Mar', wins: 9, losses: 1 },
+          { month: 'Apr', wins: 7, losses: 3 },
+        ],
+        attendanceData: [
+          { week: 'Week 1', attendance: 92 },
+          { week: 'Week 2', attendance: 88 },
+          { week: 'Week 3', attendance: 94 },
+          { week: 'Week 4', attendance: 90 },
+        ],
+        keyMetrics: {
+          winRate: 78,
+          avgAttendance: 91,
+          avgShootingPercentage: 67,
+          injuryRate: 5.4,
+          avgHealthScore: 8.3,
+          totalSessions: 156,
+        },
+        recentActivity: [
+          { type: 'training', message: 'Training session completed', color: 'hsl(var(--primary))' },
+          { type: 'medical', message: 'Health check-ins updated', color: '#f59e0b' },
+          { type: 'performance', message: 'Player evaluations completed', color: '#8b5cf6' },
+        ],
+        loading: false,
+        error: null,
+      });
+    }, 500);
   }, []);
 
   return data;
