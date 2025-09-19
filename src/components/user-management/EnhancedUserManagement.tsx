@@ -174,31 +174,37 @@ const fetchRoleTemplates = async () => {
 
 const handleAssignRole = async (userId: string, role: string, reason: string) => {
   try {
-    const { error } = await supabase.rpc('assign_user_role', {
-      target_user_id: userId,
-      target_role: role as any
+    const { data, error } = await supabase.rpc('rpc_user_management_action', {
+      p_action: 'assign_role',
+      p_target_user_id: userId,
+      p_role: role,
+      p_reason: reason
     });
 
-      if (error) throw error;
-      
-      toast.success(`Role ${role} assigned successfully`);
-      await fetchUsers();
-    } catch (error) {
-      console.error('Error assigning role:', error);
-      toast.error('Failed to assign role');
-    }
-  };
+    if (error) throw error;
+    
+    const result = data as { message?: string };
+    toast.success(result?.message || `Role ${role} assigned successfully`);
+    await fetchUsers();
+  } catch (error) {
+    console.error('Error assigning role:', error);
+    toast.error('Failed to assign role');
+  }
+};
 
   const revokeRole = async (userId: string, role: string) => {
     try {
-const { error } = await supabase.rpc('remove_user_role', {
-  target_user_id: userId,
-  target_role: role as any
-});
+      const { data, error } = await supabase.rpc('rpc_user_management_action', {
+        p_action: 'revoke_role',
+        p_target_user_id: userId,
+        p_role: role,
+        p_reason: 'Role revoked by admin'
+      });
 
       if (error) throw error;
       
-      toast.success(`Role ${role} revoked successfully`);
+      const result = data as { message?: string };
+      toast.success(result?.message || `Role ${role} revoked successfully`);
       await fetchUsers();
     } catch (error) {
       console.error('Error revoking role:', error);
@@ -247,17 +253,16 @@ const applyTemplate = async (templateId: string, userId: string) => {
 
   const archiveUser = async (userId: string, reason: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          approval_status: 'rejected',
-          rejection_reason: reason 
-        })
-        .eq('id', userId);
+      const { data, error } = await supabase.rpc('rpc_user_management_action', {
+        p_action: 'archive_user',
+        p_target_user_id: userId,
+        p_reason: reason
+      });
 
       if (error) throw error;
       
-      toast.success('User archived successfully');
+      const result = data as { message?: string };
+      toast.success(result?.message || 'User archived successfully');
       await fetchUsers();
     } catch (error) {
       console.error('Error archiving user:', error);
@@ -267,17 +272,16 @@ const applyTemplate = async (templateId: string, userId: string) => {
 
   const reactivateUser = async (userId: string, reason: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          approval_status: 'approved',
-          rejection_reason: null 
-        })
-        .eq('id', userId);
+      const { data, error } = await supabase.rpc('rpc_user_management_action', {
+        p_action: 'reactivate_user',
+        p_target_user_id: userId,
+        p_reason: reason
+      });
 
       if (error) throw error;
       
-      toast.success('User reactivated successfully');
+      const result = data as { message?: string };
+      toast.success(result?.message || 'User reactivated successfully');
       await fetchUsers();
     } catch (error) {
       console.error('Error reactivating user:', error);
@@ -287,14 +291,16 @@ const applyTemplate = async (templateId: string, userId: string) => {
 
   const deleteUser = async (userId: string, reason: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      const { data, error } = await supabase.rpc('rpc_user_management_action', {
+        p_action: 'delete_user',
+        p_target_user_id: userId,
+        p_reason: reason
+      });
 
       if (error) throw error;
       
-      toast.success('User deleted successfully');
+      const result = data as { message?: string };
+      toast.success(result?.message || 'User deleted successfully');
       await fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -426,7 +432,11 @@ const applyTemplate = async (templateId: string, userId: string) => {
             <CardContent>
               <div className="space-y-4">
                 {filteredUsers.map((user) => (
-                  <div key={user.id} className="border rounded-lg p-4">
+                  <div 
+                    key={user.id} 
+                    className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => viewUserDetails(user)}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-2">
@@ -463,7 +473,8 @@ const applyTemplate = async (templateId: string, userId: string) => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setPermissionManagerUser(user);
                             setPermissionManagerOpen(true);
                           }}
@@ -476,7 +487,10 @@ const applyTemplate = async (templateId: string, userId: string) => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setSelectedUser(user)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedUser(user);
+                              }}
                             >
                               <Edit className="w-4 h-4 mr-1" />
                               Edit

@@ -6172,6 +6172,16 @@ export type Database = {
         }
         Returns: string
       }
+      rpc_bulk_user_operations: {
+        Args: {
+          p_action: string
+          p_performed_by?: string
+          p_reason?: string
+          p_role?: string
+          p_user_ids: string[]
+        }
+        Returns: Json
+      }
       rpc_create_chat: {
         Args:
           | {
@@ -6432,6 +6442,16 @@ export type Database = {
           team_id?: string
         }
         Returns: string
+      }
+      rpc_user_management_action: {
+        Args: {
+          p_action: string
+          p_performed_by?: string
+          p_reason?: string
+          p_role?: string
+          p_target_user_id: string
+        }
+        Returns: Json
       }
       send_message_idempotent: {
         Args: {
