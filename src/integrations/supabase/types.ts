@@ -1444,6 +1444,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "health_wellness_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
+          },
         ]
       }
       injury_reports: {
@@ -3436,6 +3443,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_medical_insurance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
+          },
         ]
       }
       player_memberships: {
@@ -3514,6 +3528,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "player_memberships_membership_type_id_fkey"
@@ -3688,6 +3709,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_performance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
+          },
         ]
       }
       player_teams: {
@@ -3731,6 +3759,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_teams_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "fk_player_teams_team_id"
@@ -4381,6 +4416,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "shot_analytics_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
+          },
+          {
             foreignKeyName: "shot_analytics_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -4449,6 +4491,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "shot_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
+          },
         ]
       }
       shotiq_messages: {
@@ -4495,6 +4544,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shotiq_messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "shotiq_messages_session_id_fkey"
@@ -4606,6 +4662,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "shots_session_id_fkey"
@@ -5585,6 +5648,40 @@ export type Database = {
           },
         ]
       }
+      vw_player_dashboard_metrics: {
+        Row: {
+          active_goals_count: number | null
+          avg_goal_progress: number | null
+          avg_points: number | null
+          check_in_streak: number | null
+          completed_goals_count: number | null
+          current_energy_level: number | null
+          fitness_score: number | null
+          games_played: number | null
+          last_updated: string | null
+          player_id: string | null
+          shooting_percentage: number | null
+          total_makes: number | null
+          total_shots: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_players_profiles"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_players_profiles"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "v_pending_users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       vw_player_membership_usage_secure: {
         Row: {
           allocated_classes: number | null
@@ -5609,6 +5706,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
           },
         ]
       }
@@ -6169,6 +6273,10 @@ export type Database = {
           updated_at: string
           user_id: string
         }[]
+      }
+      rpc_get_player_dashboard_v2: {
+        Args: { target_player_id: string }
+        Returns: Json
       }
       rpc_list_chats: {
         Args: { limit_n?: number; offset_n?: number }

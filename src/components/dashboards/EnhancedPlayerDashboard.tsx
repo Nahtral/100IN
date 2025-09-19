@@ -1,9 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlayerProfile } from '@/hooks/usePlayerProfile';
-import { usePlayerStats } from '@/hooks/usePlayerStats';
-import { usePlayerSchedule } from '@/hooks/usePlayerSchedule';
-import { usePlayerGoals } from '@/hooks/usePlayerGoals';
+import { useRealTimePlayerDashboard } from '@/hooks/useRealTimePlayerDashboard';
 import { usePlayerAttendance } from '@/hooks/usePlayerAttendance';
 import { usePlayerMembership } from '@/hooks/usePlayerMembership';
 import { usePlayerGrades } from '@/hooks/usePlayerGrades';
@@ -18,6 +16,7 @@ import { EvaluationTrendChart } from '@/components/dashboard/EvaluationTrendChar
 import PlayerGradesCard from '@/components/dashboard/PlayerGradesCard';
 import { PlayerDashboardError } from '@/components/dashboard/PlayerDashboardError';
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
+import { RealTimeIndicator } from '@/components/dashboard/RealTimeIndicator';
 import { User, Target, Shield } from 'lucide-react';
 
 // Simple error boundary component
@@ -45,12 +44,30 @@ class SimpleErrorBoundary extends React.Component<
 export const EnhancedPlayerDashboard: React.FC = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, error: profileError, refetch: refetchProfile } = usePlayerProfile();
-  const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = usePlayerStats(profile?.id);
-  const { events, loading: scheduleLoading, error: scheduleError, refetch: refetchSchedule } = usePlayerSchedule(profile?.team_id);
-  const { goals, loading: goalsLoading, error: goalsError, refetch: refetchGoals } = usePlayerGoals(profile?.id);
+  const { data: dashboardData, loading: dashboardLoading, error: dashboardError, refetch: refetchDashboard, isRealTime } = useRealTimePlayerDashboard(profile?.id);
   const { attendance, loading: attendanceLoading, error: attendanceError, refetch: refetchAttendance } = usePlayerAttendance(profile?.id);
   const { membership, loading: membershipLoading, error: membershipError, refetch: refetchMembership } = usePlayerMembership(profile?.id);
   const { grades: playerGrades, loading: gradesLoading, error: gradesError, refetch: refetchGrades } = usePlayerGrades(profile?.id);
+
+  // Extract data from unified dashboard response
+  const stats = dashboardData?.stats || null;
+  const events = dashboardData?.upcomingEvents || [];
+  const goals = dashboardData?.goals || [];
+  
+  // Combine loading states
+  const statsLoading = dashboardLoading;
+  const scheduleLoading = dashboardLoading;
+  const goalsLoading = dashboardLoading;
+  
+  // Combine error states  
+  const statsError = dashboardError;
+  const scheduleError = dashboardError;
+  const goalsError = dashboardError;
+  
+  // Combine refetch functions
+  const refetchStats = refetchDashboard;
+  const refetchSchedule = refetchDashboard;
+  const refetchGoals = refetchDashboard;
 
   // Show loading skeleton while profile is loading
   if (profileLoading) {
@@ -98,13 +115,21 @@ export const EnhancedPlayerDashboard: React.FC = () => {
     <div className="mobile-container mobile-space-y">
         {/* Header */}
         <div className="text-center sm:text-left space-y-4">
-          <div>
-            <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
-              Player Dashboard
-            </h1>
-            <p className="mobile-text text-muted-foreground mt-2">
-              Welcome back, {playerName}! Here's your performance overview.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="mobile-title text-black" style={{ textShadow: '2px 2px 0px #B38F54, -2px -2px 0px #B38F54, 2px -2px 0px #B38F54, -2px 2px 0px #B38F54' }}>
+                Player Dashboard
+              </h1>
+              <p className="mobile-text text-muted-foreground mt-2">
+                Welcome back, {playerName}! Here's your performance overview.
+              </p>
+            </div>
+            
+            <RealTimeIndicator 
+              isRealTime={isRealTime} 
+              lastUpdated={dashboardData?.lastUpdated}
+              className="justify-center sm:justify-end"
+            />
           </div>
           
           {profile.team && (
@@ -151,7 +176,7 @@ export const EnhancedPlayerDashboard: React.FC = () => {
               }
             >
               <PlayerPerformanceChart 
-                performance={stats?.recentPerformance || []} 
+                performance={dashboardData?.recentPerformance || []} 
                 loading={statsLoading} 
                 error={statsError} 
               />
