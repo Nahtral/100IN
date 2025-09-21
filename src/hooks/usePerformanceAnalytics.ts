@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { validateRealData, logDataSource } from '@/utils/realDataValidator';
 
 interface PerformanceMetrics {
   averageGrade: number;
@@ -52,9 +53,9 @@ export const usePerformanceAnalytics = (timeframeDays: number = 30) => {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - timeframeDays);
 
-        // Fetch player grades
+        // Fetch event player grades (correct table)
         const { data: gradesData, error: gradesError } = await supabase
-          .from('player_grades')
+          .from('event_player_grades')
           .select(`
             id,
             overall,
@@ -206,8 +207,16 @@ export const usePerformanceAnalytics = (timeframeDays: number = 30) => {
             ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
             : 0;
           
-          // Calculate improvement (simplified - would need time-series analysis)
-          const improvement = Math.random() * 10 - 5; // Placeholder
+          // Calculate real improvement trend
+          const recentScores = scores.slice(-5); // Last 5 scores
+          const olderScores = scores.slice(0, -5); // Older scores
+          
+          let improvement = 0;
+          if (recentScores.length > 0 && olderScores.length > 0) {
+            const recentAvg = recentScores.reduce((sum, score) => sum + score, 0) / recentScores.length;
+            const olderAvg = olderScores.reduce((sum, score) => sum + score, 0) / olderScores.length;
+            improvement = recentAvg - olderAvg;
+          }
           
           return {
             skill: skill.charAt(0).toUpperCase() + skill.slice(1),
@@ -280,13 +289,17 @@ export const usePerformanceAnalytics = (timeframeDays: number = 30) => {
             evaluationCount: data.count
           }));
 
+        // Validate all data is real
+        validateRealData('PerformanceAnalytics', { averageGrade, gradeDistribution, playerPerformance });
+        logDataSource('PerformanceAnalytics', 'event_player_grades', allGrades.length);
+
         setMetrics({
           averageGrade,
           gradeDistribution,
           playerPerformance,
           evaluationTrends,
           skillBreakdown,
-          teamComparison: [], // Would need team data structure
+          teamComparison: [], // Real team data would require team structure
           loading: false,
           error: null,
         });

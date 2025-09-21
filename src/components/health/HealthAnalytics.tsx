@@ -21,7 +21,7 @@ import {
   Target,
   Clock
 } from 'lucide-react';
-import { useHealthMetrics } from '@/hooks/useHealthMetrics';
+import { useHealthAnalyticsReal } from '@/hooks/useHealthAnalyticsReal';
 import { useInjuryBreakdown } from '@/hooks/useInjuryBreakdown';
 import { InjuryPlayersModal } from './InjuryPlayersModal';
 import PlayerDetailsModal from './PlayerDetailsModal';
@@ -49,24 +49,22 @@ export const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
   // Get timeframe in days
   const timeframeDays = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : timeframe === '90d' ? 90 : 365;
   
-  const { metrics, loading, refreshMetrics } = useHealthMetrics({
-    userRole,
-    timeframeDays
-  });
+  const { 
+    data: healthData, 
+    loading: healthLoading 
+  } = useHealthAnalyticsReal(timeframeDays);
 
   const { 
     data: injuryData, 
     loading: injuryLoading 
   } = useInjuryBreakdown(timeframeDays);
 
+  const loading = healthLoading || injuryLoading;
+
   const handleInjuryClick = (location: string, type: string) => {
     setSelectedInjury({ location, type });
     setInjuryPlayersModalOpen(true);
   };
-
-  useEffect(() => {
-    refreshMetrics();
-  }, [timeframe]);
 
   if (loading) {
     return (
@@ -122,7 +120,7 @@ export const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Players</p>
-                <p className="text-3xl font-bold text-primary">{metrics?.totalPlayers || 0}</p>
+                <p className="text-3xl font-bold text-primary">{healthData?.totalPlayers || 0}</p>
                 <p className="text-xs text-muted-foreground mt-1">Active in health system</p>
               </div>
               <Users className="h-8 w-8 text-primary" />
@@ -148,7 +146,7 @@ export const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Avg Fitness Score</p>
-                <p className="text-3xl font-bold text-green-600">{metrics?.avgFitnessScore || 0}</p>
+                <p className="text-3xl font-bold text-green-600">{healthData?.avgFitnessScore || 0}</p>
                 <p className="text-xs text-muted-foreground mt-1">No change from last period</p>
               </div>
               <Activity className="h-8 w-8 text-green-600" />
@@ -161,7 +159,7 @@ export const HealthAnalytics: React.FC<HealthAnalyticsProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Health Check-ins</p>
-                <p className="text-3xl font-bold text-pink-600">{metrics?.checkInCompletionRate || 0}%</p>
+                <p className="text-3xl font-bold text-pink-600">{healthData?.checkInCompletionRate || 0}%</p>
                 <p className="text-xs text-muted-foreground mt-1">Daily completion rate</p>
               </div>
               <Heart className="h-8 w-8 text-pink-600" />

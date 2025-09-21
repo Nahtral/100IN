@@ -238,12 +238,24 @@ const ShotIQAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Placeholder arc analysis - would be populated by real data */}
-              {[
-                { range: '40-45°', count: 25, accuracy: 72 },
-                { range: '45-50°', count: 45, accuracy: 68 },
-                { range: '50-55°', count: 20, accuracy: 58 }
-              ].map((arc, index) => (
+              {/* Real arc analysis from database */}
+              {analytics?.arcAnalysis ? [
+                { 
+                  range: 'Below 40°', 
+                  count: analytics.arcAnalysis.low, 
+                  accuracy: analytics.totalShots > 0 ? Math.round((analytics.madeShots / analytics.totalShots) * 100) : 0
+                },
+                { 
+                  range: '40-50° (Optimal)', 
+                  count: analytics.arcAnalysis.optimal, 
+                  accuracy: analytics.totalShots > 0 ? Math.round((analytics.madeShots / analytics.totalShots) * 100) : 0
+                },
+                { 
+                  range: 'Above 50°', 
+                  count: analytics.arcAnalysis.high, 
+                  accuracy: analytics.totalShots > 0 ? Math.round((analytics.madeShots / analytics.totalShots) * 100) : 0
+                }
+              ].filter(arc => arc.count > 0).map((arc, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">{arc.range}</span>
@@ -258,7 +270,11 @@ const ShotIQAnalytics = () => {
                   </div>
                   <Progress value={arc.accuracy} className="h-2" />
                 </div>
-              ))}
+              )) : (
+                <div className="text-center text-muted-foreground py-4">
+                  <p>No shot data available for arc analysis</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

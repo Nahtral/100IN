@@ -145,18 +145,17 @@ export const ShotAnalyticsCard: React.FC<ShotAnalyticsCardProps> = ({
         <div className="space-y-3">
           <h4 className="text-sm font-medium">Range Distribution</h4>
           <div className="grid grid-cols-3 gap-2">
-            <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{analytics.shotDistribution.closeRange}</div>
-              <p className="text-xs text-muted-foreground">Close</p>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-yellow-600">{analytics.shotDistribution.midRange}</div>
-              <p className="text-xs text-muted-foreground">Mid</p>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-red-600">{analytics.shotDistribution.longRange}</div>
-              <p className="text-xs text-muted-foreground">Long</p>
-            </div>
+            {analytics.shotDistribution?.slice(0, 3).map((zone, index) => (
+              <div key={zone.zone} className="text-center">
+                <div className={`text-lg font-bold ${
+                  index === 0 ? 'text-green-600' : 
+                  index === 1 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {zone.shots}
+                </div>
+                <p className="text-xs text-muted-foreground">{zone.zone}</p>
+              </div>
+            ))}
           </div>
         </div>
 

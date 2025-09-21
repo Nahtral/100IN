@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Shot } from './useShotSessions';
+import { validateRealData, logDataSource } from '@/utils/realDataValidator';
 
 export interface ShotAnalytics {
   totalShots: number;
@@ -22,11 +23,11 @@ export interface ShotAnalytics {
     shots: number;
     makes: number;
   }>;
-  shotDistribution: {
-    closeRange: number;
-    midRange: number;
-    longRange: number;
-  };
+  shotDistribution: Array<{
+    zone: string;
+    shots: number;
+    accuracy: number;
+  }>;
   arcAnalysis: {
     low: number;
     optimal: number;
@@ -89,7 +90,7 @@ export const useShotAnalytics = (playerId?: string, dateRange?: { start: string;
           improvementTrend: 0,
           bestSession: null,
           recentTrend: [],
-          shotDistribution: { closeRange: 0, midRange: 0, longRange: 0 },
+          shotDistribution: [],
           arcAnalysis: { low: 0, optimal: 0, high: 0 }
         });
         return;
@@ -154,12 +155,41 @@ export const useShotAnalytics = (playerId?: string, dateRange?: { start: string;
       
       const improvementTrend = secondHalfAvg - firstHalfAvg;
 
-      // Shot distribution by depth
-      const shotDistribution = {
-        closeRange: shotData.filter(s => (s.depth_inches || 0) <= 10).length,
-        midRange: shotData.filter(s => (s.depth_inches || 0) > 10 && (s.depth_inches || 0) <= 20).length,
-        longRange: shotData.filter(s => (s.depth_inches || 0) > 20).length
-      };
+      // Shot distribution by distance from basket (using coordinates)
+      const shotDistribution = [
+        { 
+          zone: 'Paint', 
+          shots: shotData.filter(s => {
+            const distance = Math.sqrt(Math.pow(s.court_x_position - 25, 2) + Math.pow(s.court_y_position - 5.25, 2));
+            return distance <= 8; // Paint area
+          }).length,
+          accuracy: 0
+        },
+        { 
+          zone: 'Mid-Range', 
+          shots: shotData.filter(s => {
+            const distance = Math.sqrt(Math.pow(s.court_x_position - 25, 2) + Math.pow(s.court_y_position - 5.25, 2));
+            return distance > 8 && distance <= 23.75; // Between paint and 3-point line
+          }).length,
+          accuracy: 0
+        },
+        { 
+          zone: '3-Point', 
+          shots: shotData.filter(s => {
+            const distance = Math.sqrt(Math.pow(s.court_x_position - 25, 2) + Math.pow(s.court_y_position - 5.25, 2));
+            return distance > 23.75; // Beyond 3-point line
+          }).length,
+          accuracy: 0
+        }
+      ].map(zone => ({
+        ...zone,
+        accuracy: zone.shots > 0 ? Math.round((shotData.filter(s => {
+          const distance = Math.sqrt(Math.pow(s.court_x_position - 25, 2) + Math.pow(s.court_y_position - 5.25, 2));
+          if (zone.zone === 'Paint') return distance <= 8;
+          if (zone.zone === 'Mid-Range') return distance > 8 && distance <= 23.75;
+          return distance > 23.75;
+        }).filter(s => s.made).length / zone.shots) * 100) : 0
+      }));
 
       // Arc analysis
       const arcAnalysis = {
@@ -168,7 +198,8 @@ export const useShotAnalytics = (playerId?: string, dateRange?: { start: string;
         high: shotData.filter(s => (s.arc_degrees || 0) > 50).length
       };
 
-      setAnalytics({
+      // Validate all data is real
+      const analyticsData = {
         totalShots,
         madeShots,
         shootingPercentage,
@@ -181,7 +212,12 @@ export const useShotAnalytics = (playerId?: string, dateRange?: { start: string;
         recentTrend,
         shotDistribution,
         arcAnalysis
-      });
+      };
+      
+      validateRealData('ShotIQAnalytics', analyticsData);
+      logDataSource('ShotIQAnalytics', 'shots', shotData.length);
+
+      setAnalytics(analyticsData);
 
     } catch (err: any) {
       console.error('Error fetching shot analytics:', err);
