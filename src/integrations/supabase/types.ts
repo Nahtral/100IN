@@ -93,6 +93,13 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "attendance_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["team_id"]
+          },
         ]
       }
       benefit_plans: {
@@ -1448,6 +1455,27 @@ export type Database = {
             foreignKeyName: "health_wellness_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "health_wellness_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "health_wellness_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "health_wellness_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "vw_player_dashboard_metrics"
             referencedColumns: ["player_id"]
           },
@@ -2348,6 +2376,13 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "news_updates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["team_id"]
+          },
         ]
       }
       notification_preferences: {
@@ -2841,6 +2876,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_team_sponsorships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["team_id"]
           },
         ]
       }
@@ -3447,6 +3489,27 @@ export type Database = {
             foreignKeyName: "player_medical_insurance_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_medical_insurance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_medical_insurance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_medical_insurance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "vw_player_dashboard_metrics"
             referencedColumns: ["player_id"]
           },
@@ -3528,6 +3591,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "fk_player_memberships_player_id"
@@ -3713,6 +3797,27 @@ export type Database = {
             foreignKeyName: "player_performance_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_performance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_performance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_performance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "vw_player_dashboard_metrics"
             referencedColumns: ["player_id"]
           },
@@ -3764,6 +3869,27 @@ export type Database = {
             foreignKeyName: "fk_player_teams_player_id"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player_teams_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player_teams_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player_teams_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "vw_player_dashboard_metrics"
             referencedColumns: ["player_id"]
           },
@@ -3773,6 +3899,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_teams_team_id"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["team_id"]
           },
         ]
       }
@@ -4419,6 +4552,27 @@ export type Database = {
             foreignKeyName: "shot_analytics_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_analytics_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_analytics_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_analytics_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "vw_player_dashboard_metrics"
             referencedColumns: ["player_id"]
           },
@@ -4495,6 +4649,27 @@ export type Database = {
             foreignKeyName: "shot_sessions_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shot_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "vw_player_dashboard_metrics"
             referencedColumns: ["player_id"]
           },
@@ -4544,6 +4719,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shotiq_messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shotiq_messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shotiq_messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "shotiq_messages_player_id_fkey"
@@ -4662,6 +4858,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "shots_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "shots_player_id_fkey"
@@ -5478,6 +5695,21 @@ export type Database = {
         }
         Relationships: []
       }
+      v_attendance_analytics: {
+        Row: {
+          absent_count: number | null
+          attendance_percentage: number | null
+          excused_count: number | null
+          jersey_number: number | null
+          late_count: number | null
+          player_id: string | null
+          player_name: string | null
+          present_count: number | null
+          team_name: string | null
+          total_events: number | null
+        }
+        Relationships: []
+      }
       v_chat_display: {
         Row: {
           chat_id: string | null
@@ -5514,6 +5746,22 @@ export type Database = {
           original_name?: string | null
           status?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_health_analytics_summary: {
+        Row: {
+          active_injuries: number | null
+          avg_energy_level: number | null
+          avg_fitness_score: number | null
+          avg_sleep_quality: number | null
+          avg_training_readiness: number | null
+          jersey_number: number | null
+          last_checkin_date: string | null
+          player_id: string | null
+          player_name: string | null
+          team_name: string | null
+          total_checkins: number | null
         }
         Relationships: []
       }
@@ -5582,6 +5830,24 @@ export type Database = {
           },
         ]
       }
+      v_player_performance_analytics: {
+        Row: {
+          avg_defense: number | null
+          avg_dribbling: number | null
+          avg_overall_grade: number | null
+          avg_passing: number | null
+          avg_shooting: number | null
+          jersey_number: number | null
+          last_evaluation_date: string | null
+          performance_level: string | null
+          player_id: string | null
+          player_name: string | null
+          team_id: string | null
+          team_name: string | null
+          total_evaluations: number | null
+        }
+        Relationships: []
+      }
       vw_attendance_with_membership_v2: {
         Row: {
           event_id: string | null
@@ -5611,6 +5877,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["team_id"]
           },
         ]
       }
@@ -5703,6 +5976,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "fk_player_memberships_player_id"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
           },
           {
             foreignKeyName: "fk_player_memberships_player_id"
@@ -6252,6 +6546,17 @@ export type Database = {
           role_display: string
         }[]
       }
+      rpc_get_health_metrics_realtime: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_injuries: number
+          avg_fitness_score: number
+          checkin_completion_rate: number
+          daily_checkins_today: number
+          recent_checkins: Json
+          total_players: number
+        }[]
+      }
       rpc_get_injury_breakdown: {
         Args: { days_back?: number }
         Returns: Json
@@ -6283,6 +6588,19 @@ export type Database = {
           preferred_role: string
           updated_at: string
           user_id: string
+        }[]
+      }
+      rpc_get_player_analytics_detailed: {
+        Args: { timeframe_days?: number }
+        Returns: {
+          attendance_data: Json
+          health_data: Json
+          jersey_number: number
+          performance_data: Json
+          player_id: string
+          player_name: string
+          team_id: string
+          team_name: string
         }[]
       }
       rpc_get_player_dashboard_v2: {
