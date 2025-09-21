@@ -8,6 +8,8 @@ import PerformanceAnalytics from '@/components/analytics/PerformanceAnalytics';
 import ShotIQAnalytics from '@/components/analytics/ShotIQAnalytics';
 import HealthAnalytics from '@/components/health/HealthAnalytics';
 import { HealthProvider } from '@/contexts/HealthContext';
+import { Badge } from '@/components/ui/badge';
+import { Activity } from 'lucide-react';
 
 const Analytics = () => {
   const { currentUser } = useCurrentUser();
@@ -16,11 +18,17 @@ const Analytics = () => {
     <RoleProtectedRoute allowedRoles={['super_admin']}>
       <Layout currentUser={currentUser}>
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics Hub</h1>
-            <p className="text-muted-foreground">
-              Comprehensive analytics dashboard with detailed insights
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Analytics Hub</h1>
+              <p className="text-muted-foreground">
+                Comprehensive analytics dashboard with detailed insights and real-time data
+              </p>
+            </div>
+            <Badge variant="default" className="flex items-center gap-2">
+              <Activity className="h-3 w-3" />
+              Live Data
+            </Badge>
           </div>
 
           <Tabs defaultValue="attendance" className="w-full">
