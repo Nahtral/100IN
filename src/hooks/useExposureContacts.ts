@@ -47,10 +47,10 @@ export const useExposureContacts = (filters: Filters) => {
       setLoading(true);
       setError(null);
 
-      // Clean filters - remove empty values
+      // Clean filters - remove empty values and convert "all" to empty
       const cleanFilters: any = {};
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value.trim() !== '') {
+        if (value && value.trim() !== '' && value !== 'all') {
           cleanFilters[key] = value;
         }
       });

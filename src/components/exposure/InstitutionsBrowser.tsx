@@ -57,12 +57,12 @@ export const InstitutionsBrowser = () => {
   const clearFilters = () => {
     setFilters({
       search_term: '',
-      country: '',
-      level: '',
+      country: 'all',
+      level: 'all',
       state_province: '',
       sport: '',
-      department_category: '',
-      verification_status: '',
+      department_category: 'all',
+      verification_status: 'all',
       sort_by: 'institution_name'
     });
   };
@@ -119,7 +119,7 @@ export const InstitutionsBrowser = () => {
                 <SelectValue placeholder="Country" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Countries</SelectItem>
+                <SelectItem value="all">All Countries</SelectItem>
                 <SelectItem value="USA">United States</SelectItem>
                 <SelectItem value="CAN">Canada</SelectItem>
               </SelectContent>
@@ -130,7 +130,7 @@ export const InstitutionsBrowser = () => {
                 <SelectValue placeholder="Level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Levels</SelectItem>
+                <SelectItem value="all">All Levels</SelectItem>
                 <SelectItem value="HS">High School</SelectItem>
                 <SelectItem value="University">University</SelectItem>
               </SelectContent>
@@ -141,7 +141,7 @@ export const InstitutionsBrowser = () => {
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Departments</SelectItem>
+                <SelectItem value="all">All Departments</SelectItem>
                 <SelectItem value="Admissions">Admissions</SelectItem>
                 <SelectItem value="Athletics">Athletics</SelectItem>
                 <SelectItem value="Academics">Academics</SelectItem>
@@ -170,7 +170,7 @@ export const InstitutionsBrowser = () => {
                 <SelectValue placeholder="Verification Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="verified">Verified</SelectItem>
                 <SelectItem value="stale">Stale</SelectItem>
                 <SelectItem value="bounced">Bounced</SelectItem>
