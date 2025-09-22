@@ -406,6 +406,150 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_list_items: {
+        Row: {
+          added_at: string | null
+          added_by: string
+          contact_id: string
+          list_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          added_by: string
+          contact_id: string
+          list_id: string
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string
+          contact_id?: string
+          list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_list_items_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "contact_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_lists: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          bounce_count: number | null
+          created_at: string | null
+          data_source: string
+          department_id: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          institution_id: string
+          is_primary: boolean | null
+          last_contact_attempt: string | null
+          last_name: string | null
+          last_verified_at: string | null
+          metadata: Json | null
+          office_location: string | null
+          phone: string | null
+          title: string | null
+          updated_at: string | null
+          verification_status: Database["public"]["Enums"]["verification_status"]
+        }
+        Insert: {
+          bounce_count?: number | null
+          created_at?: string | null
+          data_source: string
+          department_id?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          institution_id: string
+          is_primary?: boolean | null
+          last_contact_attempt?: string | null
+          last_name?: string | null
+          last_verified_at?: string | null
+          metadata?: Json | null
+          office_location?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+        }
+        Update: {
+          bounce_count?: number | null
+          created_at?: string | null
+          data_source?: string
+          department_id?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          institution_id?: string
+          is_primary?: boolean | null
+          last_contact_attempt?: string | null
+          last_name?: string | null
+          last_verified_at?: string | null
+          metadata?: Json | null
+          office_location?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_health_checkins: {
         Row: {
           additional_notes: string | null
@@ -507,6 +651,104 @@ export type Database = {
           widget_preferences?: Json | null
         }
         Relationships: []
+      }
+      data_connectors: {
+        Row: {
+          api_key_name: string | null
+          configuration: Json | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          id: string
+          is_enabled: boolean | null
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          requires_api_key: boolean | null
+          schedule_cron: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_key_name?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          is_enabled?: boolean | null
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          requires_api_key?: boolean | null
+          schedule_cron?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_key_name?: string | null
+          configuration?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_enabled?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          requires_api_key?: boolean | null
+          schedule_cron?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          category: Database["public"]["Enums"]["department_category"]
+          created_at: string | null
+          data_source: string
+          description: string | null
+          id: string
+          institution_id: string
+          last_verified_at: string | null
+          name: string
+          program_level: string | null
+          sport: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["department_category"]
+          created_at?: string | null
+          data_source: string
+          description?: string | null
+          id?: string
+          institution_id: string
+          last_verified_at?: string | null
+          name: string
+          program_level?: string | null
+          sport?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["department_category"]
+          created_at?: string | null
+          data_source?: string
+          description?: string | null
+          id?: string
+          institution_id?: string
+          last_verified_at?: string | null
+          name?: string
+          program_level?: string | null
+          sport?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       development_goals: {
         Row: {
@@ -1236,6 +1478,42 @@ export type Database = {
           },
         ]
       }
+      exposure_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_log_ai_jobs: {
         Row: {
           ai_response: Json | null
@@ -1481,6 +1759,57 @@ export type Database = {
           },
         ]
       }
+      ingestion_runs: {
+        Row: {
+          connector: string
+          contacts_added: number | null
+          contacts_updated: number | null
+          departments_added: number | null
+          departments_updated: number | null
+          error_count: number | null
+          finished_at: string | null
+          id: string
+          institutions_added: number | null
+          institutions_updated: number | null
+          log_messages: Json | null
+          metadata: Json | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          connector: string
+          contacts_added?: number | null
+          contacts_updated?: number | null
+          departments_added?: number | null
+          departments_updated?: number | null
+          error_count?: number | null
+          finished_at?: string | null
+          id?: string
+          institutions_added?: number | null
+          institutions_updated?: number | null
+          log_messages?: Json | null
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          connector?: string
+          contacts_added?: number | null
+          contacts_updated?: number | null
+          departments_added?: number | null
+          departments_updated?: number | null
+          error_count?: number | null
+          finished_at?: string | null
+          id?: string
+          institutions_added?: number | null
+          institutions_updated?: number | null
+          log_messages?: Json | null
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       injury_reports: {
         Row: {
           created_at: string
@@ -1541,6 +1870,78 @@ export type Database = {
           symptoms?: string[] | null
           treatment_received?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      institutions: {
+        Row: {
+          athletics_division: string | null
+          boarding_available: boolean | null
+          city: string | null
+          conference: string | null
+          country: Database["public"]["Enums"]["exposure_country"]
+          created_at: string | null
+          data_source: string
+          enrollment_size: number | null
+          gpa_range: Json | null
+          id: string
+          international_admissions: boolean | null
+          is_private: boolean | null
+          last_verified_at: string | null
+          level: Database["public"]["Enums"]["education_level"]
+          metadata: Json | null
+          name: string
+          sat_range: Json | null
+          source_ref: string | null
+          state_province: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          athletics_division?: string | null
+          boarding_available?: boolean | null
+          city?: string | null
+          conference?: string | null
+          country: Database["public"]["Enums"]["exposure_country"]
+          created_at?: string | null
+          data_source: string
+          enrollment_size?: number | null
+          gpa_range?: Json | null
+          id?: string
+          international_admissions?: boolean | null
+          is_private?: boolean | null
+          last_verified_at?: string | null
+          level: Database["public"]["Enums"]["education_level"]
+          metadata?: Json | null
+          name: string
+          sat_range?: Json | null
+          source_ref?: string | null
+          state_province?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          athletics_division?: string | null
+          boarding_available?: boolean | null
+          city?: string | null
+          conference?: string | null
+          country?: Database["public"]["Enums"]["exposure_country"]
+          created_at?: string | null
+          data_source?: string
+          enrollment_size?: number | null
+          gpa_range?: Json | null
+          id?: string
+          international_admissions?: boolean | null
+          is_private?: boolean | null
+          last_verified_at?: string | null
+          level?: Database["public"]["Enums"]["education_level"]
+          metadata?: Json | null
+          name?: string
+          sat_range?: Json | null
+          source_ref?: string | null
+          state_province?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -2579,6 +2980,285 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      outreach: {
+        Row: {
+          body_html: string
+          contact_id: string | null
+          created_at: string | null
+          created_by: string
+          error_message: string | null
+          id: string
+          institution_id: string
+          last_status_at: string | null
+          list_id: string | null
+          metadata: Json | null
+          opened_at: string | null
+          replied_at: string | null
+          retry_count: number | null
+          scheduled_for: string | null
+          sent_at: string | null
+          sent_via: string
+          sequence_id: string | null
+          sequence_step: number | null
+          status: Database["public"]["Enums"]["outreach_status"]
+          subject: string
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          body_html: string
+          contact_id?: string | null
+          created_at?: string | null
+          created_by: string
+          error_message?: string | null
+          id?: string
+          institution_id: string
+          last_status_at?: string | null
+          list_id?: string | null
+          metadata?: Json | null
+          opened_at?: string | null
+          replied_at?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_via?: string
+          sequence_id?: string | null
+          sequence_step?: number | null
+          status?: Database["public"]["Enums"]["outreach_status"]
+          subject: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          body_html?: string
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          error_message?: string | null
+          id?: string
+          institution_id?: string
+          last_status_at?: string | null
+          list_id?: string | null
+          metadata?: Json | null
+          opened_at?: string | null
+          replied_at?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_via?: string
+          sequence_id?: string | null
+          sequence_step?: number | null
+          status?: Database["public"]["Enums"]["outreach_status"]
+          subject?: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "contact_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_messages: {
+        Row: {
+          attachments: Json | null
+          bcc_emails: string[] | null
+          bounce_reason: string | null
+          bounced_at: string | null
+          cc_emails: string[] | null
+          clicked_at: string | null
+          created_at: string | null
+          delivered_at: string | null
+          id: string
+          opened_at: string | null
+          outreach_id: string
+          provider_message_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["outreach_status"]
+          to_email: string
+          to_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          bcc_emails?: string[] | null
+          bounce_reason?: string | null
+          bounced_at?: string | null
+          cc_emails?: string[] | null
+          clicked_at?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          id?: string
+          opened_at?: string | null
+          outreach_id: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["outreach_status"]
+          to_email: string
+          to_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          bcc_emails?: string[] | null
+          bounce_reason?: string | null
+          bounced_at?: string | null
+          cc_emails?: string[] | null
+          clicked_at?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          id?: string
+          opened_at?: string | null
+          outreach_id?: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["outreach_status"]
+          to_email?: string
+          to_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_messages_outreach_id_fkey"
+            columns: ["outreach_id"]
+            isOneToOne: false
+            referencedRelation: "outreach"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_players: {
+        Row: {
+          included_data: Json | null
+          outreach_id: string
+          player_id: string
+        }
+        Insert: {
+          included_data?: Json | null
+          outreach_id: string
+          player_id: string
+        }
+        Update: {
+          included_data?: Json | null
+          outreach_id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_players_outreach_id_fkey"
+            columns: ["outreach_id"]
+            isOneToOne: false
+            referencedRelation: "outreach"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_attendance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "outreach_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_health_analytics_summary"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "outreach_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "v_player_performance_analytics"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "outreach_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "vw_player_dashboard_metrics"
+            referencedColumns: ["player_id"]
+          },
+        ]
+      }
+      outreach_templates: {
+        Row: {
+          audience: Database["public"]["Enums"]["template_audience"]
+          body_html: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_active: boolean | null
+          name: string
+          subject: string
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          audience: Database["public"]["Enums"]["template_audience"]
+          body_html: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          subject: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["template_audience"]
+          body_html?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          subject?: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Relationships: []
       }
       parent_child_relationships: {
         Row: {
@@ -4371,6 +5051,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sequences: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          steps: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          steps: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          steps?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       shift_templates: {
         Row: {
@@ -6811,6 +7524,23 @@ export type Database = {
       }
     }
     Enums: {
+      department_category:
+        | "Admissions"
+        | "Athletics"
+        | "Academics"
+        | "FinancialAid"
+        | "InternationalOffice"
+        | "Other"
+      education_level: "HS" | "University"
+      exposure_country: "USA" | "CAN"
+      outreach_status:
+        | "queued"
+        | "sent"
+        | "bounced"
+        | "opened"
+        | "replied"
+        | "failed"
+      template_audience: "Admissions" | "Athletics"
       tryout_team: "Gold" | "Black" | "White"
       user_role:
         | "super_admin"
@@ -6820,6 +7550,7 @@ export type Database = {
         | "parent"
         | "medical"
         | "partner"
+      verification_status: "verified" | "stale" | "bounced" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6947,6 +7678,25 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      department_category: [
+        "Admissions",
+        "Athletics",
+        "Academics",
+        "FinancialAid",
+        "InternationalOffice",
+        "Other",
+      ],
+      education_level: ["HS", "University"],
+      exposure_country: ["USA", "CAN"],
+      outreach_status: [
+        "queued",
+        "sent",
+        "bounced",
+        "opened",
+        "replied",
+        "failed",
+      ],
+      template_audience: ["Admissions", "Athletics"],
       tryout_team: ["Gold", "Black", "White"],
       user_role: [
         "super_admin",
@@ -6957,6 +7707,7 @@ export const Constants = {
         "medical",
         "partner",
       ],
+      verification_status: ["verified", "stale", "bounced", "pending"],
     },
   },
 } as const
