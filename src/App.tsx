@@ -35,6 +35,7 @@ const MembershipTypes = React.lazy(() => import("./pages/MembershipTypes"));
 const StaffManagement = React.lazy(() => import("./pages/StaffManagement"));
 const HRSection = React.lazy(() => import("./pages/HRSection"));
 const DevHealth = React.lazy(() => import("./pages/DevHealth"));
+const ExposurePortal = React.lazy(() => import("./pages/ExposurePortal"));
 
 const LoadingFallback = () => (
   <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
@@ -98,6 +99,11 @@ function AppRoutes() {
         <Route path="/user-management" element={
           <RoleProtectedRoute allowedRoles={['super_admin']}>
             <ErrorBoundaryWrapper><UserManagement /></ErrorBoundaryWrapper>
+          </RoleProtectedRoute>
+        } />
+        <Route path="/exposure-portal" element={
+          <RoleProtectedRoute allowedRoles={['super_admin']}>
+            <ErrorBoundaryWrapper><ExposurePortal /></ErrorBoundaryWrapper>
           </RoleProtectedRoute>
         } />
         <Route path="/evaluations" element={

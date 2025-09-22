@@ -15,7 +15,8 @@ import {
   Newspaper,
   MessageCircle,
   Target,
-  CreditCard
+  CreditCard,
+  School
 } from 'lucide-react';
 import {
   Sidebar,
@@ -161,6 +162,11 @@ export function AppSidebar() {
       title: 'News Manager',
       href: '/news-manager',
       icon: Newspaper,
+    },
+    {
+      title: 'Exposure Portal',
+      href: '/exposure-portal',
+      icon: School,
     },
     {
       title: 'Membership Types',

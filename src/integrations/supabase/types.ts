@@ -7071,6 +7071,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_exposure_audit: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_resource_id?: string
+          p_resource_type: string
+        }
+        Returns: undefined
+      }
       mark_all_notifications_read: {
         Args: { user_uuid?: string }
         Returns: undefined
@@ -7320,6 +7329,10 @@ export type Database = {
         Args: { target_player_id: string }
         Returns: Json
       }
+      rpc_get_player_profile_data: {
+        Args: { p_player_id: string }
+        Returns: Json
+      }
       rpc_list_chats: {
         Args: { limit_n?: number; offset_n?: number }
         Returns: {
@@ -7415,6 +7428,31 @@ export type Database = {
           overall: number
         }[]
       }
+      rpc_search_contacts: {
+        Args: { p_filters?: Json; p_limit?: number; p_offset?: number }
+        Returns: {
+          city: string
+          conference: string
+          contact_email: string
+          contact_first_name: string
+          contact_last_name: string
+          contact_phone: string
+          contact_title: string
+          data_source: string
+          department_category: Database["public"]["Enums"]["department_category"]
+          department_id: string
+          department_name: string
+          id: string
+          institution_country: Database["public"]["Enums"]["exposure_country"]
+          institution_id: string
+          institution_level: Database["public"]["Enums"]["education_level"]
+          institution_name: string
+          last_verified_at: string
+          sport: string
+          state_province: string
+          verification_status: Database["public"]["Enums"]["verification_status"]
+        }[]
+      }
       rpc_send_message: {
         Args: {
           attachment_name_param?: string
@@ -7425,6 +7463,10 @@ export type Database = {
           message_type_param?: string
           reply_to_id_param?: string
         }
+        Returns: string
+      }
+      rpc_send_outreach: {
+        Args: { p_outreach: Json }
         Returns: string
       }
       rpc_update_chat: {
@@ -7444,6 +7486,14 @@ export type Database = {
           p_team_id: string
         }
         Returns: Json
+      }
+      rpc_upsert_contact: {
+        Args: { p_contact: Json }
+        Returns: string
+      }
+      rpc_upsert_institution: {
+        Args: { p_institution: Json }
+        Returns: string
       }
       rpc_upsert_partner: {
         Args: {
