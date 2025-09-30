@@ -11,7 +11,7 @@ import { Users, Save } from 'lucide-react';
 
 const teamFormSchema = z.object({
   name: z.string().min(2, 'Team name must be at least 2 characters'),
-  ageGroup: z.string().min(1, 'Age group is required'),
+  age_group: z.string().min(1, 'Age group is required'),
   season: z.string().min(1, 'Season is required'),
 });
 
@@ -29,7 +29,7 @@ const TeamForm: React.FC<TeamFormProps> = ({ onSubmit, initialData, isLoading = 
     resolver: zodResolver(teamFormSchema),
     defaultValues: {
       name: initialData?.name || '',
-      ageGroup: initialData?.ageGroup || '',
+      age_group: initialData?.age_group || '',
       season: initialData?.season || '',
     },
   });
@@ -62,7 +62,7 @@ const TeamForm: React.FC<TeamFormProps> = ({ onSubmit, initialData, isLoading = 
               
               <FormField
                 control={form.control}
-                name="ageGroup"
+                name="age_group"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Age Group</FormLabel>

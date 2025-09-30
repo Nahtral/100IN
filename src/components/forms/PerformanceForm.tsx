@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Save } from 'lucide-react';
 
 const performanceFormSchema = z.object({
-  gameDate: z.string().min(1, 'Game date is required'),
+  game_date: z.string().min(1, 'Game date is required'),
   opponent: z.string().min(1, 'Opponent is required'),
   points: z.number().min(0, 'Points must be 0 or greater'),
   assists: z.number().min(0, 'Assists must be 0 or greater'),
@@ -18,11 +18,11 @@ const performanceFormSchema = z.object({
   steals: z.number().min(0, 'Steals must be 0 or greater'),
   blocks: z.number().min(0, 'Blocks must be 0 or greater'),
   turnovers: z.number().min(0, 'Turnovers must be 0 or greater'),
-  fieldGoalsMade: z.number().min(0, 'Field goals made must be 0 or greater'),
-  fieldGoalsAttempted: z.number().min(0, 'Field goals attempted must be 0 or greater'),
-  freeThrowsMade: z.number().min(0, 'Free throws made must be 0 or greater'),
-  freeThrowsAttempted: z.number().min(0, 'Free throws attempted must be 0 or greater'),
-  minutesPlayed: z.number().min(0, 'Minutes played must be 0 or greater'),
+  field_goals_made: z.number().min(0, 'Field goals made must be 0 or greater'),
+  field_goals_attempted: z.number().min(0, 'Field goals attempted must be 0 or greater'),
+  free_throws_made: z.number().min(0, 'Free throws made must be 0 or greater'),
+  free_throws_attempted: z.number().min(0, 'Free throws attempted must be 0 or greater'),
+  minutes_played: z.number().min(0, 'Minutes played must be 0 or greater'),
 });
 
 type PerformanceFormData = z.infer<typeof performanceFormSchema>;
@@ -37,7 +37,7 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
   const form = useForm<PerformanceFormData>({
     resolver: zodResolver(performanceFormSchema),
     defaultValues: {
-      gameDate: initialData?.gameDate || '',
+      game_date: initialData?.game_date || '',
       opponent: initialData?.opponent || '',
       points: initialData?.points || 0,
       assists: initialData?.assists || 0,
@@ -45,11 +45,11 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
       steals: initialData?.steals || 0,
       blocks: initialData?.blocks || 0,
       turnovers: initialData?.turnovers || 0,
-      fieldGoalsMade: initialData?.fieldGoalsMade || 0,
-      fieldGoalsAttempted: initialData?.fieldGoalsAttempted || 0,
-      freeThrowsMade: initialData?.freeThrowsMade || 0,
-      freeThrowsAttempted: initialData?.freeThrowsAttempted || 0,
-      minutesPlayed: initialData?.minutesPlayed || 0,
+      field_goals_made: initialData?.field_goals_made || 0,
+      field_goals_attempted: initialData?.field_goals_attempted || 0,
+      free_throws_made: initialData?.free_throws_made || 0,
+      free_throws_attempted: initialData?.free_throws_attempted || 0,
+      minutes_played: initialData?.minutes_played || 0,
     },
   });
 
@@ -67,7 +67,7 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="gameDate"
+                name="game_date"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Game Date</FormLabel>
@@ -209,7 +209,7 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
               
               <FormField
                 control={form.control}
-                name="fieldGoalsMade"
+                name="field_goals_made"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Field Goals Made</FormLabel>
@@ -228,7 +228,7 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
               
               <FormField
                 control={form.control}
-                name="fieldGoalsAttempted"
+                name="field_goals_attempted"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Field Goals Attempted</FormLabel>
@@ -247,7 +247,7 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
               
               <FormField
                 control={form.control}
-                name="freeThrowsMade"
+                name="free_throws_made"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Free Throws Made</FormLabel>
@@ -266,7 +266,7 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
               
               <FormField
                 control={form.control}
-                name="freeThrowsAttempted"
+                name="free_throws_attempted"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Free Throws Attempted</FormLabel>
@@ -285,7 +285,7 @@ const PerformanceForm: React.FC<PerformanceFormProps> = ({ onSubmit, initialData
               
               <FormField
                 control={form.control}
-                name="minutesPlayed"
+                name="minutes_played"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Minutes Played</FormLabel>

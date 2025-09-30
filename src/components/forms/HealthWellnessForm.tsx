@@ -15,11 +15,11 @@ import { useSecurityMonitoring } from '@/hooks/useSecurityMonitoring';
 const healthWellnessFormSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   weight: z.number().min(0, 'Weight must be 0 or greater').optional(),
-  bodyFatPercentage: z.number().min(0).max(100, 'Body fat percentage must be between 0 and 100').optional(),
-  fitnessScore: z.number().min(1).max(10, 'Fitness score must be between 1 and 10').optional(),
-  injuryStatus: z.string().optional(),
-  injuryDescription: z.string().optional(),
-  medicalNotes: z.string().optional(),
+  body_fat_percentage: z.number().min(0).max(100, 'Body fat percentage must be between 0 and 100').optional(),
+  fitness_score: z.number().min(1).max(10, 'Fitness score must be between 1 and 10').optional(),
+  injury_status: z.string().optional(),
+  injury_description: z.string().optional(),
+  medical_notes: z.string().optional(),
 });
 
 type HealthWellnessFormData = z.infer<typeof healthWellnessFormSchema>;
@@ -38,11 +38,11 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
     defaultValues: {
       date: initialData?.date || new Date().toISOString().split('T')[0],
       weight: initialData?.weight || undefined,
-      bodyFatPercentage: initialData?.bodyFatPercentage || undefined,
-      fitnessScore: initialData?.fitnessScore || undefined,
-      injuryStatus: initialData?.injuryStatus || '',
-      injuryDescription: initialData?.injuryDescription || '',
-      medicalNotes: initialData?.medicalNotes || '',
+      body_fat_percentage: initialData?.body_fat_percentage || undefined,
+      fitness_score: initialData?.fitness_score || undefined,
+      injury_status: initialData?.injury_status || '',
+      injury_description: initialData?.injury_description || '',
+      medical_notes: initialData?.medical_notes || '',
     },
   });
 
@@ -50,12 +50,12 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
     // Validate and sanitize medical data
     const sanitizedData = {
       ...data,
-      injuryDescription: data.injuryDescription ? validateSensitiveInput(data.injuryDescription, 'medical') : '',
-      medicalNotes: data.medicalNotes ? validateSensitiveInput(data.medicalNotes, 'medical') : '',
+      injury_description: data.injury_description ? validateSensitiveInput(data.injury_description, 'medical') : '',
+      medical_notes: data.medical_notes ? validateSensitiveInput(data.medical_notes, 'medical') : '',
     };
 
     // Check for SQL injection attempts
-    const inputs = [data.injuryDescription, data.medicalNotes].filter(Boolean);
+    const inputs = [data.injury_description, data.medical_notes].filter(Boolean);
     for (const input of inputs) {
       if (checkSQLInjection(input)) {
         logSecurityEvent('sql_injection_attempt', { 
@@ -69,8 +69,8 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
     // Log medical data submission for audit
     logSecurityEvent('medical_data_submission', {
       form: 'health_wellness',
-      has_injury_data: !!data.injuryDescription,
-      has_medical_notes: !!data.medicalNotes
+      has_injury_data: !!data.injury_description,
+      has_medical_notes: !!data.medical_notes
     }, 'low');
 
     onSubmit(sanitizedData);
@@ -125,7 +125,7 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
               
               <FormField
                 control={form.control}
-                name="bodyFatPercentage"
+                name="body_fat_percentage"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Body Fat Percentage (%)</FormLabel>
@@ -144,7 +144,7 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
               
               <FormField
                 control={form.control}
-                name="fitnessScore"
+                name="fitness_score"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fitness Score (1-10)</FormLabel>
@@ -163,9 +163,9 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="injuryStatus"
+            <FormField
+              control={form.control}
+              name="injury_status"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Injury Status</FormLabel>
@@ -191,7 +191,7 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
             
             <FormField
               control={form.control}
-              name="injuryDescription"
+              name="injury_description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Injury Description</FormLabel>
@@ -209,7 +209,7 @@ const HealthWellnessForm: React.FC<HealthWellnessFormProps> = ({ onSubmit, initi
             
             <FormField
               control={form.control}
-              name="medicalNotes"
+              name="medical_notes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Medical Notes</FormLabel>

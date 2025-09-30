@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const userRegistrationSchema = z.object({
   email: z.string().email('Invalid email address'),
-  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
   role: z.string().min(1, 'Role is required'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -41,7 +41,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onSubmit, i
     resolver: zodResolver(userRegistrationSchema),
     defaultValues: {
       email: initialData?.email || '',
-      fullName: initialData?.fullName || '',
+      full_name: initialData?.full_name || '',
       phone: initialData?.phone || '',
       role: initialData?.role || '',
       password: '',
@@ -117,7 +117,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onSubmit, i
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="fullName"
+                name="full_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>

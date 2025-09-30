@@ -16,18 +16,18 @@ import { supabase } from '@/integrations/supabase/client';
 const scheduleFormSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().optional(),
-  eventType: z.string().min(1, 'Event type is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  startTime: z.string().min(1, 'Start time is required'),
-  endDate: z.string().min(1, 'End date is required'),
-  endTime: z.string().min(1, 'End time is required'),
+  event_type: z.string().min(1, 'Event type is required'),
+  start_date: z.string().min(1, 'Start date is required'),
+  start_time: z.string().min(1, 'Start time is required'),
+  end_date: z.string().min(1, 'End date is required'),
+  end_time: z.string().min(1, 'End time is required'),
   location: z.string().min(2, 'Location is required'),
   opponent: z.string().optional(),
-  teamIds: z.array(z.string()).optional(),
-  isRecurring: z.boolean().optional(),
-  recurrenceEndDate: z.string().optional(),
-  recurrencePattern: z.enum(['daily', 'weekly', 'monthly']).optional(),
-  recurrenceDaysOfWeek: z.array(z.number()).optional(),
+  team_ids: z.array(z.string()).optional(),
+  is_recurring: z.boolean().optional(),
+  recurrence_end_date: z.string().optional(),
+  recurrence_pattern: z.enum(['daily', 'weekly', 'monthly']).optional(),
+  recurrence_days_of_week: z.array(z.number()).optional(),
 });
 
 type ScheduleFormData = z.infer<typeof scheduleFormSchema>;
@@ -52,22 +52,22 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
-      eventType: initialData?.eventType || '',
-      startDate: initialData?.startDate || '',
-      startTime: initialData?.startTime || '',
-      endDate: initialData?.endDate || '',
-      endTime: initialData?.endTime || '',
+      event_type: initialData?.event_type || '',
+      start_date: initialData?.start_date || '',
+      start_time: initialData?.start_time || '',
+      end_date: initialData?.end_date || '',
+      end_time: initialData?.end_time || '',
       location: initialData?.location || '',
       opponent: initialData?.opponent || '',
-      teamIds: initialData?.teamIds || [],
-      isRecurring: initialData?.isRecurring || false,
-      recurrenceEndDate: initialData?.recurrenceEndDate || '',
-      recurrencePattern: initialData?.recurrencePattern || 'daily',
-      recurrenceDaysOfWeek: initialData?.recurrenceDaysOfWeek || [],
+      team_ids: initialData?.team_ids || [],
+      is_recurring: initialData?.is_recurring || false,
+      recurrence_end_date: initialData?.recurrence_end_date || '',
+      recurrence_pattern: initialData?.recurrence_pattern || 'daily',
+      recurrence_days_of_week: initialData?.recurrence_days_of_week || [],
     },
   });
 
-  const isRecurring = form.watch('isRecurring');
+  const isRecurring = form.watch('is_recurring');
   const eventTypes = ['game', 'practice', 'meeting', 'scrimmage', 'tournament'];
   const daysOfWeek = [
     { label: 'Monday', value: 1 },
@@ -134,7 +134,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
               
               <FormField
                 control={form.control}
-                name="eventType"
+                name="event_type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Event Type</FormLabel>
@@ -159,7 +159,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
               
               <FormField
                 control={form.control}
-                name="startDate"
+                name="start_date"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
@@ -173,7 +173,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
               
               <FormField
                 control={form.control}
-                name="startTime"
+                name="start_time"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Time</FormLabel>
@@ -187,7 +187,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
               
               <FormField
                 control={form.control}
-                name="endDate"
+                name="end_date"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>End Date</FormLabel>
@@ -201,7 +201,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
               
               <FormField
                 control={form.control}
-                name="endTime"
+                name="end_time"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>End Time</FormLabel>
@@ -245,7 +245,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
             {/* Team Selection */}
             <FormField
               control={form.control}
-              name="teamIds"
+              name="team_ids"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
@@ -292,7 +292,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
             {/* Recurring Event Toggle */}
             <FormField
               control={form.control}
-              name="isRecurring"
+              name="is_recurring"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 space-y-0">
                   <div className="space-y-0.5">
@@ -322,7 +322,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="recurrencePattern"
+                    name="recurrence_pattern"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Repeat Pattern</FormLabel>
@@ -345,7 +345,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
 
                   <FormField
                     control={form.control}
-                    name="recurrenceEndDate"
+                    name="recurrence_end_date"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>End Date for Recurring</FormLabel>
@@ -358,10 +358,10 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onSubmit, initialData, isLo
                   />
                 </div>
 
-                {form.watch('recurrencePattern') === 'weekly' && (
+                {form.watch('recurrence_pattern') === 'weekly' && (
                   <FormField
                     control={form.control}
-                    name="recurrenceDaysOfWeek"
+                    name="recurrence_days_of_week"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Days of Week</FormLabel>
