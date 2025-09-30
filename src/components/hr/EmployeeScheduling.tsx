@@ -127,6 +127,15 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     fetchData();
   }, [currentDate, activeView]);
 
+  // Real-time search effect with debouncing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchEmployees(searchQuery);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -623,6 +632,10 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   };
 
   const openScheduleModal = (schedule?: any) => {
+    // Reset search and fetch employees
+    setSearchQuery('');
+    fetchEmployees('');
+    
     if (schedule) {
       setSelectedSchedule(schedule);
       setScheduleForm({
