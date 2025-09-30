@@ -1235,7 +1235,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "employee_schedules_employee_id_fkey"
+            foreignKeyName: "employee_schedules_employee_id_fkey_correct"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -6872,12 +6872,11 @@ export type Database = {
       get_approved_players: {
         Args: Record<PropertyKey, never> | { search_term?: string }
         Returns: {
+          avatar_url: string
           email: string
           full_name: string
           id: string
-          latest_tryout_date: string
-          latest_tryout_placement: Database["public"]["Enums"]["tryout_team"]
-          latest_tryout_total: number
+          phone: string
         }[]
       }
       get_benefit_cost_analysis: {
@@ -7260,10 +7259,13 @@ export type Database = {
       rpc_get_employees: {
         Args: { lim?: number; off?: number; q?: string }
         Returns: {
+          department: string
           email: string
           employee_id: string
+          employment_status: string
           full_name: string
           phone: string
+          position: string
           role: string
           role_display: string
         }[]
@@ -7416,7 +7418,11 @@ export type Database = {
         Args:
           | { p_entries: Json; p_event_id: string; p_team_id: string }
           | { p_records: Json }
-        Returns: undefined
+        Returns: {
+          credited: boolean
+          player_id: string
+          status: string
+        }[]
       }
       rpc_save_event_grades: {
         Args: { p_event_id: string; p_metrics: Json; p_player_id: string }

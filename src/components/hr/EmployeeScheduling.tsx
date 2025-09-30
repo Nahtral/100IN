@@ -38,6 +38,9 @@ interface Employee {
   role: string;
   role_display: string;
   phone?: string;
+  position?: string;
+  department?: string;
+  employment_status?: string;
 }
 
 interface EmployeeSchedulingProps {
@@ -103,6 +106,22 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch employees when search changes
+  useEffect(() => {
+    if (showScheduleModal) {
+      fetchEmployees(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery, showScheduleModal]);
 
   useEffect(() => {
     fetchData();
@@ -184,32 +203,26 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   const fetchEmployees = async (query: string = '') => {
     try {
       setIsLoadingEmployees(true);
-      console.log('Fetching employees with query:', query);
       
-      // Use RPC function as preferred method
+      // Use RPC function to get employees with proper IDs
       const { data, error } = await supabase.rpc('rpc_get_employees', {
-        q: query,
+        q: query || '',
         lim: 50,
         off: 0
       });
 
       if (error) {
-        console.error('RPC call failed:', error);
+        console.error('Failed to fetch employees:', error);
         toast({
           title: "Error",
-          description: `Failed to fetch employees: ${error.message}`,
+          description: "Failed to load employees. Please try again.",
           variant: "destructive",
         });
+        setEmployees([]);
         return;
       }
 
-      console.log('RPC success, fetched employees:', data);
-      console.log('Employee count:', data?.length);
       setEmployees(data || []);
-
-      if (!data || data.length === 0) {
-        console.log('No employees found for query:', query);
-      }
     } catch (error) {
       console.error('Error in fetchEmployees:', error);
       toast({
@@ -217,6 +230,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
         description: "Failed to fetch employees. Please try again.",
         variant: "destructive",
       });
+      setEmployees([]);
     } finally {
       setIsLoadingEmployees(false);
     }
@@ -313,11 +327,11 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
   };
 
   const handleScheduleSubmit = async () => {
-    // Validate required fields
+    // Comprehensive validation
     if (!scheduleForm.employee_id) {
       toast({
         title: "Validation Error",
-        description: "Please select an employee.",
+        description: "Please select an employee from the list.",
         variant: "destructive",
       });
       return;
@@ -326,7 +340,7 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
     if (!scheduleForm.shift_date) {
       toast({
         title: "Validation Error", 
-        description: "Please select a date.",
+        description: "Please select a shift date.",
         variant: "destructive",
       });
       return;
@@ -363,16 +377,23 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
       return;
     }
 
+    // Verify employee exists in the current list
+    const selectedEmployee = employees.find(emp => emp.employee_id === scheduleForm.employee_id);
+    if (!selectedEmployee) {
+      toast({
+        title: "Validation Error",
+        description: "Selected employee is invalid. Please search and select again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSaving(true);
-      console.log('Saving schedule with data:', {
-        ...scheduleForm,
-        break_duration_minutes: Number(scheduleForm.break_duration_minutes)
-      });
       
       // Get current user for created_by field
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         toast({
           title: "Authentication Error",
           description: "You must be logged in to create schedules.",
@@ -381,26 +402,36 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
         return;
       }
 
+      const scheduleData = {
+        employee_id: scheduleForm.employee_id,
+        shift_date: scheduleForm.shift_date,
+        start_time: scheduleForm.start_time,
+        end_time: scheduleForm.end_time,
+        break_duration_minutes: Number(scheduleForm.break_duration_minutes) || 0,
+        location: scheduleForm.location || null,
+        notes: scheduleForm.notes || null
+      };
+
       if (selectedSchedule) {
         const { error } = await supabase
           .from('employee_schedules')
-          .update({
-            ...scheduleForm,
-            break_duration_minutes: Number(scheduleForm.break_duration_minutes)
-          })
+          .update(scheduleData)
           .eq('id', selectedSchedule.id);
 
         if (error) {
           console.error('Error updating schedule:', error);
           
-          // Provide specific error messages based on error type
           let errorMessage = "Failed to update schedule.";
-          if (error.code === '23503') {
-            errorMessage = "Invalid employee selected. Please refresh and try again.";
-          } else if (error.code === '23505') {
-            errorMessage = "A schedule already exists for this employee at this time.";
+          if (error.message.includes('Invalid employee')) {
+            errorMessage = "The selected employee is no longer active or invalid.";
+          } else if (error.message.includes('Schedule conflict')) {
+            errorMessage = "This employee already has a shift scheduled during this time.";
+          } else if (error.message.includes('End time')) {
+            errorMessage = "End time must be after start time.";
+          } else if (error.code === '23503') {
+            errorMessage = "Invalid employee reference. Please select a valid employee.";
           } else if (error.message) {
-            errorMessage = `Database error: ${error.message}`;
+            errorMessage = error.message;
           }
           
           toast({
@@ -416,26 +447,27 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
           description: "Schedule updated successfully.",
         });
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('employee_schedules')
           .insert({
-            ...scheduleForm,
-            break_duration_minutes: Number(scheduleForm.break_duration_minutes),
-            created_by: user.user.id
-          })
-          .select();
+            ...scheduleData,
+            created_by: user.id
+          });
 
         if (error) {
           console.error('Error creating schedule:', error);
           
-          // Provide specific error messages based on error type
-          let errorMessage = "Failed to save schedule.";
-          if (error.code === '23503') {
-            errorMessage = "Invalid employee selected. Please refresh and try again.";
-          } else if (error.code === '23505') {
-            errorMessage = "A schedule already exists for this employee at this time.";
+          let errorMessage = "Failed to create schedule.";
+          if (error.message.includes('Invalid employee')) {
+            errorMessage = "The selected employee is no longer active or invalid.";
+          } else if (error.message.includes('Schedule conflict')) {
+            errorMessage = "This employee already has a shift scheduled during this time.";
+          } else if (error.message.includes('End time')) {
+            errorMessage = "End time must be after start time.";
+          } else if (error.code === '23503') {
+            errorMessage = "Invalid employee reference. Please select a valid employee.";
           } else if (error.message) {
-            errorMessage = `Database error: ${error.message}`;
+            errorMessage = error.message;
           }
           
           toast({
@@ -446,10 +478,9 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
           return;
         }
 
-        console.log('Schedule created successfully:', data);
         toast({
           title: "Success",
-          description: "Schedule created successfully!",
+          description: `Schedule created for ${selectedEmployee.full_name}`,
         });
       }
 
@@ -465,9 +496,10 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
         location: '',
         notes: ''
       });
+      setSearchQuery('');
       
       // Refresh data
-      fetchData();
+      await fetchData();
       onStatsUpdate?.();
     } catch (error: any) {
       console.error('Error in handleScheduleSubmit:', error);
@@ -1071,40 +1103,83 @@ const EmployeeScheduling: React.FC<EmployeeSchedulingProps> = ({ onStatsUpdate }
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="employee">Employee</Label>
+              <Label htmlFor="employee">
+                Employee <span className="text-red-500">*</span>
+              </Label>
               <div className="space-y-2">
-                <Input
-                  placeholder="Search employees..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="mb-2"
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="Search by name, position, or department..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="mb-2"
+                    disabled={isLoadingEmployees}
+                  />
+                  {isLoadingEmployees && (
+                    <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
                 <Select 
                   value={scheduleForm.employee_id} 
-                  onValueChange={(value) => setScheduleForm({...scheduleForm, employee_id: value})}
+                  onValueChange={(value) => {
+                    setScheduleForm({...scheduleForm, employee_id: value});
+                  }}
+                  disabled={isLoadingEmployees}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select employee" />
+                  <SelectTrigger className={!scheduleForm.employee_id ? 'text-muted-foreground' : ''}>
+                    <SelectValue placeholder="Select an employee from the list" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px]">
                     {isLoadingEmployees ? (
-                      <div className="p-2">
-                        <Skeleton className="h-4 w-full mb-2" />
+                      <div className="p-4 space-y-2">
+                        <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-5/6" />
                       </div>
                     ) : employees.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground">
-                        No active employees found
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No employees found</p>
+                        {searchQuery && (
+                          <p className="text-xs mt-1">Try a different search term</p>
+                        )}
                       </div>
                     ) : (
                       employees.map((employee) => (
-                        <SelectItem key={employee.employee_id} value={employee.employee_id}>
-                          {employee.full_name} - {employee.role_display}
+                        <SelectItem 
+                          key={employee.employee_id} 
+                          value={employee.employee_id}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{employee.full_name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {employee.position} • {employee.department}
+                            </span>
+                          </div>
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
+                {scheduleForm.employee_id && (
+                  <div className="text-xs text-muted-foreground">
+                    {(() => {
+                      const selected = employees.find(e => e.employee_id === scheduleForm.employee_id);
+                      return selected ? (
+                        <p className="text-green-600 flex items-center gap-1">
+                          <Check className="h-3 w-3" />
+                          Selected: {selected.full_name}
+                        </p>
+                      ) : (
+                        <p className="text-orange-600 flex items-center gap-1">
+                          <X className="h-3 w-3" />
+                          Please refresh and select again
+                        </p>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
             
